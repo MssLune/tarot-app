@@ -25,8 +25,46 @@ model User {
   spreads UserSpread[]
   readings UserReading[]
   rituals UserRitual[]
+  subscription Subscription?
 
   @@map("users")
+}
+
+/// Suscripción de pago. DELIBERADAMENTE separada de `User.role`.
+///
+/// `role` es autorización (quién puede entrar al panel de administración).
+/// La suscripción es un hecho económico. Son ortogonales: si se mezclaran en
+/// una sola columna, un administrador que cancela perdería permisos, o un
+/// suscriptor acabaría con permisos de administración.
+///
+/// `plan` es lo que OUR app cree; `status` es lo que Stripe reporta. Puede
+/// haber plan "pro" con status "past_due": la tarjeta falló pero todavía
+/// existe un período de gracia. Por eso se guardan los dos y no uno solo.
+model Subscription {
+  id     String @id
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 'free' | 'pro'
+  plan   String @default("free")
+  /// Lo que reporta Stripe: 'inactive' | 'active' | 'trialing' |
+  /// 'past_due' | 'canceled' | 'incomplete' | 'unpaid'.
+  status String @default("inactive")
+
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+
+  /// Fin del período que ya está pagado. Si `cancelAtPeriodEnd` es true, la
+  /// suscripción sigue activa hasta acá y después baja a free.
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stripeCustomerId])
+  @@map("subscriptions")
 }
 
 /// Ritual que el usuario anota para sí, con la fuente que él declara.

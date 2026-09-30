@@ -53,31 +53,36 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* ---------------- Cabecera ---------------- */}
       <header className="sticky top-0 z-40 border-b border-gold-400/10 bg-ink-950/70 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          {/* Marca */}
+          {/* Marca. En móvil va sólo el ícono: con el texto completo la fila
+              mide 459px y desborda los 375px de un iPhone SE. Medido con un
+              modelo de ancho de texto: ícono 40px + "ARCANA" 103px + nav 235px
+              + padding y gaps. Con sólo el ícono, 311px: entra incluso en
+              pantallas de 320px. El texto vuelve desde `sm`. */}
           <button
             onClick={restart}
             className="group flex items-center gap-3 text-left"
             title="Volver al inicio"
           >
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gold-400/40 bg-ink-900">
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold-400/40 bg-ink-900">
               <span className="absolute inset-0 rounded-full bg-gold-400/10 blur-md transition-opacity group-hover:opacity-100 sm:opacity-60" />
               <span className="relative text-lg text-gold-300">☾</span>
             </span>
-            <span className="leading-none">
+            <span className="hidden leading-none sm:block">
               <span className="block font-display text-lg tracking-[0.3em] text-gold-gradient">
                 ARCANA
               </span>
               <span className="mt-1 block text-[0.6rem] uppercase tracking-[0.28em] text-gold-100/35">
-                Tarot & Oráculo
+                Tarot &amp; Oráculo
               </span>
             </span>
           </button>
 
-          {/* Acciones */}
-          <nav className="flex items-center gap-1 sm:gap-2">
+          {/* Acciones. El padding baja en móvil para que los tres botones más el
+              ícono entren incluso en pantallas de 320px. */}
+          <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
             <button
               onClick={() => goTo('history')}
-              className={`relative rounded-full px-3 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
+              className={`relative rounded-full px-2.5 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
                 screen === 'history'
                   ? 'bg-gold-400/15 text-gold-200'
                   : 'text-gold-100/50 hover:bg-white/5 hover:text-gold-100'
@@ -92,7 +97,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button
               onClick={() => goTo('rituals')}
-              className={`rounded-full px-3 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
+              className={`rounded-full px-2.5 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
                 screen === 'rituals'
                   ? 'bg-gold-400/15 text-gold-200'
                   : 'text-gold-100/50 hover:bg-white/5 hover:text-gold-100'
@@ -102,7 +107,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button
               onClick={restart}
-              className="rounded-full border border-gold-400/25 px-3 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] text-gold-200/80 transition-colors hover:border-gold-300/60 hover:bg-gold-400/10 hover:text-gold-100 sm:px-4 sm:text-xs"
+              className="rounded-full border border-gold-400/25 px-2.5 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] text-gold-200/80 transition-colors hover:border-gold-300/60 hover:bg-gold-400/10 hover:text-gold-100 sm:px-4 sm:text-xs"
             >
               Nueva
             </button>

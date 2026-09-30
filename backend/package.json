@@ -27,6 +27,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "morgan": "^1.10.0",
+    "stripe": "^22.6.2",
     "svix": "^2.6.0"
   },
   "devDependencies": {
