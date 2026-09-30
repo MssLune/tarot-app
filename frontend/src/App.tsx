@@ -13,6 +13,7 @@ import SystemScreen from './components/screens/SystemScreen';
 import SignInPage from './components/auth/SignInPage';
 import SignUpPage from './components/auth/SignUpPage';
 import AdminPage from './components/admin/AdminPage';
+import PlanScreen from './components/plans/PlanScreen';
 import Button from './components/ui/Button';
 import Glyph from './components/ui/Glyph';
 import Starfield from './components/ui/Starfield';
@@ -201,6 +202,8 @@ export default function App() {
         return <HistoryScreen />;
       case 'rituals':
         return <RitualsScreen />;
+      case 'plan':
+        return <PlanScreen />;
       case 'admin':
         return <AdminPage />;
       default:

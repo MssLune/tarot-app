@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useClerk, useSession } from '@clerk/react';
 import { useProfile } from '../../lib/useProfile';
+import { usePlan } from '../../lib/usePlan';
 import { useReadingStore } from '../../store/useReadingStore';
 import Button from '../ui/Button';
 
@@ -14,6 +15,27 @@ const ROLE_LABEL: Record<string, string> = {
   user: 'Lector',
 };
 
+/**
+ * Una línea con el recurso que está más cerca de su tope.
+ *
+ * No se listan los cuatro: el menú de cuenta tiene que caber sin scroll, y lo
+ * único que le interesa al usuario es qué se le está por acabar.
+ */
+function resumenDeUso(usage: {
+  readings: number;
+  decks: number;
+  spreads: number;
+  rituals: number;
+}): string {
+  const partes = [
+    `${usage.readings} lecturas`,
+    `${usage.decks} mazos`,
+    `${usage.spreads} tiradas`,
+    `${usage.rituals} rituales`,
+  ];
+  return partes.join(' · ');
+}
+
 export default function UserMenu() {
   const { user, signOut } = useClerk();
   const { session } = useSession();
@@ -23,6 +45,7 @@ export default function UserMenu() {
   const syncInFlight = useReadingStore((s) => s.syncInFlight);
   const pendingCount = useReadingStore((s) => s.pendingOps.length);
   const { profile, isAdmin } = useProfile();
+  const { isPro, usage } = usePlan();
 
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -164,6 +187,32 @@ export default function UserMenu() {
               </button>
             </div>
           )}
+
+          {/* Plan y uso. Va antes que la sesión activa porque es lo que el
+              usuario viene a mirar: cuánto le queda. */}
+          <button
+            type="button"
+            onClick={() => {
+              goTo('plan');
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2.5 border-b border-gold-400/15 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+          >
+            <span className="text-sm text-gold-300" aria-hidden="true">
+              {isPro ? '✦' : '◇'}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs text-gold-100">
+                {isPro ? 'Plan Pro' : 'Plan gratuito'}
+              </span>
+              <span className="block text-[0.6rem] text-gold-100/55">
+                {usage ? resumenDeUso(usage) : 'Ver límites y_usage'}
+              </span>
+            </span>
+            <span className="shrink-0 text-[0.6rem] text-gold-100/30" aria-hidden="true">
+              →
+            </span>
+          </button>
 
           {/* Sesión activa */}
           <div className="border-b border-gold-400/15 px-4 py-3">

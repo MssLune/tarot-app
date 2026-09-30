@@ -1,4 +1,27 @@
 /* ==========================================================================
+   Plan y cobro.
+   ========================================================================== */
+
+export type Plan = 'free' | 'pro';
+
+/** Nombres de los recursos con tope, para mostrar "3 de 20 lecturas". */
+export type LimitedResource = 'readings' | 'decks' | 'spreads' | 'rituals';
+
+/** Cuánto puede usar y qué puede hacer, según el plan. */
+export interface PlanLimits {
+  readings: number;
+  decks: number;
+  spreads: number;
+  rituals: number;
+  pdfExport: boolean;
+  showBanner: boolean;
+  cloudSync: boolean;
+}
+
+/** Cuántos lleva usados ahora. */
+export type PlanUsage = Record<LimitedResource, number>;
+
+/* ==========================================================================
    Tipos del dominio: sistemas, cartas, tiradas y lecturas guardadas.
    ========================================================================== */
 
@@ -17,6 +40,7 @@ export type Screen =
   | 'builder'
   | 'history'
   | 'rituals'
+  | 'plan'
   | 'admin';
 
 /** Eje arquetípico usado para detectar patrones entre cartas. */

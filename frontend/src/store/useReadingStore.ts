@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { blankDeck } from '../data/deckTemplates';
 import { userService } from '../services/userService';
 import { migrateLocalDataToAccount } from '../lib/migrateLocalData';
+import { ApiRequestError } from '../services/api';
 import type {
   CustomDeck,
   DrawnCard,
@@ -121,6 +122,16 @@ interface ReadingState {
   pendingOps: PendingOp[];
   /** Reintenta lo pendiente y recarga desde la cuenta. */
   retrySync: () => Promise<void>;
+  /**
+   * Aviso de límite del plan alcanzado.
+   *
+   * No es un error de sincronización: la operación es correcta y el backend la
+   * rechazó porque el usuario llegó al tope de su plan. Se muestra una vez y
+   * no entra en la cola de reintentos, porque reintentarla no puede funcionar
+   * nunca.
+   */
+  planNotice: { message: string; code: string; key: string } | null;
+  dismissPlanNotice: () => void;
 
   /* -------- Acciones -------- */
   goTo: (screen: Screen) => void;
@@ -219,7 +230,19 @@ export const useReadingStore = create<ReadingState>()(
         }
       };
 
-      /** Ejecuta la operación. Si falla, queda en cola para el reintento. */
+      /**
+       * Ejecuta la operación. Si falla por una razón recuperable, queda en
+       * cola para el reintento.
+       *
+       * Un 402 NO entra en la cola. Es un límite del plan: reintentarlo no
+       * puede funcionar nunca, y si lo encoláramos el usuario vería "1 cambio
+       * sin subir" para siempre y cada "Reintentar" lo volvería a sumar. En vez
+       * de eso se guarda como aviso para que la interfaz muestre el cartel de
+       * "se alcanzó el límite".
+       *
+       * Lo mismo con un 409 de id tomado por otra cuenta: reintentar con el
+       * mismo id va a seguir chocando.
+       */
       const runOp = async (op: PendingOp): Promise<void> => {
         if (!get().isAuthenticated) return;
         set((s) => ({ syncInFlight: s.syncInFlight + 1 }));
@@ -227,8 +250,15 @@ export const useReadingStore = create<ReadingState>()(
           await executeOp(op);
           dequeue(op.key);
         } catch (err) {
-          queueOp(op);
-          console.error(`[useReadingStore] No se pudo sincronizar ${op.key}:`, err);
+          if (err instanceof ApiRequestError && (err.status === 402 || err.status === 409)) {
+            set({
+              planNotice: { message: err.message, code: err.code, key: op.key },
+            });
+            console.warn(`[useReadingStore] ${err.code}: ${err.message}`);
+          } else {
+            queueOp(op);
+            console.error(`[useReadingStore] No se pudo sincronizar ${op.key}:`, err);
+          }
         } finally {
           set((s) => ({ syncInFlight: Math.max(0, s.syncInFlight - 1) }));
         }
@@ -253,7 +283,8 @@ export const useReadingStore = create<ReadingState>()(
         isAuthenticated: false,
         syncInFlight: 0,
         pendingOps: [],
-
+        planNotice: null,
+        dismissPlanNotice: () => set({ planNotice: null }),
         /* ---------------- Autenticación ---------------- */
         setIsAuthenticated: (value) => set({ isAuthenticated: value }),
 

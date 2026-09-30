@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Show } from '@clerk/react';
 import { useReadingStore } from '../../store/useReadingStore';
 import type { Screen } from '../../types';
+import LimitBanner from '../plans/LimitBanner';
 import UserMenu from './UserMenu';
 
 /* ==========================================================================
@@ -172,6 +173,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
       </header>
+
+      {/* Aviso de límite del plan. Va FUERA del <main> y después de la
+          cabecera para que ocupe el ancho de la pantalla y se lea como un
+          aviso del sistema, no como parte de la página. Sólo aparece cuando
+          el usuario llegó a un tope, y se puede cerrar. */}
+      <Show when="signed-in">
+        <LimitBanner />
+      </Show>
 
       {/* ---------------- Contenido ---------------- */}
       <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
