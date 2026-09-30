@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Arcana · Estilos base
+   ========================================================================== */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 font-body text-gold-100/85 antialiased;
+    background-image: radial-gradient(
+        130% 100% at 50% -20%,
+        rgba(76, 29, 149, 0.55) 0%,
+        rgba(21, 14, 46, 0.85) 45%,
+        #05030c 100%
+      ),
+      radial-gradient(80% 60% at 85% 110%, rgba(166, 122, 51, 0.16) 0%, transparent 70%);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-wide;
+  }
+
+  /* Scrollbar sutil, acorde a la paleta */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(214, 178, 95, 0.45), rgba(109, 51, 214, 0.4));
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(232, 205, 138, 0.7), rgba(139, 92, 246, 0.6));
+    background-clip: padding-box;
+  }
+
+  ::selection {
+    background: rgba(232, 205, 138, 0.28);
+    color: #fbf3dc;
+  }
+
+  /* Campos de formulario: base compartida */
+  input[type='text'],
+  input[type='number'],
+  textarea,
+  select {
+    @apply w-full rounded-xl border border-gold-400/20 bg-ink-900/70 px-4 py-3 text-sm text-gold-100
+      placeholder:text-gold-100/25 outline-none transition;
+  }
+  input[type='text']:focus,
+  input[type='number']:focus,
+  textarea:focus,
+  select:focus {
+    @apply border-gold-400/60 bg-ink-800/80;
+    box-shadow: 0 0 0 3px rgba(214, 178, 95, 0.12);
+  }
+
+  select option {
+    background-color: #120d24;
+    color: #fbf3dc;
+  }
+}
+
+@layer components {
+  /* Texto con degradado dorado (títulos y acentos) */
+  .text-gold-gradient {
+    @apply bg-gold-sheen bg-clip-text text-transparent;
+    background-size: 200% auto;
+  }
+
+  /* Panel de vidrio oscuro con filo dorado */
+  .panel {
+    @apply relative rounded-3xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl;
+    box-shadow:
+      0 24px 60px -30px rgba(0, 0, 0, 0.95),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Borde dorado luminoso reutilizable (usa ::before para no romper radios) */
+  .gilded::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      140deg,
+      rgba(232, 205, 138, 0.75),
+      rgba(125, 86, 34, 0.15) 35%,
+      rgba(167, 139, 250, 0.35) 60%,
+      rgba(232, 205, 138, 0.6)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Glifos astrológicos siempre monocromos (nunca emoji de color) */
+  .glyph {
+    font-variant-emoji: text;
+    font-family: 'Segoe UI Symbol', 'Noto Sans Symbols 2', 'Apple Symbols', 'Cambria Math',
+      'DejaVu Sans', serif;
+    line-height: 1;
+  }
+
+  /* Etiqueta pequeña en versalitas */
+  .overline {
+    @apply font-display text-[0.68rem] uppercase tracking-[0.32em] text-gold-300/70;
+  }
+
+  /* Reverso de carta: patrón geométrico dorado */
+  .card-back {
+    background-color: #150e2e;
+    background-image: radial-gradient(circle at 50% 50%, rgba(232, 205, 138, 0.16) 0%, transparent 55%),
+      repeating-linear-gradient(45deg, rgba(232, 205, 138, 0.1) 0 1px, transparent 1px 9px),
+      repeating-linear-gradient(-45deg, rgba(232, 205, 138, 0.1) 0 1px, transparent 1px 9px),
+      linear-gradient(160deg, #2b1a5c 0%, #150e2e 60%, #0a0716 100%);
+  }
+
+  /* Frente de carta: pergamino nocturno */
+  .card-face {
+    background-image: radial-gradient(90% 70% at 50% 0%, rgba(139, 92, 246, 0.22) 0%, transparent 60%),
+      linear-gradient(170deg, #1b1436 0%, #120d24 55%, #0a0716 100%);
+  }
+
+  /* Línea divisoria ornamentada */
+  .hairline {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(232, 205, 138, 0.45) 20%,
+      rgba(232, 205, 138, 0.75) 50%,
+      rgba(232, 205, 138, 0.45) 80%,
+      transparent
+    );
+  }
+}
+
+@layer utilities {
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Respeta la preferencia de reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

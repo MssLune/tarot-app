@@ -1,0 +1,244 @@
+// Esquema de datos de Arcana.
+// Modela contenido editorial (cartas y tiradas predefinidas) y datos de usuario
+// (mazos personalizados, tiradas creadas por el usuario y historial de lecturas).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Usuario autenticado (sincronizado con Clerk).
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  role      String   @default("user") // 'user' | 'admin'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  decks   UserDeck[]
+  spreads UserSpread[]
+  readings UserReading[]
+  rituals UserRitual[]
+
+  @@map("users")
+}
+
+/// Ritual que el usuario anota para sí, con la fuente que él declara.
+///
+/// IMPORTANTE sobre las fuentes: la app NO verifica que un ritual venga
+/// realmente del libro que el usuario escribió. Por eso `sourceVerified`
+/// arranca en false y la interfaz muestra "fuente sin verificar" mientras sea
+/// false. La app no inventa atribuciones; sólo las guarda.
+///
+/// Un ritual puede estar ligado a una fase lunar (`phase`, uno de los ocho
+/// ids de lib/lunar.ts) o a ninguna (`phase = 'any'`), para los que se hacen
+/// cuando uno quiere.
+model UserRitual {
+  id     String @id
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title    String
+  /// Qué hacer: los pasos del ritual.
+  body     String
+  /// Fase lunar a la que aplica, o 'any' si no depende de la fase.
+  phase    String  @default("any")
+  /// Fuente declarada por el usuario (obra, autor, tradición). Puede ir vacía.
+  source   String?
+  /// Capítulo, página o sección, si la fuente lo tiene.
+  sourceDetail String?
+  /// `false` mientras el usuario no haya confirmado que la fuente es correcta.
+  /// La UI lo muestra como advertencia, nunca lo oculta ni lo da por bueno.
+  sourceVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, phase])
+  @@map("user_rituals")
+}
+
+/// Carta del Tarot: Arcano Mayor (22) o Arcano Menor (56) — mazo completo de 78.
+model Card {
+  id     String @id
+  /// Índice global único de orden (0-21 Mayores, 22-77 Menores por palo).
+  number Int    @unique
+  name   String
+  glyph  String
+  /// Correspondencia astrológica corta, usada como subtítulo en toda la UI (ej. "Aire · Urano").
+  correspondence String
+  element        String
+  axis           String
+  energy         String
+
+  /// 'mayor' | 'menor'.
+  arcanaType String
+  /// Palo del Arcano Menor ('bastos'|'copas'|'espadas'|'oros'); null en Mayores.
+  suit       String?
+  /// Etiqueta del rango dentro del palo ('As','2'...'10','Sota','Caballero','Reina','Rey'); null en Mayores.
+  rank       String?
+  /// Valor numérico del rango (1-14) para ordenar dentro de un palo; null en Mayores.
+  rankValue  Int?
+
+  /// Listas guardadas como JSON (["palabra1","palabra2"]) — no ameritan una
+  /// tabla propia: son atributos simples de la carta, no entidades con
+  /// identidad ni relaciones propias.
+  keywords         String
+  reversedKeywords String
+
+  upright  String
+  reversed String
+  advice   String
+
+  /// Frases cortas y opcionales que enfocan la lectura de esta carta según el
+  /// tema de la pregunta. Se combinan con upright/reversed en el motor de
+  /// interpretación; no son párrafos completos para no multiplicar el
+  /// contenido a mantener (78 cartas × 4 categorías × 2 orientaciones).
+  loveHint   String?
+  workHint   String?
+  moneyHint  String?
+  healthHint String?
+
+  /// --- Contenido de referencia (ficha de la carta), tomado de la guía del
+  /// usuario. Siempre asume la carta al derecho, por eso vive aparte de
+  /// upright/reversed en vez de mezclarse con el motor de interpretación.
+  /// Etiquetas cortas de resumen conceptual (JSON, como keywords).
+  conceptTags String?
+  /// 'si' | 'no' | 'incierto'. No varía con la orientación: es una cualidad
+  /// fija de la carta, no algo que cambie al salir invertida.
+  yesNo       String?
+  yesNoReason String?
+  /// Pasado/Presente/Futuro al derecho (de la guía).
+  pastText    String?
+  presentText String?
+  futureText  String?
+  /// Pasado/Presente/Futuro invertido: la misma energía bloqueada, demorada
+  /// o vivida hacia adentro, no una simple negación de la versión derecha.
+  /// Es contenido propio (la guía original sólo cubre la posición derecha).
+  pastTextReversed    String?
+  presentTextReversed String?
+  futureTextReversed  String?
+  /// Signo/regente y rango de fechas tal como los da la guía (ej. "Aries · 21 de marzo al 20 de abril").
+  astrology   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cards")
+}
+
+/// Conjunto de 2-3 cartas que, si aparecen juntas en una misma tirada
+/// (sin importar posición ni orientación), tienen un significado especial
+/// propio además del de cada carta por separado.
+model CardCombination {
+  id      String @id
+  name    String
+  /// Ids de Card guardados como JSON (["el-diablo","la-luna"]), mismo criterio
+  /// que `keywords` en Card: es una lista simple, no una relación con entidad propia.
+  cardIds String
+  meaning String
+  /// Reutiliza la misma paleta de tono que los patrones detectados en el frontend.
+  tone    String @default("rose")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("card_combinations")
+}
+
+/// Tirada predefinida (ej. "Cruz Celta").
+model Spread {
+  id          String @id
+  name        String
+  description String
+  /// Familia de layout usada por el creador de tiradas (line/cross/circle/...).
+  preset      String?
+
+  positions SpreadPosition[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("spreads")
+}
+
+/// Una posición dentro de una tirada. Tiene identidad y orden propios,
+/// por eso es una tabla relacionada y no un campo JSON dentro de Spread.
+model SpreadPosition {
+  id       String @id
+  spreadId String
+  spread   Spread @relation(fields: [spreadId], references: [id], onDelete: Cascade)
+
+  /// Orden dentro de la tirada (reemplaza al índice del array original).
+  order  Int
+  name   String
+  prompt String?
+  x      Float
+  y      Float
+  rotate Float?
+
+  @@index([spreadId])
+  @@map("spread_positions")
+}
+
+/// Mazo personalizado de un usuario.
+model UserDeck {
+  id          String @id
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  allowReversed Boolean @default(true)
+  /// Cartas del mazo guardadas como JSON.
+  cards       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_decks")
+}
+
+/// Tirada personalizada de un usuario.
+model UserSpread {
+  id          String @id
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  preset      String?
+  /// Posiciones de la tirada guardadas como JSON.
+  positions   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_spreads")
+}
+
+/// Lectura guardada por un usuario.
+model UserReading {
+  id        String @id
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  question  String?
+  questionCategory String?
+  system    String
+  /// Tirada usada (copia JSON).
+  spread    String
+  /// Mazo usado (copia JSON, opcional).
+  deck      String?
+  /// Cartas cargadas (JSON).
+  cards     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_readings")
+}
