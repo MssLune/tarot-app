@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
-import { ELEMENT_LABELS, YES_NO_LABELS } from '../../lib/labels';
-import { interpret } from '../../lib/interpretation';
+import { ELEMENT_LABELS, YES_NO_LABELS } from '@arcana/tarot-core';
+import { interpret } from '@arcana/tarot-core';
 import { SYSTEM_LABELS } from '../../lib/systems';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';

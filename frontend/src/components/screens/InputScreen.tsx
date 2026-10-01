@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
-import { CATEGORY_LABELS } from '../../lib/labels';
-import { cardDisplayName, cardGlyph } from '../../lib/interpretation';
+import { CATEGORY_LABELS } from '@arcana/tarot-core';
+import { cardDisplayName, cardGlyph } from '@arcana/tarot-core';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
 import type { QuestionCategory } from '../../types';

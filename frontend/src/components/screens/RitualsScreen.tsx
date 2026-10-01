@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { moonPhase, phasesOfLunation, type MoonPhaseId } from '../../lib/lunar';
+import { moonPhase, phasesOfLunation, type MoonPhaseId } from '@arcana/tarot-core';
 import { useReadingStore, uid } from '../../store/useReadingStore';
 import type { Ritual } from '../../types';
 import MoonDisc from '../cards/MoonDisc';

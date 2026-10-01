@@ -13,7 +13,7 @@ import type {
   QuestionCategory,
   Spread,
   SystemId,
-} from '../types';
+} from './types';
 
 /** Cartas del Rider-Waite indexadas por id, tal como las sirve la API. */
 type CardsById = Record<string, ArcanaCard>;

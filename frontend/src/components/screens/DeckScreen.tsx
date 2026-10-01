@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { blankCard, getDeckTemplates, parseKeywords } from '../../data/deckTemplates';
 import { buildArchive, downloadArchive } from '../../lib/archive';
-import { AXIS_LABELS, ELEMENT_LABELS } from '../../lib/labels';
+import { AXIS_LABELS, ELEMENT_LABELS } from '@arcana/tarot-core';
 import { useContentStore } from '../../store/useContentStore';
 import { uid, useReadingStore } from '../../store/useReadingStore';
 import type { Axis, CustomCard, CustomDeck, Element, Energy } from '../../types';

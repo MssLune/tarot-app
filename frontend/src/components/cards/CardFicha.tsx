@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { YES_NO_LABELS } from '../../lib/labels';
+import { YES_NO_LABELS } from '@arcana/tarot-core';
 import type { ArcanaCard } from '../../types';
 import Glyph from '../ui/Glyph';
 import OrnateDivider from '../ui/OrnateDivider';

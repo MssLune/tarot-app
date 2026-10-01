@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Arcana — App de lecturas de Tarot y Oráculo (frontend + API + base de datos)",
   "workspaces": [
+    "packages/tarot-core",
     "frontend",
     "backend"
   ],
@@ -14,8 +15,8 @@
     "build": "npm run build -w backend && npm run build -w frontend",
     "db:migrate": "npm run db:migrate -w backend",
     "db:seed": "npm run db:seed -w backend",
-    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
-    "test": "npm run test -w backend && npm run test -w frontend",
+    "typecheck": "npm run typecheck -w @arcana/tarot-core && npm run typecheck -w backend && npm run typecheck -w frontend",
+    "test": "npm run test -w @arcana/tarot-core && npm run test -w backend && npm run test -w frontend",
     "test:watch": "concurrently -n backend,frontend \"npm run test:watch -w backend\" \"npm run test:watch -w frontend\""
   },
   "devDependencies": {

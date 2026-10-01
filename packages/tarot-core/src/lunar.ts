@@ -148,24 +148,68 @@ interface Elements {
   T: number;
 }
 
-function elementsOf(k: number): Elements {
+/**
+ * Movimientos medios, en grados por día.
+ *
+ * Se usan para desplazar los argumentos de cada fase hasta SU instante, y no
+ * hasta el de la luna nueva del lunación. Ver `elementsOf`.
+ */
+const MEAN_MOTION = {
+  /** Anomalía media del Sol. */
+  M: 0.98560028,
+  /** Anomalía media de la Luna. Es la que domina la corrección. */
+  Mp: 13.0649929509,
+  /** Argumento de latitud de la Luna. */
+  F: 13.22935024,
+  /** Nodo ascendente: retrocede. */
+  Omega: -0.0529539,
+} as const;
+
+/**
+ * Argumentos de la corrección para una fase.
+ *
+ * `k` da los valores en la LUNA NUEVA de ese lunación, y después se desplazan
+ * por los días que faltan hasta la fase que se está calculando.
+ *
+ * El desplazamiento no es un detalle menor: es la diferencia entre acertar y
+ * fallar por un día entero. El término dominante de la corrección es
+ * `-0,406 · sin(M')`, y M' —la anomalía media de la Luna— avanza 13,065° por
+ * día, o sea 192,9° a lo largo de medio lunación. Si se usara el M' de la luna
+ * nueva para calcular la llena, el signo de la corrección saldría invertido:
+ * la luna nueva acertaría (el desfase es cero) y las otras tres fases
+ * fallarían, la llena por unas 16 horas.
+ *
+ * La Luna no recorre el lunación a velocidad constante: se acelera cerca del
+ * perigeo. Por eso la fase real puede estar a más de medio día del punto medio
+ * geométrico del lunación.
+ */
+function elementsOf(k: number, index: number): Elements {
   const T = k / 1236.85;
+  /* Días desde la luna nueva hasta esta fase. */
+  const offset = SYNODIC * (index / 8);
+
+  const M = 2.5534 + 29.1053567 * k - 0.0000014 * T ** 2 - 0.00000011 * T ** 3;
+  const Mp =
+    201.5643 +
+    385.81693528 * k +
+    0.0107582 * T ** 2 +
+    0.00001238 * T ** 3 -
+    0.000000058 * T ** 4;
+  const F =
+    160.7108 +
+    390.67050284 * k -
+    0.0016118 * T ** 2 -
+    0.00000227 * T ** 3 +
+    0.000000011 * T ** 4;
+  const Omega = 124.7746 - 1.56375588 * k + 0.0020672 * T ** 2 + 0.00000215 * T ** 3;
+
   return {
     T,
-    M: 2.5534 + 29.1053567 * k - 0.0000014 * T ** 2 - 0.00000011 * T ** 3,
-    Mp:
-      201.5643 +
-      385.81693528 * k +
-      0.0107582 * T ** 2 +
-      0.00001238 * T ** 3 -
-      0.000000058 * T ** 4,
-    F:
-      160.7108 +
-      390.67050284 * k -
-      0.0016118 * T ** 2 -
-      0.00000227 * T ** 3 +
-      0.000000011 * T ** 4,
-    Omega: 124.7746 - 1.56375588 * k + 0.0020672 * T ** 2 + 0.00000215 * T ** 3,
+    M: M + MEAN_MOTION.M * offset,
+    Mp: Mp + MEAN_MOTION.Mp * offset,
+    F: F + MEAN_MOTION.F * offset,
+    Omega: Omega + MEAN_MOTION.Omega * offset,
+    /* E depende sólo de la época, no de la fase. */
     E: 1 - 0.002516 * T - 0.0000074 * T ** 2,
   };
 }
@@ -231,8 +275,15 @@ function correctionFull({ M, Mp, F, Omega, E }: Elements): number {
   );
 }
 
-/** Cuarto Creciente y Cuarto Menguante. Tabla 49.A de Meeus. */
-function correctionQuarter({ M, Mp, F, Omega, E }: Elements): number {
+/**
+ * Cuarto Creciente. Tabla 49.A de Meeus.
+ *
+ * Los dos cuartos comparten casi todos los coeficientes, pero NO son la misma
+ * serie: el Menguante no tiene el término `-0,01183 E sin(M' + M)` y trae
+ * `+0,00023 sin(M + 2F)` sin el factor E. Usar la misma serie para los dos
+ * dejaba al Cuarto Menguante desviado.
+ */
+function correctionFirstQuarter({ M, Mp, F, Omega, E }: Elements): number {
   return (
     -0.62801 * sin(Mp) +
     0.17172 * E * sin(M) -
@@ -263,6 +314,37 @@ function correctionQuarter({ M, Mp, F, Omega, E }: Elements): number {
   );
 }
 
+/** Cuarto Menguante. Tabla 49.A de Meeus. */
+function correctionLastQuarter({ M, Mp, F, Omega, E }: Elements): number {
+  return (
+    -0.62801 * sin(Mp) +
+    0.17172 * E * sin(M) +
+    0.00862 * sin(2 * Mp) +
+    0.00804 * sin(2 * F) +
+    0.00454 * E * sin(Mp - M) +
+    0.00204 * E * E * sin(2 * M) -
+    0.0018 * sin(Mp - 2 * F) -
+    0.0007 * sin(Mp + 2 * F) -
+    0.0004 * sin(2 * Mp + M) +
+    0.00033 * E * sin(M + 2 * F) -
+    0.00023 * E * sin(Mp + M) +
+    0.00023 * sin(M + 2 * F) +
+    0.00021 * E * sin(2 * Mp) -
+    0.00019 * E * sin(Mp - M) +
+    0.00017 * sin(Omega) -
+    0.00011 * sin(Mp - 2 * F) -
+    0.00011 * sin(Mp + M) -
+    0.00005 * sin(Mp + 2 * F) +
+    0.00004 * sin(2 * Mp + 2 * F) -
+    0.00004 * sin(M) +
+    0.00003 * sin(Mp + M - 2 * F) +
+    0.00003 * sin(Mp - M + 2 * F) -
+    0.00002 * sin(Mp - M - 2 * F) -
+    0.00002 * sin(3 * Mp + M) +
+    0.00002 * sin(4 * Mp)
+  );
+}
+
 /** Las 4 fases principales tienen índice par dentro de la lista de 8. */
 const PRINCIPAL_INDEX = [0, 2, 4, 6] as const;
 
@@ -286,7 +368,7 @@ function phaseJDE(k: number, index: number): number {
 
 /** Día juliano de una de las 4 fases principales, con su serie de correcciones. */
 function principalJDE(k: number, index: number): number {
-  const el = elementsOf(k);
+  const el = elementsOf(k, index);
   const base =
     JDE_REFERENCE +
     SYNODIC * k +
@@ -299,7 +381,9 @@ function principalJDE(k: number, index: number): number {
       ? correctionNew(el)
       : index === 4
         ? correctionFull(el)
-        : correctionQuarter(el);
+        : index === 2
+          ? correctionFirstQuarter(el)
+          : correctionLastQuarter(el);
   return instant + correction;
 }
 

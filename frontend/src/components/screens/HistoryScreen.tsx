@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
-import { cardDisplayName } from '../../lib/interpretation';
+import { cardDisplayName } from '@arcana/tarot-core';
 import { SYSTEM_SHORT } from '../../lib/systems';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';

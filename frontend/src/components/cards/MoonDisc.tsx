@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { MoonPhase } from '../../lib/lunar';
+import type { MoonPhase } from '@arcana/tarot-core';
 
 /* ==========================================================================
    Disco lunar, en dos registros distintos.
