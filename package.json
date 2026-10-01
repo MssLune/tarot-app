@@ -15,8 +15,8 @@
     "db:migrate": "npm run db:migrate -w backend",
     "db:seed": "npm run db:seed -w backend",
     "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
-    "test": "npm run test -w frontend",
-    "test:watch": "npm run test:watch -w frontend"
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:watch": "concurrently -n backend,frontend \"npm run test:watch -w backend\" \"npm run test:watch -w frontend\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
