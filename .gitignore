@@ -16,3 +16,5 @@ frontend/.env
 backend/assets/cards/_extraidas/
 backend/.entrada/*
 !backend/.entrada/LEEME.txt
+backend/.entrada/major/
+backend/.entrada/minor/
