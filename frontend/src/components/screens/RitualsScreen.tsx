@@ -4,6 +4,8 @@ import { moonPhase, phasesOfLunation, type MoonPhaseId } from '@arcana/tarot-cor
 import { useReadingStore, uid } from '../../store/useReadingStore';
 import type { Ritual } from '../../types';
 import MoonDisc from '../cards/MoonDisc';
+import EclipseNotice from '../moon/EclipseNotice';
+import FestivalList from '../moon/FestivalList';
 import Button from '../ui/Button';
 import SectionHeading from '../ui/SectionHeading';
 
@@ -93,6 +95,11 @@ export default function RitualsScreen() {
         </div>
       </section>
 
+      {/* ---------------- Eclipse de hoy ---------------- */}
+      {/* Va pegado a la fase: si hoy es luna de sangre, el cartel tiene que
+          estar en la misma pantalla que el disco, no más abajo. */}
+      <EclipseNotice />
+
       {/* ---------------- El lunación completo ---------------- */}
       <section className="panel gilded p-5">
         <h3 className="overline mb-3">El lunación</h3>
@@ -181,6 +188,12 @@ export default function RitualsScreen() {
           </div>
         </section>
       )}
+
+      {/* ---------------- Festividades ---------------- */}
+      {/* Al final y no arriba: el calendario del año es contexto. Lo primero
+          que se abre la pantalla es la fase de HOY, que es lo que la persona
+          fue a ver. */}
+      <FestivalList />
 
       {/* ---------------- Editor ---------------- */}
       <AnimatePresence>

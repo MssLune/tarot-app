@@ -303,3 +303,26 @@ model UserReading {
   @@index([userId])
   @@map("user_readings")
 }
+
+/// Datos astronómicos que se piden a un servicio externo y no se calculan.
+///
+/// Una fila por clave, con el JSON ya limpio. No es una tabla de eclipses: es
+/// una caché clave/valor genérica, para que el supermoon o lo que venga
+/// después entren acá sin otra migración.
+///
+/// Existe la fila aunque el año no tenga nada. Un año sin eclipses lunares
+/// existe de verdad, y sin la fila el backend lo volvería a preguntar a la
+/// API en cada request, para siempre.
+model AstronomyCache {
+  /// Forma `eclipses-lunares:2026`.
+  key String @id
+
+  /// JSON ya reducido a los campos que la app usa. Nunca la respuesta cruda:
+  /// la de un año pesa 1,5 MB porque trae la geometría de visibilidad, y
+  /// guardar eso para mostrar una fecha sería una locura.
+  payload String
+
+  fetchedAt DateTime @default(now())
+
+  @@map("astronomy_cache")
+}

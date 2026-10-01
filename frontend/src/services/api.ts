@@ -153,3 +153,39 @@ export const api = {
     });
   },
 };
+
+/* ==========================================================================
+   Luna: eclipses
+   ========================================================================== */
+
+export type EclipseKind = 'total' | 'parcial' | 'penumbral';
+
+export interface LunarEclipse {
+  /** Día del eclipse, como `AAAA-MM-DD`. */
+  fecha: string;
+  kind: EclipseKind;
+  magnitud: number;
+  /** Duración de la totalidad. Sólo los eclipsos totales lo tienen. */
+  totalidad: string | null;
+  parcial: string | null;
+  penumbral: string | null;
+  /** Instante del máximo, ISO. */
+  mayor: string | null;
+}
+
+/**
+ * Estado lunar para la pantalla: si hoy hay eclipse y cuál viene después.
+ *
+ * Nunca lanza. La luna de sangre es un dato lindo, no una función que la app
+ * necesita para funcionar: si el backend no responde o el observatorio está
+ * caído, la pantalla tiene que mostrar la fase igual. Por eso el `catch`
+ * devuelve el estado vacío en vez de dejar propagar el error — un throw acá
+ * dejaría la pantalla de la luna en blanco.
+ */
+export async function estadoLunar(): Promise<{ hoy: LunarEclipse | null; proximo: LunarEclipse | null }> {
+  try {
+    return await request<{ hoy: LunarEclipse | null; proximo: LunarEclipse | null }>('/moon/estado');
+  } catch {
+    return { hoy: null, proximo: null };
+  }
+}

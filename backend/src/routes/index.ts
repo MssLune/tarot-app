@@ -4,6 +4,7 @@ import { combinationsRouter } from './combinations.routes';
 import { spreadsRouter } from './spreads.routes';
 import { userRouter } from './user.routes';
 import { adminRouter } from './admin.routes';
+import { moonRouter } from './moon.routes';
 
 export const apiRouter = Router();
 
@@ -13,3 +14,4 @@ apiRouter.use('/spreads', spreadsRouter);
 apiRouter.use('/combinations', combinationsRouter);
 apiRouter.use('/user', userRouter);
 apiRouter.use('/admin', adminRouter);
+apiRouter.use('/moon', moonRouter);
