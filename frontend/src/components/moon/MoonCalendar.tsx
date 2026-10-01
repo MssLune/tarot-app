@@ -180,7 +180,7 @@ function Celda({ dia, esHoy }: { dia: CalendarDay; esHoy: boolean }) {
             title="Luna Nueva"
           />
         ) : (
-          <MoonDisc phase={luna} size={20} variant="icon" />
+          <MoonDisc phase={luna} size={20} variant="icon" animate={false} />
         )}
       </div>
 

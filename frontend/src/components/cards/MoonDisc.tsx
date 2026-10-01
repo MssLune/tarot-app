@@ -54,6 +54,16 @@ interface Props {
   variant?: 'engraved' | 'icon';
   /** Halo alrededor del disco. */
   glow?: boolean;
+  /**
+   * Animar la entrada.
+   *
+   * `false` en el calendario, y no por pereza: la grilla pone entre 35 y 42
+   * celdas, o sea 42 animaciones simultáneas de opacidad y escala cada vez que
+   * se entra a la pantalla. Sube por la boca y se ve como un fogonazo. La
+   * página ya tiene su propia transición; los 42 discos girando además son
+   * ruido.
+   */
+  animate?: boolean;
 }
 
 /** Contador para dar un id único a cada conjunto de defs. */
@@ -65,6 +75,7 @@ export default function MoonDisc({
   className = '',
   variant = 'engraved',
   glow = false,
+  animate = true,
 }: Props) {
   const [uid] = useState(() => `luna${(uidSeq += 1)}`);
 
@@ -91,12 +102,12 @@ export default function MoonDisc({
   return (
     <motion.span
       className={`inline-flex ${className}`}
-      /* La animación iba antes sobre el path iluminado, que ya no existe
-         como elemento propio: ahora entra el disco entero. El efecto es el
-         mismo y es menos DOM. */
-      initial={{ opacity: 0, scale: 0.94 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
+      /* `initial={false}` cuando no anima. Con `initial` posto, un elemento
+         sin animación queda en opacidad 0 si la animación no corre nunca, que
+         es justo el modo de fallo que se estaba viendo. */
+      initial={animate ? { opacity: 0 } : false}
+      animate={animate ? { opacity: 1 } : undefined}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
       style={{ width: size, height: size, color: PALETA.oroCentro }}
       role="img"
       aria-label={etiqueta}

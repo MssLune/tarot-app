@@ -26,11 +26,24 @@ import { useReadingStore } from './store/useReadingStore';
    mantiene el fondo estelar fuera del ciclo de animación.
    ========================================================================== */
 
-/** Transición compartida por todas las pantallas. */
+/**
+ * Transición compartida por todas las pantallas.
+ *
+ * SIN `filter: blur()`. Estaba, y era caro de una forma que no se ve en la
+ * pantalla de sistema pero sí en la Luna: un desenfoque sobre el subárbol
+ * entero obliga al navegador a componerlo en una capa propia, y la Luna tiene
+ * 42 SVG inline. Al entrar y al salir se difuminaban los 42 a la vez.
+ *
+ * Un desenfoque además hace que la salida dependa de terminar a tiempo: con
+ * `AnimatePresence mode="wait"`, si el exit no concludes, la pantalla nueva no
+ * se monta y el área de contenido queda VACÍA — se ve el menú y nada más.
+ * Sacar el blur deja la transición como una opacidad y un desplazamiento, que
+ * no dependen de que el navegador pueda seguir el paso.
+ */
 const pageTransition = {
-  initial: { opacity: 0, y: 24, filter: 'blur(6px)' },
-  animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-  exit: { opacity: 0, y: -18, filter: 'blur(6px)' },
+  initial: { opacity: 0, y: 24 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -18 },
   transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
 };
 
