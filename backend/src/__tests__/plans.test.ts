@@ -44,8 +44,7 @@ describe('límites del plan gratuito', () => {
     expect(f.rituals).toBe(3);
   });
 
-  it('sin PDF y con banner de promoción', () => {
-    expect(f.pdfExport).toBe(false);
+  it('con banner de promoción', () => {
     expect(f.showBanner).toBe(true);
   });
 });
@@ -60,8 +59,7 @@ describe('límites del plan Pro', () => {
     expect(p.rituals).toBe(Number.POSITIVE_INFINITY);
   });
 
-  it('con PDF y sin banner', () => {
-    expect(p.pdfExport).toBe(true);
+  it('sin banner', () => {
     expect(p.showBanner).toBe(false);
   });
 });

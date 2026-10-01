@@ -26,12 +26,20 @@ import SectionHeading from '../ui/SectionHeading';
 
 const RECURSOS: LimitedResource[] = ['readings', 'decks', 'spreads', 'rituals'];
 
-/** Lo que trae el Pro. Los tres planes dan todo esto. */
+/**
+ * Lo que trae el Pro. Los tres planes dan todo esto.
+ *
+ * El PDF NO está en la lista, a propósito. Es la función por la que más gente
+ * comparte una lectura, y compartir es de las pocas vías por las que alguien
+ * se entera de que la app existe. Ponerla de pago frenaría justo eso, a cambio
+ * de unos pesos: generar el archivo cuesta milisegundos y cero servidores, así
+ * que detrás de la decisión no hay costo, sólo una decisión de producto.
+ */
 const BENEFICIOS = [
   { titulo: 'Lecturas sin tope', detalle: 'El plan gratuito guarda 10.' },
   { titulo: 'Mazos y tiradas sin tope', detalle: 'Gratis: 1 mazo y 2 tiradas.' },
   { titulo: 'Rituales sin tope', detalle: 'Gratis: 3 rituales.' },
-  { titulo: 'Exportar a PDF', detalle: 'Llevá la lectura en un archivo.' },
+  { titulo: 'Todo en la nube', detalle: 'Tus lecturas en todos tus dispositivos.' },
   { titulo: 'Sin avisos de promoción', detalle: 'Nada de banners en la app.' },
 ];
 

@@ -14,6 +14,7 @@ import {
   SYSTEM_LABEL,
 } from './layout';
 import { drawMoonDisc } from './moon';
+import { drawCardFace, type CaraDeCarta } from './carta';
 
 /* ==========================================================================
    Maquetación de la lectura.
@@ -31,9 +32,17 @@ export interface DocumentInput {
   reading: Reading;
   interpretation: Interpretation;
   luna: MoonPhase;
+  /**
+   * La cara a dibujar en cada posición, indexada por id de posición.
+   *
+   * Se calcula en el servicio, que es el único que tiene las cartas. Armarlo
+   * acá obligaría a volver a pedirlas, y a que el motor y el PDF puedan
+   * resolver el mismo nombre de carta de dos maneras distintas.
+   */
+  caras: Map<string, CaraDeCarta>;
 }
 
-export function buildDocument({ reading, interpretation, luna }: DocumentInput): Promise<Buffer> {
+export function buildDocument({ reading, interpretation, luna, caras }: DocumentInput): Promise<Buffer> {
   const doc = new PDFDocument({
     size: 'A4',
     margins: { top: M, bottom: M, left: M, right: M },
@@ -59,10 +68,10 @@ export function buildDocument({ reading, interpretation, luna }: DocumentInput):
     doc.on('error', reject);
   });
 
-  encabezado(doc, { reading, interpretation, luna });
+  encabezado(doc, { reading, interpretation });
   panelLunar(doc, luna);
-  repartoDeCartas(doc, { interpretation });
-  posiciones(doc, interpretation);
+  repartoDeCartas(doc, { interpretation, caras });
+  posiciones(doc, interpretation, caras);
   patrones(doc, interpretation);
   conclusion(doc, interpretation);
 
@@ -125,7 +134,7 @@ function pieDePagina(doc: PDFKit.PDFDocument): void {
 
 function encabezado(
   doc: PDFKit.PDFDocument,
-  { reading, interpretation }: DocumentInput,
+  { reading, interpretation }: Pick<DocumentInput, 'reading' | 'interpretation'>,
 ): void {
   doc.font(FONT.regular).fontSize(SIZE.tiny).fillColor(COLOR.gold);
   doc.text('ARCANA', M, M, { width: W, align: 'center', characterSpacing: 3 });
@@ -217,58 +226,40 @@ function panelLunar(doc: PDFKit.PDFDocument, luna: MoonPhase): void {
  */
 function repartoDeCartas(
   doc: PDFKit.PDFDocument,
-  { interpretation }: Pick<DocumentInput, 'interpretation'>,
+  { interpretation, caras }: Pick<DocumentInput, 'interpretation' | 'caras'>,
 ): void {
   asegurarEspacio(doc, 200);
 
   tituloSeccion(doc, 'El reparto', 40);
   const top = doc.y;
   const alto = 150;
-  const w = 72;
-  const h = 100;
 
   for (const p of interpretation.positions) {
     const x = M + (p.position.x / 100) * W;
     const y = top + (p.position.y / 100) * alto;
     const rot = p.position.rotate ?? 0;
+    const w = 66;
+    const h = 94;
 
-    /* La rotación va alrededor del centro de la carta, no de su esquina: con la
-       esquina, la Cruz Celta saca la carta del papel. */
-    doc
-      .save()
-      .translate(x, y)
-      .rotate(rot, { origin: [0, 0] })
-      .roundedRect(-w / 2, -h / 2, w, h, 3)
-      .fillColor(COLOR.panel)
-      .fill()
-      .lineWidth(0.7)
-      .strokeColor(COLOR.goldSoft)
-      .stroke()
-      .restore();
-
-    /* Los rótulos también en coordenadas absolutas, dentro del mismo marco
-       girado. Se mide el texto ANTES de escribirlo, porque escribirlo mueve el
-       cursor y el siguiente rótulo saldría corrido. */
+    /* La rotación va alrededor del centro de la carta, no de su esquina: con
+       la esquina, la Cruz Celta saca la carta del papel. */
     doc.save().translate(x, y).rotate(rot, { origin: [0, 0] });
 
-    const nombre = sanear(recortar(p.cardName, 19));
-    doc.font(FONT.bold).fontSize(6.5).fillColor(COLOR.ink);
-    const hNombre = doc.heightOfString(nombre, { width: w - 8 });
-    doc.text(nombre, -w / 2 + 4, -h / 2 + 6, { width: w - 8, align: 'center' });
+    drawCardFace(doc, 0, 0, w, h, caras.get(p.position.id)!, {
+      conNombre: true,
+      conSubtitulo: false,
+    });
 
-    let yPie = h / 2 - 6;
-    for (const pie of [
-      p.card.reversed ? 'invertida' : '',
-      sanear(recortar(p.position.name, 22)),
-    ].filter(Boolean)) {
-      doc.font(FONT.regular).fontSize(5.5).fillColor(COLOR.muted);
-      const hPie = doc.heightOfString(pie, { width: w - 8 });
-      doc.text(pie, -w / 2 + 4, yPie - hPie, { width: w - 8, align: 'center' });
-      yPie -= hPie + 1;
+    /* El nombre de la posición va FUERA de la carta: adentro hay poco lugar y
+       el texto se lee mejor abajo, como una etiqueta. */
+    const etiqueta = sanear(recortar(p.position.name, 22));
+    doc.font(FONT.regular).fontSize(5.5).fillColor(COLOR.muted);
+    doc.text(etiqueta, -w / 2, h / 2 + 2, { width: w, align: 'center' });
+    if (p.card.reversed) {
+      doc.font(FONT.regular).fontSize(5).fillColor(COLOR.gold);
+      doc.text('invertida', -w / 2, h / 2 + 11, { width: w, align: 'center' });
     }
-
     doc.restore();
-    void hNombre;
   }
 
   doc.y = top + alto + 18;
@@ -285,42 +276,76 @@ function recortar(texto: string, max: number): string {
    Lectura por posición.
    -------------------------------------------------------------------------- */
 
-function posiciones(doc: PDFKit.PDFDocument, interp: Interpretation): void {
+function posiciones(
+  doc: PDFKit.PDFDocument,
+  interp: Interpretation,
+  caras: Map<string, CaraDeCarta>,
+): void {
   /* Se reserva el título más la primera carta entera: es la unidad de lectura
      que tiene sentido, y partirla entre dos páginas deja medio pensamiento
      arriba y medio abajo. */
-  tituloSeccion(doc, 'Carta por carta', 200);
+  tituloSeccion(doc, 'Carta por carta', 240);
+
+  const { cartaAncho: anchoCarta, cartaAlto: altoCarta, textoX: xTextoBase } = COLUMNA;
 
   for (const p of interp.positions) {
     asegurarEspacio(doc, 150);
 
-    doc.font(FONT.regular).fontSize(SIZE.tiny).fillColor(COLOR.gold);
-    doc.text(sanear(p.position.name.toUpperCase()), { characterSpacing: 1.4 });
+    /* La carta va a la izquierda y el texto a la derecha, como en la pantalla.
+       En una columna sola, la carta se separaría del texto que explica y habría
+       que saltar la vista; al lado, se lee como una unidad. */
+    /* El bloque tiene que medir lo que mide el texto, no un número inventado:
+       es lo que decide dónde termina la carta. */
+    const altoTexto = doc.heightOfString(sanear(p.text), {
+      width: W - anchoCarta - 16,
+      align: 'justify',
+      lineGap: 1.5,
+    });
+    const altoBloque = Math.max(altoCarta, altoTexto + 64);
 
-    doc.font(FONT.bold).fontSize(SIZE.cardName).fillColor(COLOR.ink);
-    doc.text(sanear(p.cardName) + (p.card.reversed ? '  ·  invertida' : ''));
+    const top = doc.y;
+    const xTexto = xTextoBase;
+
+    drawCardFace(doc, M + anchoCarta / 2, top + altoCarta / 2, anchoCarta, altoCarta, caras.get(p.position.id)!, {
+      conNombre: true,
+      conSubtitulo: true,
+    });
+
+    let y = top;
+    const anchoTexto = W - anchoCarta - 16;
+
+    doc.font(FONT.regular).fontSize(SIZE.tiny).fillColor(COLOR.gold);
+    doc.text(sanear(p.position.name.toUpperCase()), xTexto, y, {
+      width: anchoTexto,
+      characterSpacing: 1.4,
+    });
+    y += 14;
+
     doc.font(FONT.regular).fontSize(SIZE.small).fillColor(COLOR.muted);
-    doc.text(sanear(p.subtitle));
+    doc.text(sanear(p.subtitle), xTexto, y, { width: anchoTexto });
+    y += 12;
 
     if (p.keywords.length > 0) {
-      doc.moveDown(0.2);
       doc.font(FONT.regular).fontSize(SIZE.small).fillColor(COLOR.gold);
-      doc.text(sanear(p.keywords.join(' · ')));
+      doc.text(sanear(p.keywords.join(' · ')), xTexto, y, { width: anchoTexto });
+      y += 14;
     }
 
-    doc.moveDown(0.4);
+    y += 2;
     doc.font(FONT.regular).fontSize(SIZE.body).fillColor(COLOR.ink);
-    doc.text(sanear(p.text), { align: 'justify', lineGap: 1.5 });
+    doc.text(sanear(p.text), xTexto, y, { width: anchoTexto, align: 'justify', lineGap: 1.5 });
+    y = doc.y;
 
     if (p.advice) {
-      doc.moveDown(0.3);
+      y += 5;
       doc.font(FONT.italic).fontSize(SIZE.body).fillColor(COLOR.gold);
-      doc.text(sanear(p.advice), { width: W - 20, indent: 12 });
+      doc.text(sanear(p.advice), xTexto, y, { width: anchoTexto - 10 });
     }
 
-    doc.moveDown(1.1);
+    doc.y = top + altoBloque + 18;
   }
 }
+
 
 /* --------------------------------------------------------------------------
    Patrones transversales.
@@ -362,6 +387,30 @@ function conclusion(doc: PDFKit.PDFDocument, interp: Interpretation): void {
     doc.moveDown(0.6);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Geometría de la sección de cartas.
+   -------------------------------------------------------------------------- */
+
+/**
+ * Dónde van las dos columnas de la sección "carta por carta".
+ *
+ * Vive declarado y no repartido dentro de la función porque los tests
+ * necesitan comprobar la aritmética: que el texto no se monte sobre la carta y
+ * que ninguna de las dos se salga de la hoja. Si estos números estuvieran
+ * escritos en el medio del dibujado, esa comprobación tendría que medirlos del
+ * PDF generado, y medir el ancho de una línea contando sus caracteres es una
+ * estimación que falla.
+ */
+export const COLUMNA = {
+  cartaX: M,
+  cartaAncho: 78,
+  cartaAlto: 110,
+  /** Separación entre la carta y el texto. */
+  hueco: 16,
+  textoX: M + 78 + 16,
+  textoAncho: W - 78 - 16,
+} as const;
 
 /* --------------------------------------------------------------------------
    Utilidades de maquetación.

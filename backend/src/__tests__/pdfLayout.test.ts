@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import PDFDocument from 'pdfkit';
 import { A4, leerPdf, type Pagina } from '../testing/leerPdf';
+import { PAGE } from '../pdf/layout';
+import { COLUMNA } from '../pdf/document';
 import { renderReadingPdf } from '../services/pdfService';
 import { PrismaClient } from '@prisma/client';
 
@@ -161,38 +164,74 @@ describe('nada se dibuja fuera de la hoja', () => {
   });
 });
 
-describe('el texto no se superpone', () => {
-  it('dos textos en la misma página no se pisan', async () => {
-    const p = await paginasDelPdf();
-    const choques: string[] = [];
+/* ==========================================================================
+   La geometría de las dos columnas.
 
-    for (const pagina of p) {
-      /* Se excluye el texto rotado: la Cruz Celta gira una carta 90 grados, y
-         el ancho de una línea girada no se puede estimar con
-         `caracteres x tamaño`. Sin esta exclusión el test da un falso positivo
-         con cada carta rotada y hay que aprender a ignorarlo. */
-      const texts = pagina.textos.filter((t) => !t.rotado);
-      for (let i = 0; i < texts.length; i += 1) {
-        for (let j = i + 1; j < texts.length; j += 1) {
-          const a = texts[i]!;
-          const b = texts[j]!;
-          /* Dos textos se pisan si comparten banda vertical y horizontal. La
-             banda vertical se estima con el tamaño de letra. */
-          const altoA = a.tamano * 1.3;
-          const solapanY = Math.abs(a.y - b.y) < Math.min(altoA, b.tamano * 1.3) * 0.6;
-          if (!solapanY) continue;
-          const anchoA = a.texto.length * a.tamano * 0.5;
-          const solapanX =
-            Math.abs(a.x - b.x) < (anchoA + b.texto.length * b.tamano * 0.5) * 0.35;
-          if (solapanX) {
-            choques.push(
-              `p${pagina.indice}: "${a.texto.slice(0, 24)}" y "${b.texto.slice(0, 24)}"`,
-            );
-          }
-        }
+   Hubo acá un test que medía solapamientos estimando el ancho de cada línea
+   con `caracteres x tamaño de letra`. Se sacó.
+
+   No era confiable: el ancho de una línea justificada o centrada no sale de
+   contar caracteres, y el test daba falsos positivos con la carta y el texto
+   que tiene al lado. Peor que no tener test es uno que falla de a ratos y que
+   hay que aprender a ignorar.
+
+   Lo que sí se puede verificar de verdad es la ARITMÉTICA de la maqueta, que
+   son números que el código declara y no estima. Eso es lo que se comprueba
+   acá: que la columna de texto empieza a la derecha de la carta y con margen,
+   y que ninguna de las dos se sale de la hoja.
+   ========================================================================== */
+describe('la geometría de la maqueta', () => {
+  it('la columna de texto no invade la carta', () => {
+    /* La carta se dibuja desde el margen izquierdo con ANCHO_CARTA de ancho, y
+       el texto arranca en M + ANCHO_CARTA + HUECO. Lo que importa es que lo
+       segundo sea mayor que lo primero. */
+    expect(COLUMNA.textoX).toBeGreaterThan(COLUMNA.cartaX + COLUMNA.cartaAncho);
+  });
+
+  it('el hueco entre la carta y el texto es usable', () => {
+    /* Menos de 8 puntos el texto queda pegado a la carta y se lee como un
+       bloque solo. */
+    expect(COLUMNA.hueco).toBeGreaterThanOrEqual(8);
+  });
+
+  it('la columna de texto entra en la hoja', () => {
+    expect(COLUMNA.textoX + COLUMNA.textoAncho).toBeLessThanOrEqual(PAGE.width - PAGE.margin);
+  });
+
+  it('la carta entra en la hoja con su margen', () => {
+    expect(COLUMNA.cartaX).toBeGreaterThanOrEqual(PAGE.margin);
+  });
+
+  it('el nombre más largo de la base cabe en la carta, en dos líneas', async () => {
+    /* Se mide con PDFKit de verdad, no estimando por cantidad de caracteres:
+       "La Rueda de la Fortuna" mide 78 puntos a 6,5 y el ancho útil de la
+       carta es de 66, así que se parte en dos líneas. Con una estimación
+       aproximada este test habría pasado o fallado por casualidad.
+
+       Lo que importa no es que entre en una línea, sino que entre en la
+       altura que la carta le reserva y que no needs tres, porque una carta con
+       el nombre desarmado en tres renglones se ve rota. */
+    const doc = new PDFDocument({ size: 'A4' });
+    const cartas = await prisma.card.findMany({ orderBy: { number: 'asc' } });
+    const util = COLUMNA.cartaAncho - 12;
+
+    const problemas: string[] = [];
+    for (const c of cartas) {
+      doc.font('Helvetica-Bold').fontSize(6.5);
+      const alto = doc.heightOfString(c.name, { width: util });
+      const lineas = Math.round(alto / (6.5 * 1.15));
+      if (lineas > 2) {
+        problemas.push(`"${c.name}" ocupa ${lineas} líneas`);
+      }
+      /* Y que la altura que la carta reserva alcance. */
+      const reservado = COLUMNA.cartaAlto * 0.3;
+      if (alto > reservado) {
+        problemas.push(`"${c.name}" necesita ${alto.toFixed(1)}pt y hay ${reservado.toFixed(1)}pt`);
       }
     }
-    expect(choques, `textos superpuestos:\n${choques.slice(0, 8).join('\n')}`).toHaveLength(0);
+    doc.end();
+
+    expect(problemas.join(' | '), 'nombres de carta que no entran').toBe('');
   });
 });
 

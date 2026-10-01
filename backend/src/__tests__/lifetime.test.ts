@@ -148,7 +148,6 @@ describe('la compra de por vida concede el Pro', () => {
     const sub = await getSubscription(usuario.id);
     expect(sub.plan).toBe('pro');
     expect(sub.limits.readings).toBe(Number.POSITIVE_INFINITY);
-    expect(sub.limits.pdfExport).toBe(true);
   });
 
   it('repetir la concesión no cambia nada', async () => {

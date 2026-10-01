@@ -37,7 +37,6 @@ export interface PlanLimits {
   decks: number;
   spreads: number;
   rituals: number;
-  pdfExport: boolean;
   showBanner: boolean;
   cloudSync: boolean;
 }

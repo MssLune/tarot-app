@@ -9,6 +9,7 @@ import { prisma } from '../database/prisma';
 import { ApiError } from '../utils/ApiError';
 import { toCardDTO } from '../models/card.model';
 import { buildDocument } from '../pdf/document';
+import { caraDe, paloDe, type CaraDeCarta } from '../pdf/carta';
 import { toFilename } from '../pdf/layout';
 
 /* ==========================================================================
@@ -91,7 +92,55 @@ export async function renderReadingPdf(userId: string, readingId: string): Promi
   );
 
   const luna = moonPhase(new Date(reading.createdAt));
-  const bytes = await buildDocument({ reading, interpretation, luna });
+
+  /* Qué cara se dibuja en cada posición. Se resuelve acá porque el servicio es
+     el único que tiene las cartas: el motor trabaja con ids, no con dibujos. */
+  const cartasDe = await prisma.card.findMany({
+    where: { id: { in: reading.cards.map((c) => c.arcanaId ?? '').filter(Boolean) } },
+  });
+  const porId = new Map(cartasDe.map((c) => [c.id, c]));
+
+  const caras = new Map<string, CaraDeCarta>();
+  for (const pos of reading.spread.positions) {
+    const dibujada = reading.cards.find((c) => c.positionId === pos.id);
+    if (!dibujada) continue;
+
+    if (reading.system === 'rider-waite' && dibujada.arcanaId) {
+      const carta = porId.get(dibujada.arcanaId);
+      if (carta) {
+        caras.set(
+          pos.id,
+          caraDe(carta.name, {
+            subtitulo: carta.correspondence,
+            esMayor: carta.arcanaType === 'mayor',
+            numero: carta.arcanaType === 'mayor' ? carta.number : null,
+            palo: paloDe(carta.arcanaType, carta.suit),
+            invertida: dibujada.reversed,
+          }),
+        );
+        continue;
+      }
+    }
+
+    /* Mazo propio u oráculo: el nombre y el significado los escribió el
+       usuario, así que no hay nada que ir a buscar. Un oráculo no tiene ni
+       arcanos ni palos, y se dibuja sin símbolo: el nombre es toda la
+       información que hay. */
+    const propia = reading.deck?.cards.find((c) => c.id === dibujada.deckCardId) ?? null;
+    caras.set(
+      pos.id,
+      caraDe(dibujada.customName ?? propia?.name ?? 'Carta', {
+        subtitulo:
+          propia?.subtitle ?? (reading.system === 'custom-deck' ? 'Mazo propio' : 'Oráculo'),
+        esMayor: false,
+        numero: null,
+        palo: null,
+        invertida: dibujada.reversed,
+      }),
+    );
+  }
+
+  const bytes = await buildDocument({ reading, interpretation, luna, caras });
 
   return { bytes, filename: toFilename(reading) };
 }

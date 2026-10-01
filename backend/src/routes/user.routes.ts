@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { requireAuth } from '../middleware/clerk';
-import { enforceLimit, requirePro } from '../middleware/planLimits';
+import { enforceLimit } from '../middleware/planLimits';
 import * as pdfService from '../services/pdfService';
 import * as userController from '../controllers/userController';
 
@@ -56,11 +56,18 @@ userRouter.put('/rituals/:id', asyncHandler(userController.updateRitual));
 userRouter.delete('/rituals/:id', asyncHandler(userController.deleteRitual));
 
 /* ---------- Exportar ---------- */
-/* El PDF no es "crear un objeto más" sino una operación cara, así que va con
-   `requirePro` en vez de un contador. */
+/* El PDF es GRATIS, a propósito.
+
+   Lo único que hace el producto es leer: es lo que la gente vino a buscar, y
+   cobrarlo sería cobrarle a alguien por la razón por la que llegó. Y lo que
+   más rinde de esta función es COMPARTIR la lectura, que es de las pocas vías
+   por las que alguien se entera de que la app existe. Ponerle candado frenaría
+   justo eso.
+
+   Armarlo cuesta milisegundos y cero servidores, así que detrás de la decisión
+   no hay un argumento de costo: es una decisión de producto. */
 userRouter.get(
   '/readings/:id/pdf',
-  requirePro(),
   asyncHandler(async (req, res) => {
     const userId = (req as any).dbUserId as string;
     const { bytes, filename } = await pdfService.renderReadingPdf(userId, req.params.id);

@@ -67,8 +67,6 @@ export interface PlanLimits {
   spreads: number;
   /** Rituales anotados. */
   rituals: number;
-  /** Exportar la lectura a PDF. */
-  pdfExport: boolean;
   /** Muestra el banner que promociona el Pro. */
   showBanner: boolean;
   /** Respaldo en la nube de los datos del navegador. */
@@ -85,7 +83,6 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     decks: 1,
     spreads: 2,
     rituals: 3,
-    pdfExport: false,
     showBanner: true,
     /* Sin límite de tiempo, pero el respaldo en la nube de los datos del
        navegador es lo que justifica el plan. */
@@ -96,7 +93,6 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     decks: Number.POSITIVE_INFINITY,
     spreads: Number.POSITIVE_INFINITY,
     rituals: Number.POSITIVE_INFINITY,
-    pdfExport: true,
     showBanner: false,
     cloudSync: true,
   },

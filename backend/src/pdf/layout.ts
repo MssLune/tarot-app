@@ -44,6 +44,8 @@ export const COLOR = {
   goldSoft: '#C4B088',
   /** Fondo de los recuadros. */
   panel: '#FAF7F0',
+  /** Filete interior de las cartas, más apagado que el borde. */
+  rule: '#DED7C8',
 } as const;
 
 export const FONT = {
