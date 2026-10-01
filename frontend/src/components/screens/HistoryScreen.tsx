@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { cardDisplayName } from '@arcana/tarot-core';
 import { SYSTEM_SHORT } from '../../lib/systems';
+import { usePlan } from '../../lib/usePlan';
+import { abrirPdf } from '../../services/pdfService';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
 import SpreadMini from '../cards/SpreadMini';
@@ -38,6 +40,9 @@ export default function HistoryScreen() {
   const editDeck = useReadingStore((s) => s.editDeck);
   const deleteCustomDeck = useReadingStore((s) => s.deleteCustomDeck);
   const startNewDeck = useReadingStore((s) => s.startNewDeck);
+  /* Sólo para decidir qué texto muestra el botón de PDF. El permiso real lo
+     aplica el backend. */
+  const { isPro } = usePlan();
   const system = useReadingStore((s) => s.system);
   const deck = useReadingStore((s) => s.deck);
   const goTo = useReadingStore((s) => s.goTo);
@@ -177,6 +182,11 @@ export default function HistoryScreen() {
                             <Button size="sm" onClick={() => openReading(reading.id)}>
                               Abrir
                             </Button>
+                            <BotonPdf
+                              readingId={reading.id}
+                              esPro={isPro}
+                              onIrAlPlan={() => goTo('plan')}
+                            />
                             <button
                               onClick={() => deleteReading(reading.id)}
                               title="Eliminar lectura"
@@ -400,6 +410,68 @@ export default function HistoryScreen() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Botón de PDF                                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * El botón de exportar a PDF.
+ *
+ * Se muestra a los dos, pero hace cosas distintas según el plan. Es una
+ * decisión que se puede discutir: ocultar el botón al plan gratuito reduce la
+ * tentación, pero deja la función invisible y quien la busca tiene que adivinar
+ * que existe. Mostrarlo y que lleve a la pantalla de planes explica qué es y
+ * cuánto cuesta, que es más honesto y además es la forma en que la gente se
+ * entera de la opción.
+ *
+ * En ambos casos el plan lo decide el BACKEND, no este componente: el
+ * `esPro` de acá sólo sirve para elegir qué texto mostrar, nunca para decidir
+ * si la descarga tiene sentido.
+ */
+function BotonPdf({
+  readingId,
+  esPro,
+  onIrAlPlan,
+}: {
+  readingId: string;
+  esPro: boolean;
+  onIrAlPlan: () => void;
+}) {
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const descargar = async () => {
+    if (ocupado) return;
+    setOcupado(true);
+    setError(null);
+    const r = await abrirPdf(readingId);
+    if (!r.ok) {
+      setError(r.mensaje);
+      /* Un 402 no es un fallo: es alguien que quiso pagar. Se lo lleva a la
+         pantalla de planes en vez de dejarlo con un cartel de error. */
+      if (r.motivo === 'no-pro') onIrAlPlan();
+    }
+    setOcupado(false);
+  };
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={ocupado}
+        onClick={() => void descargar()}
+        title={esPro ? 'Descargar en PDF' : 'El PDF es del plan Pro'}
+      >
+        {ocupado ? 'Preparando…' : 'PDF'}
+      </Button>
+      {error && !error.startsWith('El PDF es del plan Pro') && (
+        <p className="mt-1 text-[0.6rem] leading-relaxed text-rose-200/70">{error}</p>
+      )}
+    </>
   );
 }
 

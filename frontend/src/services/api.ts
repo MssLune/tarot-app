@@ -95,4 +95,34 @@ export const api = {
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+
+  /**
+   * Petición que devuelve el archivo crudo, no el sobre JSON.
+   *
+   * El PDF es binario: si pasara por `request`, el `response.json()` fallaría y
+   * el error que saltaría sería "JSON inesperado", que no dice nada de que el
+   * problema es que la respuesta no es JSON. Va aparte, pero comparte el token
+   * de Clerk: duplicar esa lógica en otro archivo es la forma segura de que un
+   * día una ruta funcione y la otra no.
+   *
+   * No lanza por un 4xx: devuelve la `Response` y deja que quien la pidió
+   * decida, porque cada error tiene su propio mensaje.
+   */
+  raw: async (path: string, init?: RequestInit): Promise<Response> => {
+    let token: string | null = null;
+    try {
+      token = await getToken();
+    } catch {
+      // Sin Clerk inicializado seguimos sin token: la ruta responderá 401.
+    }
+
+    return fetch(`${API_URL}${path}`, {
+      ...init,
+      cache: 'no-store',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+  },
 };

@@ -72,28 +72,25 @@ function suscripciónStripe(over: Partial<Record<string, unknown>> = {}) {
 }
 
 beforeAll(async () => {
-  /* Si no hay usuarios, se crean dos de prueba. La app real ya tiene al
-     menos uno; si no, el test no tiene contra qué comparar. */
-  const existentes = await prisma.user.findMany({ take: 2 });
-  if (existentes.length >= 2) {
-    usuarioA = existentes[0]!;
-    usuarioB = existentes[1]!;
-  } else {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@test.local' } } });
-    const sello = Date.now();
-    usuarioA = await prisma.user.create({
-      data: { id: `user_tA${sello}`, email: `ta${sello}@test.local`, role: 'user' },
-    });
-    usuarioB = await prisma.user.create({
-      data: { id: `user_tB${sello}`, email: `tb${sello}@test.local`, role: 'user' },
-    });
-  }
+  /* Usuarios propios de este archivo. Reutilizar los primeros de la base hacía
+     que los tres archivos de integración se pisen entre ellos —el `afterAll` de
+     uno borraba la suscripción que el otro estaba usando— y el fallo se veía
+     como un error de clave primaria en un servicio que estaba bien. */
+  const sello = Date.now();
+  usuarioA = await prisma.user.create({
+    data: { id: `user_tA${sello}`, email: `ta${sello}@test.local`, role: 'user' },
+  });
+  usuarioB = await prisma.user.create({
+    data: { id: `user_tB${sello}`, email: `tb${sello}@test.local`, role: 'user' },
+  });
 });
 
 afterAll(async () => {
   await prisma.subscription.deleteMany({ where: { userId: { in: [usuarioA.id, usuarioB.id] } } });
-  /* Sólo se borran los usuarios creados por este test. */
-  await prisma.user.deleteMany({ where: { email: { endsWith: '@test.local' } } });
+  /* Sólo los usuarios de este archivo, y por id: ver la nota de
+     lifetime.test.ts sobre por qué borrar por un predicado amplio rompe a los
+     demás archivos de integración. */
+  await prisma.user.deleteMany({ where: { id: { in: [usuarioA.id, usuarioB.id] } } });
   await prisma.$disconnect();
 });
 
@@ -116,10 +113,14 @@ describe('el webhook escribe la suscripción en la base', () => {
   it('repetir el mismo evento no duplica la fila', async () => {
     /* Stripe reintenta los webhooks. Con `upsert` el reintento deja el mismo
        resultado, que es lo que evita que un cobro se procese dos veces. */
-    const antes = await prisma.subscription.count();
+    /* El conteo va filtrado por los usuarios de ESTE archivo. Un conteo global
+       depende de lo que dejaron otros archivos de prueba y de corridas
+       anteriores, y falla sin que el código tenga nada que ver. */
+    const losMios = { userId: { in: [usuarioA.id, usuarioB.id] } };
+    const antes = await prisma.subscription.count({ where: losMios });
     await syncSubscription(suscripciónStripe());
     await syncSubscription(suscripciónStripe());
-    const despues = await prisma.subscription.count();
+    const despues = await prisma.subscription.count({ where: losMios });
     expect(despues).toBe(antes);
   });
 

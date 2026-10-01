@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { requireAuth } from '../middleware/clerk';
 import { enforceLimit, requirePro } from '../middleware/planLimits';
+import * as pdfService from '../services/pdfService';
 import * as userController from '../controllers/userController';
 
 export const userRouter = Router();
@@ -56,15 +57,24 @@ userRouter.delete('/rituals/:id', asyncHandler(userController.deleteRitual));
 
 /* ---------- Exportar ---------- */
 /* El PDF no es "crear un objeto más" sino una operación cara, así que va con
-   `requirePro` en vez de un contador. Este endpoint todavía no existe: está
-   declarado para que la interfaz pueda ofrecerlo y fallar con un mensaje
-   claro en vez de un 404 de "ruta inexistente". */
-userRouter.get('/readings/:id/pdf', requirePro(), (_req, res) => {
-  res.status(501).json({
-    success: false,
-    error: {
-      code: 'PDF_NOT_IMPLEMENTED',
-      message: 'La exportación a PDF todavía no está implementada.',
-    },
-  });
-});
+   `requirePro` en vez de un contador. */
+userRouter.get(
+  '/readings/:id/pdf',
+  requirePro(),
+  asyncHandler(async (req, res) => {
+    const userId = (req as any).dbUserId as string;
+    const { bytes, filename } = await pdfService.renderReadingPdf(userId, req.params.id);
+
+    /* `inline` y no `attachment`: el navegador abre el PDF en una pestaña y el
+       usuario decide guardarlo. Con `attachment` la descarga arranca sola y no
+       hay vuelta atrás si se equivoca de lectura. */
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', String(bytes.length));
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(bytes);
+  }),
+);

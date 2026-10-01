@@ -94,21 +94,26 @@ beforeAll(async () => {
     throw new Error(`Peticion a Stripe sin preparar en el test: ${url}`);
   }) as typeof fetch;
 
-  const existentes = await prisma.user.findMany({ take: 1 });
-  if (existentes.length >= 1) {
-    usuario = existentes[0]!;
-  } else {
-    const sello = Date.now();
-    usuario = await prisma.user.create({
-      data: { id: `user_lt${sello}`, email: `lt${sello}@test.local`, role: 'user' },
-    });
-  }
-  await prisma.subscription.deleteMany({ where: { userId: usuario.id } });
+  /* Cada archivo de integración crea SU propio usuario.
+
+     Antes se reutilizaba el primer usuario de la base, y eso hacía que los
+     archivos se pisen entre ellos: el `afterAll` de uno borraba la suscripción
+     que el otro estaba usando, y el fallo aparecía como un error de clave
+     primaria dentro de un `upsert` de un servicio que estaba bien. */
+  const sello = Date.now();
+  usuario = await prisma.user.create({
+    data: { id: `user_lt${sello}`, email: `lt${sello}@test.local`, role: 'user' },
+  });
 });
 
 afterAll(async () => {
   await prisma.subscription.deleteMany({ where: { userId: usuario.id } });
-  await prisma.user.deleteMany({ where: { email: { endsWith: '@test.local' } } });
+  /* Sólo el usuario de ESTE archivo, y por id. Borrar con un predicado amplio
+     como "todos los que acaban en @test.local" parece inofensivo y no lo es:
+     si otro archivo de integración ya creó su usuario, lo borra mientras lo
+     está usando, y el fallo aparece como una violación de clave foránea dentro
+     de un servicio que está bien. */
+  await prisma.user.deleteMany({ where: { id: usuario.id } });
   await prisma.$disconnect();
 });
 
@@ -149,12 +154,14 @@ describe('la compra de por vida concede el Pro', () => {
   it('repetir la concesión no cambia nada', async () => {
     /* Stripe reintenta los webhooks. Con `upsert` el reintento deja el mismo
        resultado, que es lo que evita cobrar dos veces por el mismo efecto. */
-    const antes = await prisma.subscription.count();
+    /* El conteo va filtrado por usuario. Un conteo global depende de lo que
+       dejaron otros archivos de prueba, y falla sin que el código esté mal. */
+    const antes = await prisma.subscription.count({ where: { userId: usuario.id } });
     const restaurar = simularStripe(sesionPagoUnico());
     await grantLifetime(`cs_venta${SUFIJO}`);
     await grantLifetime(`cs_venta${SUFIJO}`);
     restaurar();
-    expect(await prisma.subscription.count()).toBe(antes);
+    expect(await prisma.subscription.count({ where: { userId: usuario.id } })).toBe(antes);
   });
 });
 
