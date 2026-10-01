@@ -18,3 +18,4 @@ backend/.entrada/*
 !backend/.entrada/LEEME.txt
 backend/.entrada/major/
 backend/.entrada/minor/
+backend/.*.ts
