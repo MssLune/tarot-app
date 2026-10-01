@@ -16,6 +16,8 @@ export interface LayoutEntry {
   name: string;
   glyph: string;
   subtitle?: string;
+  /** URL de la imagen, si la carta tiene. Opcional a propósito. */
+  imageUrl?: string;
   reversed?: boolean;
   empty?: boolean;
 }
@@ -115,6 +117,7 @@ export default function SpreadLayout({
                   name={entry.name}
                   glyph={entry.glyph}
                   subtitle={entry.subtitle}
+                  imageUrl={entry.imageUrl}
                   reversed={entry.reversed}
                   revealed={revealed}
                   empty={entry.empty}

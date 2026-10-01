@@ -101,7 +101,7 @@ export interface DeckTemplate {
 }
 
 /**
- * Arma las plantillas disponibles. Las que parten del Rider-Waite necesitan
+ * Arma las plantillas disponibles. Las que parten de los Arcanos Mayores necesitan
  * las cartas traídas de la API (por eso son un parámetro y no un import
  * estático de `data/majorArcana`, que ya no existe).
  */
@@ -120,7 +120,7 @@ export function getDeckTemplates(majorArcana: ArcanaCard[]): DeckTemplate[] {
       label: 'Partir de los 22 Arcanos Mayores',
       glyph: '☉',
       description:
-        'Copia editable del Rider-Waite completo. Cambiá los textos a tu manera y sumá las cartas que quieras.',
+        'Copia editable de los 22 Arcanos Mayores. Cambiá los textos a tu manera y sumá las cartas que quieras.',
       build: () => ({
         ...blankDeck(),
         name: 'Mi Tarot',
@@ -146,7 +146,7 @@ export function getDeckTemplates(majorArcana: ArcanaCard[]): DeckTemplate[] {
       label: 'Tarot completo (78 cartas)',
       glyph: '✦',
       description:
-        'Mayores con textos del Rider-Waite + los 56 menores en blanco. La base más completa para tu mazo.',
+        'Mayores con los textos del tarot clásico + los 56 menores en blanco. La base más completa para tu mazo.',
       build: () => ({
         ...blankDeck(),
         name: 'Mi Tarot completo',

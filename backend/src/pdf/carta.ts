@@ -116,8 +116,16 @@ export interface CaraDeCarta {
   nombre: string;
   /** Subtítulo: la correspondencia astrológica, o el palo. */
   subtitulo: string;
-  /** Qué se dibuja en el centro. */
+  /** Qué se dibuja en el centro si la carta no tiene imagen. */
   simbolo: { tipo: 'palo'; palo: Palo } | { tipo: 'romano'; numero: number } | { tipo: 'ninguno' };
+  /**
+   * Ruta del archivo de imagen, o null.
+   *
+   * Se incrusta en el PDF, no se enlaza. Un PDF que enlaza a una URL se rompe
+   * sin internet, y la gente manda estos archivos por messaging, donde eso es
+   * justo lo que va a pasar.
+   */
+  imagen: string | null;
   invertida: boolean;
 }
 
@@ -127,6 +135,8 @@ export interface DatosDeCarta {
   subtitulo: string;
   /** true si es un arcano mayor. */
   esMayor: boolean;
+  /** Ruta del archivo de imagen, o null si la carta no tiene. */
+  imagen?: string | null;
   /** 0 a 21 para los mayores, que es lo que da el número romano. */
   numero: number | null;
   /** El palo, o null si no aplica. */
@@ -144,23 +154,23 @@ export interface DatosDeCarta {
  * real.
  */
 export function caraDe(nombre: string, datos: DatosDeCarta): CaraDeCarta {
+  const base = {
+    nombre,
+    subtitulo: datos.subtitulo,
+    imagen: datos.imagen ?? null,
+    invertida: datos.invertida,
+  };
+
+  /* El símbolo se calcula igual aunque haya imagen: si el archivo está pero
+     falla al incrustarse, el dibujo vectorial es el respaldo y no queda un
+     rectángulo vacío. Por eso va antes. */
   if (datos.esMayor) {
-    return {
-      nombre,
-      subtitulo: datos.subtitulo,
-      simbolo: { tipo: 'romano', numero: datos.numero ?? 0 },
-      invertida: datos.invertida,
-    };
+    return { ...base, simbolo: { tipo: 'romano', numero: datos.numero ?? 0 } };
   }
   if (datos.palo) {
-    return {
-      nombre,
-      subtitulo: datos.subtitulo,
-      simbolo: { tipo: 'palo', palo: datos.palo },
-      invertida: datos.invertida,
-    };
+    return { ...base, simbolo: { tipo: 'palo', palo: datos.palo } };
   }
-  return { nombre, subtitulo: datos.subtitulo, simbolo: { tipo: 'ninguno' }, invertida: datos.invertida };
+  return { ...base, simbolo: { tipo: 'ninguno' } };
 }
 
 /** El número romano, o cadena vacía si no corresponde. */
@@ -226,9 +236,22 @@ export function drawCardFace(
   const zonaSimbolo = { y: y, h: alto * 0.5 - y - (conNombre ? alto * 0.3 : 0) };
   const cySimbolo = y + Math.max(6, zonaSimbolo.h * 0.45);
 
-  if (cara.simbolo.tipo === 'palo') {
+  /* La imagen ocupa la mayor parte de la carta, que es como se ve un mazo de
+     verdad. El subtítulo y el nombre quedan arriba y abajo porque en una carta
+     real también están, y el nombre sobre todo: sin él la carta del PDF no se
+     puede identificar de un vistazo.
+
+     No se corta el dibujado cuando hay imagen: se dibuja y se sigue con el
+     nombre, que es lo que hace una carta real. */
+  const dibujada = cara.imagen
+    ? dibujarImagen(doc, cara.imagen, 0, alto * 0.02, ancho - 10, alto * 0.62)
+    : false;
+
+  /* Con la imagen puesta el símbolo no se dibuja: queda tapado. Sin ella, se
+     dibuja el símbolo de siempre. */
+  if (!dibujada && cara.simbolo.tipo === 'palo') {
     simboloDePalo(doc, cara.simbolo.palo, 0, cySimbolo, Math.min(zonaSimbolo.h * 0.9, alto * 0.3));
-  } else if (cara.simbolo.tipo === 'romano') {
+  } else if (!dibujada && cara.simbolo.tipo === 'romano') {
     const romano = romanoDe(cara.simbolo.numero);
     doc.font(FONT.bold).fontSize(Math.max(6, alto * 0.13)).fillColor(COLOR.gold);
     doc.text(romano, -ancho / 2 + pad, cySimbolo - alto * 0.09, {
@@ -236,7 +259,7 @@ export function drawCardFace(
       align: 'center',
       lineBreak: false,
     });
-  } else {
+  } else if (!dibujada) {
     /* Sin símbolo: un punto discreto, para que la carta no quede vacía. */
     doc.save().fillColor(COLOR.goldSoft).circle(0, cySimbolo, 1.6).fill().restore();
   }
@@ -252,4 +275,35 @@ export function drawCardFace(
   }
 
   doc.restore();
+}
+
+/**
+ * Incrusta la imagen de la carta. Devuelve false si no se pudo.
+ *
+ * El `false` es lo importante: si el archivo no está, no es un formato que
+ * PDFKit sepa leer, o el PDF queda corrupto, se sigue con el símbolo vectorial
+ * en vez de dejar un hueco. Una carta a medio dibujar se nota más que una
+ * carta con el dibujo de siempre.
+ */
+function dibujarImagen(
+  doc: any,
+  ruta: string,
+  cx: number,
+  cy: number,
+  ancho: number,
+  alto: number,
+): boolean {
+  try {
+    /* `fit` recorta en vez de deformar: una imagen estirada hasta llenar la
+       caja deja la figura gorda, y en una carta eso se nota. */
+    doc.image(ruta, cx - ancho / 2, cy - alto / 2, {
+      fit: [ancho, alto],
+      align: 'center',
+      valign: 'center',
+    });
+    return true;
+  } catch (err) {
+    console.error(`[pdf] No pude incrustar la imagen ${ruta}:`, err);
+    return false;
+  }
 }

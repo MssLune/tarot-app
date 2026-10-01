@@ -94,6 +94,14 @@ export interface ArcanaCard {
   futureTextReversed?: string;
   /** Signo/regente y rango de fechas (ej. "Aries · 21 de marzo al 20 de abril"). */
   astrology?: string;
+  /**
+   * URL de la imagen de la carta, o undefined si no tiene.
+   *
+   * Opcional a propósito: el mazo funciona entero sin imágenes, con los
+   * símbolos y el número romano. Por eso se pueden ir agregando de a una sin
+   * que nada se rompa.
+   */
+  imageUrl?: string;
 }
 
 /**

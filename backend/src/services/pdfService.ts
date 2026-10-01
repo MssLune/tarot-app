@@ -10,6 +10,7 @@ import { ApiError } from '../utils/ApiError';
 import { toCardDTO } from '../models/card.model';
 import { buildDocument } from '../pdf/document';
 import { caraDe, paloDe, type CaraDeCarta } from '../pdf/carta';
+import { imagenDeCarta } from './cardImages';
 import { toFilename } from '../pdf/layout';
 
 /* ==========================================================================
@@ -115,6 +116,7 @@ export async function renderReadingPdf(userId: string, readingId: string): Promi
             esMayor: carta.arcanaType === 'mayor',
             numero: carta.arcanaType === 'mayor' ? carta.number : null,
             palo: paloDe(carta.arcanaType, carta.suit),
+            imagen: imagenDeCarta(carta.image),
             invertida: dibujada.reversed,
           }),
         );

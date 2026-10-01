@@ -1,23 +1,15 @@
 node_modules/
 dist/
-build/
-
-# Env
-.env
-.env.local
-
-# Backend / Prisma
-backend/prisma/dev.db
-backend/prisma/dev.db-journal
-backend/generated/
-
-# TypeScript build info
 *.tsbuildinfo
 
-# Logs
-npm-debug.log*
-*.log
+# Los PDF de ejemplo que genera tools/ejemplo.ts. Son artefactos, no código.
+backend/*.pdf
 
-# OS
-.DS_Store
-Thumbs.db
+# Los archivos de imagen de las cartas no se versionan: son varios megas de
+# binarios que cambian cada vez que se reemplaza una. La carpeta queda en el
+# servidor; el nombre de cada archivo sí está en la base.
+backend/assets/cards/*
+!backend/assets/cards/README.md
+
+# Las claves de Clerk nunca se versionan.
+frontend/.env

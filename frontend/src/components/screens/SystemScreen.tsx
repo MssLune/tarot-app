@@ -22,7 +22,7 @@ const OPTIONS: SystemOption[] = [
   {
     id: 'rider-waite',
     glyph: '☉',
-    name: 'Tarot Rider-Waite',
+    name: 'Tarot clásico',
     tagline: 'Mazo completo de 78 cartas',
     description:
       'Los 78 Arcanos (22 Mayores + 56 Menores) con significado en posición derecha e invertida, ficha de referencia con Sí/No, Pasado-Presente-Futuro y astrología.',

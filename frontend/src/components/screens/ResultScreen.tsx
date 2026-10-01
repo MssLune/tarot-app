@@ -71,11 +71,15 @@ export default function ResultScreen() {
 
   const { positions, patterns, conclusion, stats } = interpretation;
 
+  /* La imagen se busca por el id de la carta, no por el nombre: el nombre
+     depende del sistema y del mazo, y dos cartas distintas pueden llamarse
+     igual. El motor no la trae porque trabaja con ids, no con dibujos. */
   const entries: LayoutEntry[] = positions.map((p) => ({
     position: p.position,
     name: p.cardName,
     glyph: p.glyph,
     subtitle: undefined,
+    imageUrl: p.card.arcanaId ? cardsById[p.card.arcanaId]?.imageUrl : undefined,
     reversed: p.card.reversed,
   }));
 

@@ -176,6 +176,19 @@ model Card {
   /// Signo/regente y rango de fechas tal como los da la guía (ej. "Aries · 21 de marzo al 20 de abril").
   astrology   String?
 
+  /// Nombre del archivo de la imagen de la carta dentro de `assets/cards`, o
+  /// null si la carta todavía no tiene.
+  ///
+  /// Va SÓLO el nombre del archivo y no una ruta, por dos razones. Una: las
+  /// lecturas guardadas guardan la carta por id, así que mover la carpeta no
+  /// rompe nada. Dos: una ruta guardada en la base es una forma de que alguien
+  /// lea un archivo de fuera; el nombre se valida antes de construir la ruta.
+  ///
+  /// Es opcional a propósito. La app y el PDF funcionan sin ella y dibujan el
+  /// símbolo del palo o el número romano. Una carta sin imagen no es una carta
+  /// rota, es una carta con el dibujo de siempre.
+  image String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

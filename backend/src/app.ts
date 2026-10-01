@@ -9,10 +9,23 @@ import { apiRouter } from './routes';
 import { billingRouter } from './routes/billing.routes';
 import { stripeWebhookRouter } from './routes/stripeWebhook.routes';
 import { webhookRouter } from './routes/webhook';
+import { CARDS_DIR, CARDS_ROUTE } from './services/cardImages';
 
 export const app = express();
 
 app.use(cors({ origin: env.frontendUrl }));
+
+/* Las imágenes de las cartas. Se sirven estáticas y no hay protección que
+   valga: son el arte de un mazo de dominio público, que cualquiera puede
+   descargar igual, y para que la PWA las pueda guardar para usar sin
+   conexión tienen que ser archivos que el navegador pueda pedir por URL.
+   `index: false` y el dotfiles en "deny" evitan que se liste la carpeta o se
+   sirva algo con punto adelante. */
+app.use(
+  CARDS_ROUTE,
+  express.static(CARDS_DIR, { index: false, dotfiles: 'deny', maxAge: '30d' }),
+);
+
 /* El webhook de Stripe va ANTES del parser de JSON, con su propio parser
    crudo. Si el cuerpo llegara parseado, la firma (un HMAC sobre los bytes
    exactos) no coincidiría y Stripe rechazaría todos los eventos. */

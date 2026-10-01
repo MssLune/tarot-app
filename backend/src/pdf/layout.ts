@@ -157,8 +157,15 @@ export function toFilename(reading: Reading): string {
   return `${limpio || 'lectura'}.pdf`;
 }
 
+/**
+ * El rótulo del sistema en el PDF.
+ *
+ * No dice "Rider-Waite" a propósito: ese nombre es una marca registrada, y el
+ * PDF es un archivo que el usuario hornea y comparte. Ver la nota larga en
+ * `frontend/src/lib/systems.ts`.
+ */
 export const SYSTEM_LABEL: Record<SystemId, string> = {
-  'rider-waite': 'Tarot Rider-Waite',
+  'rider-waite': 'Tarot clásico',
   oracle: 'Oráculo',
   'custom-deck': 'Mazo propio',
 };

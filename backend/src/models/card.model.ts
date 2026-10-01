@@ -1,4 +1,5 @@
 import type { Card as CardRow } from '@prisma/client';
+import { urlDeImagen } from '../services/cardImages';
 
 /**
  * Forma pública de una carta, tal como la consume el frontend.
@@ -39,6 +40,8 @@ export interface CardDTO {
   presentTextReversed?: string;
   futureTextReversed?: string;
   astrology?: string;
+  /** URL de la imagen, o null si la carta no tiene. La arma el backend. */
+  imageUrl?: string;
 }
 
 /** Datos aceptados al crear/editar una carta. */
@@ -74,6 +77,7 @@ export interface CardInput {
   presentTextReversed?: string;
   futureTextReversed?: string;
   astrology?: string;
+  image?: string;
 }
 
 /** Convierte la fila de la base (keywords como JSON string) a la forma pública. */
@@ -110,6 +114,10 @@ export function toCardDTO(row: CardRow): CardDTO {
     presentTextReversed: row.presentTextReversed ?? undefined,
     futureTextReversed: row.futureTextReversed ?? undefined,
     astrology: row.astrology ?? undefined,
+    /* Se resuelve contra el disco: si la base dice que hay imagen pero el
+       archivo no está, se devuelve null y la carta se dibuja con su símbolo.
+       Una referencia rota es peor que no tener referencia. */
+    imageUrl: urlDeImagen(row.image) ?? undefined,
   };
 }
 

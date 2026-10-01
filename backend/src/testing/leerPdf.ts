@@ -16,7 +16,7 @@ import zlib from 'node:zlib';
 
    - Juntar TODAS las cadenas de un `TJ`. PDFKit parte el texto en trozos para
      justifiable con micro-ajustes de espaciado, y quedarse con la última da
-     "aite" en vez de "Tarot Rider-Waite".
+     "aite" en vez de "Tarot clásico".
 
    - Traducir los huecos de palabra a espacios. En un `TJ` justificado, el
      espacio no es un glifo sino un desplazamiento numérico: sin esto, un

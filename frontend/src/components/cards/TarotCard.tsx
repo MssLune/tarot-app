@@ -13,6 +13,17 @@ interface TarotCardProps {
   name: string;
   glyph: string;
   subtitle?: string;
+  /**
+   * URL de la imagen de la carta, si tiene.
+   *
+   * Opcional: sin imagen la carta se dibuja con el glifo, como siempre. Por eso
+   * se pueden ir agregando imágenes sin cambiar nada de lo demás. Si la URL está
+   * pero el archivo no carga, cae al glifo también: una carta con el dibujo
+   * de siempre es mejor que una con un ícono de imagen rota.
+   */
+  imageUrl?: string;
+  /** Se apaga mientras la imagen no cargó, para no partir de un í roto. */
+  onImage?: (ok: boolean) => void;
   reversed?: boolean;
   revealed?: boolean;
   /** Retardo de aparición, para el efecto escalonado. */
@@ -37,6 +48,8 @@ export default function TarotCard({
   name,
   glyph,
   subtitle,
+  imageUrl,
+  onImage,
   reversed = false,
   revealed = true,
   delay = 0,
@@ -109,16 +122,29 @@ export default function TarotCard({
               )}
             </div>
           ) : hideName ? (
-            /* Miniatura: sólo el símbolo, centrado */
+            /* Miniatura: sólo el dibujo, centrado */
             <div
               className="flex h-full w-full items-center justify-center"
               style={{ transform: reversed ? 'rotate(180deg)' : undefined }}
             >
-              <span
-                className={`${t.glyph} text-gold-gradient leading-none drop-shadow-[0_0_14px_rgba(232,205,138,0.4)]`}
-              >
-                <Glyph>{glyph}</Glyph>
-              </span>
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  draggable={false}
+                  onLoad={() => onImage?.(true)}
+                  onError={() => onImage?.(false)}
+                  className="h-full w-full rounded object-contain"
+                />
+              ) : (
+                <span
+                  className={`${t.glyph} text-gold-gradient leading-none drop-shadow-[0_0_14px_rgba(232,205,138,0.4)]`}
+                >
+                  <Glyph>{glyph}</Glyph>
+                </span>
+              )}
             </div>
           ) : (
             <div
@@ -129,11 +155,24 @@ export default function TarotCard({
                 {subtitle ?? ''}
               </span>
 
-              <span
-                className={`${t.glyph} text-gold-gradient leading-none drop-shadow-[0_0_18px_rgba(232,205,138,0.45)]`}
-              >
-                <Glyph>{glyph}</Glyph>
-              </span>
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  draggable={false}
+                  onLoad={() => onImage?.(true)}
+                  onError={() => onImage?.(false)}
+                  className="min-h-0 w-full flex-1 rounded object-contain"
+                />
+              ) : (
+                <span
+                  className={`${t.glyph} text-gold-gradient leading-none drop-shadow-[0_0_18px_rgba(232,205,138,0.45)]`}
+                >
+                  <Glyph>{glyph}</Glyph>
+                </span>
+              )}
 
               <span
                 className={`${t.name} font-display uppercase leading-tight tracking-[0.1em] text-gold-100/90`}
