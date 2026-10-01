@@ -6,6 +6,7 @@ import type { Ritual } from '../../types';
 import MoonDisc from '../cards/MoonDisc';
 import EclipseNotice from '../moon/EclipseNotice';
 import FestivalList from '../moon/FestivalList';
+import MoonCalendar from '../moon/MoonCalendar';
 import Button from '../ui/Button';
 import SectionHeading from '../ui/SectionHeading';
 
@@ -27,9 +28,9 @@ const PHASE_OPTIONS: { value: MoonPhaseId | 'any'; label: string }[] = [
   { value: 'new', label: 'Luna Nueva' },
   { value: 'waxing-crescent', label: 'Luna Creciente' },
   { value: 'first-quarter', label: 'Cuarto Creciente' },
-  { value: 'waxing-gibbous', label: 'Gibosa Creciente' },
+  { value: 'waxing-gibbous', label: 'Casi Llena' },
   { value: 'full', label: 'Luna Llena' },
-  { value: 'waning-gibbous', label: 'Gibosa Menguante' },
+  { value: 'waning-gibbous', label: 'Luna Menguante' },
   { value: 'last-quarter', label: 'Cuarto Menguante' },
   { value: 'waning-crescent', label: 'Luna Balsema' },
 ];
@@ -100,45 +101,38 @@ export default function RitualsScreen() {
           estar en la misma pantalla que el disco, no más abajo. */}
       <EclipseNotice />
 
-      {/* ---------------- El lunación completo ---------------- */}
-      <section className="panel gilded p-5">
-        <h3 className="overline mb-3">El lunación</h3>
-        <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-8">
-          {ciclo.map((fase) => {
-            const esAhora = fase.id === hoy.id;
-            const conRituales = rituals.some((r) => r.phase === fase.id);
-            return (
-              <div
-                key={fase.id}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-colors ${
-                  esAhora
-                    ? 'border-gold-300/60 bg-gold-400/[0.12]'
-                    : 'border-gold-400/12 bg-ink-950/40'
-                }`}
-              >
-                {/* Registro chico: a 40 px la textura sería barro. */}
-                <MoonDisc phase={fase} size={44} variant="icon" />
-                <span
-                  className={`text-[0.55rem] leading-tight ${esAhora ? 'text-gold-100' : 'text-gold-100/50'}`}
+      {/* ---------------- El lunación, mes a mes ---------------- */}
+      {/* Antes acá iban ocho fichas, una por fase. Es la información correcta
+          pero no se lee como un calendario: no dice en qué día cae la Luna
+          Llena de este mes ni cuántos días faltan. */}
+      <MoonCalendar />
+
+      {/* ---------------- Las ocho fases y sus rituales ---------------- */}
+      {/* Achicada a propósito. Antes era la seccion principal y tenía que
+          decir cómo se veía la Luna; ahora eso lo hace el
+          calendario de arriba. Queda sólo para lo que sigue. */}
+      {rituals.some((r) => r.phase !== 'any') && (
+        <section className="panel p-3">
+          <h3 className="overline mb-2.5">Fases con rituales</h3>
+          <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+            {ciclo.map((fase) => {
+              const conRituales = rituals.some((r) => r.phase === fase.id);
+              if (!conRituales) return null;
+              return (
+                <div
+                  key={fase.id}
+                  className="flex flex-col items-center gap-1 rounded-lg border border-gold-400/15 bg-ink-950/40 px-1 py-2 text-center"
                 >
-                  {fase.name.replace('Luna ', '').replace('Gibosa ', 'Gib. ')}
-                </span>
-                <span className="text-[0.5rem] text-gold-100/30">
-                  {fase.date.getDate()}/{fase.date.getMonth() + 1}
-                </span>
-                {conRituales && (
-                  <span
-                    className="text-[0.5rem] text-gold-300/70"
-                    title="Tenés rituales para esta fase"
-                  >
-                    ✦
+                  <MoonDisc phase={fase} size={28} variant="icon" />
+                  <span className="text-[0.52rem] leading-tight text-gold-100/70">
+                    {fase.name.replace('Luna ', '')}
                   </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ---------------- Rituales de hoy ---------------- */}
       <section className="space-y-3">

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { MoonPhase } from '@arcana/tarot-core';
 
 /* ==========================================================================
    Disco lunar, en dos registros distintos.
@@ -27,8 +26,25 @@ import type { MoonPhase } from '@arcana/tarot-core';
    puedo resolver por vos.
    ========================================================================== */
 
+/**
+ * Lo mínimo que el disco necesita para dibujarse.
+ *
+ * Antes era `MoonPhase` entera, pero el calendario pinta la Luna de un día
+ * suelto y no tiene (ni necesita) un id de fase ni una nota: sólo el ángulo y
+ * la fracción iluminada. Tiparlo como `MoonPhase` obligaba a fabricar un
+ * objeto entero con datos inventados para poder pintar una celda.
+ */
+export interface MoonLook {
+  /** Ángulo dentro del ciclo, de 0 a 2π. */
+  angle: number;
+  /** Fracción iluminada, de 0 a 1. */
+  illumination: number;
+  /** Nombre, sólo para el `aria-label`. */
+  name?: string;
+}
+
 interface Props {
-  phase: MoonPhase;
+  phase: MoonLook;
   size?: number;
   className?: string;
   /** Registro del dibujo. */
@@ -310,7 +326,11 @@ export default function MoonDisc({
       viewBox={`0 0 ${size} ${size}`}
       className={className}
       role="img"
-      aria-label={`${phase.name}, ${Math.round(phase.illumination * 100)}% iluminada`}
+      aria-label={
+        phase.name
+          ? `${phase.name}, ${Math.round(phase.illumination * 100)}% iluminada`
+          : `${Math.round(phase.illumination * 100)}% iluminada`
+      }
     >
       <defs>
         {/* Superficie mate: la luz entra de arriba a la izquierda y cae hacia

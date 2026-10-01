@@ -68,16 +68,22 @@ const PHASE_META: Record<MoonPhaseId, { name: string; note: string }> = {
     note: 'Primer obstáculo. Se pide una decisión, no una definición.',
   },
   'waxing-gibbous': {
-    name: 'Gibosa Creciente',
-    note: 'Casi llena. Momento de afinar y revisar lo que ya se sabe.',
+    /* "Gibosa" es el termino tecnico correcto y casi nadie lo usa. "Casi
+       llena" dice lo mismo y se entiende al primer vistazo. El nombre tecnico
+       no se pierde: vive en el id ('waxing-gibbous') y en el PDF. */
+    name: 'Casi Llena',
+    note: 'Más de la mitad iluminada, todavía no llena. Momento de afinar y revisar lo que ya se sabe.',
   },
   full: {
     name: 'Luna Llena',
     note: 'Revelación. Lo que estaba oculto se hace visible.',
   },
   'waning-gibbous': {
-    name: 'Gibosa Menguante',
-    note: 'Distribuir lo aprendido: compartir, enseñar o pedir consejo.',
+    /* Ninguno de los ocho nombres se repite ni se confunde con otro: aqui
+       "menguante" es la gibosa, el cuarto menguante es el cuarto, y la ultima
+       del ciclo es la balsema. */
+    name: 'Luna Menguante',
+    note: 'La Luna ya pasó la llena y le empieza a bajar la luz. Momento de distribuir lo aprendido: compartir, enseñar o pedir consejo.',
   },
   'last-quarter': {
     name: 'Cuarto Menguante',
@@ -475,4 +481,173 @@ export function moonPhase(date: Date = new Date()): MoonPhase & { next: MoonPhas
       illumination: ILLUMINATION_ANCHORS[nextIndex],
     },
   };
+}
+
+/* --------------------------------------------------------------------------
+   Fase de cada día: para el calendario
+   -------------------------------------------------------------------------- */
+
+export interface MoonDay {
+  /** El día, a medianoche local. */
+  date: Date;
+  /** Fracción iluminada, interpolada como en el resto del módulo. */
+  illumination: number;
+  /**
+   * Ángulo dentro del ciclo, de 0 a 2π, para DIBUJAR el disco.
+   *
+   * Va por interpolación lineal entre las fases y no por `2π·edad/lunación`.
+   * No es lo mismo: la fase de las 8:00 no es la fase de las 8:00 con la
+   * edad corrida. Encajar los extremos es lo que hace que el calendario no
+   * "salte" de la Luna Llena a la Balsema de golpe entre dos celdas.
+   */
+  angle: number;
+}
+
+/**
+ * La Luna de cada día de un mes, en orden.
+ *
+ * Va mes a mes y no día a día porque el calendario necesita los dos: la
+ * primera semana arranca en el día que le toca, que puede ser del mes anterior.
+ * `calendarMonth()` arma esa rejilla con esto.
+ *
+ * Se calcula el lunación una sola vez por mes, no una por día. `moonPhase()`
+ * recalcula las 8 fases en cada llamada, y llamarla 31 veces para pintar un
+ * calendario es tirar trigonometría a la basura.
+ */
+export function moonDaysInMonth(anio: number, mes: number): MoonDay[] {
+  const ultimo = new Date(anio, mes + 1, 0).getDate();
+  const dias: MoonDay[] = [];
+
+  for (let d = 1; d <= ultimo; d += 1) {
+    /* Mediodía y no medianoche a propósito: la fase que se ve de noche es la
+       de ese día, y a medianoche el disco ya es el del día siguiente. */
+    const fecha = new Date(anio, mes, d, 12, 0, 0, 0);
+    dias.push({ date: fecha, ...faseEn(fecha) });
+  }
+  return dias;
+}
+
+/**
+ * Iluminación y ángulo de la Luna en una fecha cualquiera.
+ *
+ * Es el cálculo que ya hacía `moonPhase`, pero sin la fase siguiente, sin el
+ * nombre y sin la nota: para pintar 35 celdas de un calendario, eso es 35
+ * verbos que no se usan y 35 listas de fases que se tiran.
+ */
+function faseEn(fecha: Date): { illumination: number; angle: number } {
+  let k = lunationNumber(fecha);
+  if (fromJulianDay(phaseJDE(k, 0)).getTime() > fecha.getTime()) k -= 1;
+
+  /* Los ocho instantes del lunación, calculados una vez. */
+  const instantes = PHASE_ORDER.map((_, i) => fromJulianDay(phaseJDE(k, i)).getTime());
+  const finLunacion = fromJulianDay(phaseJDE(k + 1, 0)).getTime();
+
+  const t = fecha.getTime();
+  let index = 0;
+  for (let i = 0; i < 8; i += 1) if (instantes[i] <= t) index = i;
+
+  const inicio = instantes[index];
+  const fin = index === 7 ? finLunacion : instantes[index + 1];
+  const f = Math.max(0, Math.min(1, (t - inicio) / (fin - inicio)));
+
+  return {
+    /* Iluminación interpolada entre anclas: da 0, 0,5 y 1 exactos en las ocho
+       fases, que es lo que hace falta. La fórmula ingenua
+       (1-cos)/2 por edad daría 0,42 en el cuarto creciente. */
+    illumination:
+      ILLUMINATION_ANCHORS[index] +
+      (ILLUMINATION_ANCHORS[(index + 1) % 8] - ILLUMINATION_ANCHORS[index]) * f,
+    /* Ángulo POR EDAD, no interpolado entre anclas.
+       Interpolar da 7π/4 → 0 en el tramo final, o sea el ángulo DECRECIENDO
+       justo en la Luna Nueva: el disco del calendario giraría al revés en el
+       día que más se mira. La edad avanza siempre, así que por edad el ángulo
+       es monótono y da la vuelta solo, que es lo que corresponde. */
+    angle: (2 * Math.PI * (toJulianDay(fecha) - JDE_REFERENCE - SYNODIC * k)) / SYNODIC,
+  };
+}
+
+export interface CalendarDay extends MoonDay {
+  /** 0 = domingo, 6 = sábado. */
+  weekday: number;
+  /** `true` si el día pertenece al mes pedido. Los de los bordes, no. */
+  enMes: boolean;
+  /** Festividad que cae ese día, si hay. */
+  festividad?: { id: string; name: string; granHoguera?: boolean };
+  /** Fase principal que cae EXACTO ese día, si hay. */
+  fase?: { id: MoonPhaseId; name: string };
+}
+
+/**
+ * El mes como lo ve un calendario: una semana por fila, con los días del mes
+ * vecino que completan la primera y la última fila.
+ *
+ * Empieza en domingo porque es como lo tiene la mayoría. Cambiarlo sería meter
+ * una opinión en un lugar donde no hace falta.
+ */
+export function calendarMonth(
+  anio: number,
+  mes: number,
+  festividades: { id: string; name: string; date: Date; granHoguera?: boolean }[] = [],
+): CalendarDay[] {
+  const primero = new Date(anio, mes, 1, 12, 0, 0, 0);
+  const ultimo = new Date(anio, mes + 1, 0, 12, 0, 0, 0);
+
+  /* Cuántos días hay que poner delante para que el 1º caiga donde le toca. */
+  const relleno = primero.getDay();
+  const celdas = Math.ceil((relleno + ultimo.getDate()) / 7) * 7;
+
+  /* Los días del mes, con su fase. Los del mes vecino salen del mes vecino. */
+  const fasesPorFecha = new Map<string, { illumination: number; angle: number }>();
+  for (const d of moonDaysInMonth(anio, mes)) {
+    fasesPorFecha.set(claveDia(d.date), d);
+  }
+
+  /* Las fases principales que caen dentro del mes, por día.
+     Un mes NO cabe en un lunación: son 29,53 días contra 28-31, así que
+     siempre toca parte de dos. `phasesOfLunation` devuelve una sola, y con
+     una sola el calendario marcaba una fase de las cuatro. De ahí se toman
+     las dos: la del 1º y la del último día. */
+  const fasesPorDia = new Map<number, { id: MoonPhaseId; name: string }>();
+  for (const fecha of [primero, ultimo]) {
+    for (const f of phasesOfLunation(fecha)) {
+      if (f.date.getFullYear() === anio && f.date.getMonth() === mes && f.exact) {
+        fasesPorDia.set(f.date.getDate(), { id: f.id, name: f.name });
+      }
+    }
+  }
+
+  const festPorDia = new Map<number, { id: string; name: string; granHoguera?: boolean }>();
+  for (const f of festividades) {
+    if (f.date.getFullYear() === anio && f.date.getMonth() === mes) {
+      festPorDia.set(f.date.getDate(), { id: f.id, name: f.name, granHoguera: f.granHoguera });
+    }
+  }
+
+  const salida: CalendarDay[] = [];
+  for (let i = 0; i < celdas; i += 1) {
+    const fecha = new Date(anio, mes, 1 - relleno + i, 12, 0, 0, 0);
+    const enMes = fecha.getMonth() === mes;
+    /* La fase de los días del borde se calcula sólo si no la trajo el mes
+       vecino. En la mayoría de los meses el borde es del mes anterior, que
+       no está en el mapa, así que se calcula: 8 celdas, no 35. */
+    const fase =
+      fasesPorFecha.get(claveDia(fecha)) ??
+      fasesPorFecha.get(claveDia(new Date(anio, mes - 1, fecha.getDate(), 12))) ??
+      faseEn(fecha);
+    salida.push({
+      date: fecha,
+      weekday: fecha.getDay(),
+      enMes,
+      illumination: fase.illumination,
+      angle: fase.angle,
+      festividad: enMes ? festPorDia.get(fecha.getDate()) : undefined,
+      fase: enMes ? fasesPorDia.get(fecha.getDate()) : undefined,
+    });
+  }
+  return salida;
+}
+
+/** Clave de un día, para comparar fechas sin la hora. */
+function claveDia(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
