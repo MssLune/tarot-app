@@ -19,3 +19,6 @@ backend/.entrada/*
 backend/.entrada/major/
 backend/.entrada/minor/
 backend/.*.ts
+
+# Salidas de herramientas/renderLuna.ts: PNG para mirar, no código.
+frontend/.luna/
