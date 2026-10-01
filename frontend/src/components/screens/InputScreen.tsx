@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { CATEGORY_LABELS } from '@arcana/tarot-core';
-import { cardDisplayName, cardGlyph } from '@arcana/tarot-core';
+import { cardDisplayName, cardGlyph, cardImageUrl } from '@arcana/tarot-core';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
 import type { QuestionCategory } from '../../types';
 import CardFicha from '../cards/CardFicha';
 import CardPicker, { type PickerFacet, type PickerGroup } from '../cards/CardPicker';
+import { urlDeArchivo } from '../../services/api';
 import SpreadLayout, { type LayoutEntry } from '../cards/SpreadLayout';
 import Button from '../ui/Button';
 import SectionHeading from '../ui/SectionHeading';
@@ -97,6 +98,9 @@ export default function InputScreen() {
           label: c.name,
           hint: `${c.rank ?? c.number} · ${c.correspondence}`,
           glyph: c.glyph,
+          /* La URL viene del backend como ruta relativa y hay que volverla
+             absoluta: si no, el navegador la pide al servidor de Vite. */
+          imageUrl: urlDeArchivo(c.imageUrl),
           // El buscador también matchea por significado y palabras clave:
           // permite encontrar "la carta que habla de Lupertad" y no sólo el nombre.
           keywords: [...c.keywords, ...c.reversedKeywords, c.upright, c.reversed, c.advice],
@@ -187,6 +191,9 @@ export default function InputScreen() {
       position: pos,
       name: hasCard ? cardDisplayName(card, system, cardsById, deck) : '',
       glyph: hasCard ? cardGlyph(card, system, i, cardsById, deck) : '',
+      /* La URL viene del backend como ruta relativa y hay que volverla
+         absoluta: si no, el navegador la pide al servidor de Vite y da 404. */
+      imageUrl: hasCard ? urlDeArchivo(cardImageUrl(card, system, cardsById)) : undefined,
       reversed: card.reversed,
       empty: !hasCard,
     };

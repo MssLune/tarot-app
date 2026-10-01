@@ -156,6 +156,27 @@ export function cardGlyph(
   return genericGlyphs[index % genericGlyphs.length];
 }
 
+/**
+ * URL de la imagen de la carta, si tiene.
+ *
+ * Va al lado de `cardDisplayName` y no dentro por dos razones. Una: la imagen
+ * es opcional y se resuelve por el mismo camino que el nombre, así que la
+ * lógica queda junta. Dos: devolver `undefined` es un caso NORMAL y no un
+ * error —el mazo funciona entero sin imágenes, con el glifo—, y conviene que
+ * el que llama lo sepa sin adivinar.
+ *
+ * Sólo el mazo del Rider-Waite tiene imágenes: son 78 archivos del servidor y
+ * un mazo propio las tiene si el usuario las subió, que hoy no es el caso.
+ */
+export function cardImageUrl(
+  card: DrawnCard,
+  system: SystemId,
+  cardsById: CardsById,
+): string | undefined {
+  if (system !== 'rider-waite' || !card.arcanaId) return undefined;
+  return cardsById[card.arcanaId]?.imageUrl;
+}
+
 /* --------------------------------------------------------------------------
    Interpretación por posición
    -------------------------------------------------------------------------- */

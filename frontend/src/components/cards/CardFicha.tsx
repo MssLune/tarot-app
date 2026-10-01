@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { YES_NO_LABELS } from '@arcana/tarot-core';
 import type { ArcanaCard } from '../../types';
 import Glyph from '../ui/Glyph';
+import { urlDeArchivo } from '../../services/api';
 import OrnateDivider from '../ui/OrnateDivider';
 
 /* ==========================================================================
@@ -67,10 +68,23 @@ export default function CardFicha({
             </button>
 
             {/* ---------------- Encabezado ---------------- */}
-            <div className="mb-5 text-center">
-              <span className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full border border-gold-300/40 bg-ink-950/70 text-2xl text-gold-gradient shadow-inset">
-                <Glyph>{card.glyph}</Glyph>
-              </span>
+            <div className="mb-5 flex flex-col items-center text-center">
+              {card.imageUrl ? (
+                /* La imagen manda sobre el glifo: la ficha es donde se mira la
+                   carta con detalle, y ahí el dibujo es lo que importa. La URL
+                   es absoluta porque así la arma el backend. */
+                <img
+                  src={urlDeArchivo(card.imageUrl)}
+                  alt={card.name}
+                  loading="lazy"
+                  draggable={false}
+                  className="mb-3 h-44 w-32 rounded-lg border border-gold-300/40 object-cover shadow-[0_0_24px_rgba(232,205,138,0.18)]"
+                />
+              ) : (
+                <span className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full border border-gold-300/40 bg-ink-950/70 text-2xl text-gold-gradient shadow-inset">
+                  <Glyph>{card.glyph}</Glyph>
+                </span>
+              )}
               <h2 className="flex items-center justify-center gap-2 text-gold-gradient text-2xl">
                 {card.name}
                 {reversed && (

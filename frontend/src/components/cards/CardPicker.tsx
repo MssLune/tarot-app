@@ -34,6 +34,12 @@ export interface PickerItem {
   hint?: string;
   /** Glifo a dibujar. */
   glyph?: string;
+  /**
+   * URL de la imagen de la carta, si tiene.
+   *
+   * Opcional: sin imagen se dibuja el glifo, que es como funcionaba antes.
+   */
+  imageUrl?: string;
   /** Campos extra por los que también se puede buscar (significado, keywords). */
   keywords?: string[];
   /** Texto ya conocido de la carta (significado escrito por el usuario). */
@@ -448,9 +454,23 @@ export default function CardPicker({
                           : 'border-transparent hover:border-gold-400/30 hover:bg-ink-800/70'
                   }`}
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gold-400/20 text-[0.65rem] text-gold-300/80">
-                    <Glyph>{item.glyph ?? '✦'}</Glyph>
-                  </span>
+                  {item.imageUrl ? (
+                    /* La miniatura reemplaza al glifo cuando hay imagen. Es un
+                       24×36, que es chico pero alcanza para reconocer la
+                       carta: el buscador es justo donde se las busca. */
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      loading="lazy"
+                      draggable={false}
+                      className="h-9 w-6 shrink-0 rounded border border-gold-400/20 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gold-400/20 text-[0.65rem] text-gold-300/80">
+                      <Glyph>{item.glyph ?? '✦'}</Glyph>
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1">
                     <span
                       className={`block truncate text-xs ${
@@ -519,9 +539,20 @@ export default function CardPicker({
           onClick={() => setOpen((v) => !v)}
           className="flex w-full items-center gap-2.5 rounded-xl border border-gold-300/40 bg-gold-400/[0.07] px-3 py-2 text-left transition-colors hover:border-gold-300/70"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gold-300/30 text-base text-gold-200">
-            <Glyph>{selected.glyph ?? '✦'}</Glyph>
-          </span>
+          {selected.imageUrl ? (
+            <img
+              src={selected.imageUrl}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              draggable={false}
+              className="h-12 w-8 shrink-0 rounded border border-gold-300/30 object-cover"
+            />
+          ) : (
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gold-300/30 text-base text-gold-200">
+              <Glyph>{selected.glyph ?? '✦'}</Glyph>
+            </span>
+          )}
           <span className="min-w-0 flex-1">
             <span className="block truncate text-xs text-gold-100">{selected.label}</span>
             {selected.hint && (

@@ -139,7 +139,12 @@ export default function HistoryScreen() {
                           className="w-24 shrink-0 self-start rounded-xl border border-gold-400/10 bg-ink-950/60 p-2 sm:w-28"
                           title="Abrir lectura"
                         >
-                          <SpreadMini positions={reading.spread.positions} />
+                          <SpreadMini
+                            positions={reading.spread.positions}
+                            cards={reading.cards}
+                            cardsById={cardsById}
+                            system={reading.system}
+                          />
                         </button>
 
                         <div className="flex min-w-0 flex-1 flex-col">
