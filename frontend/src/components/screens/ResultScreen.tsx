@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ELEMENT_LABELS, YES_NO_LABELS } from '@arcana/tarot-core';
 import { interpret } from '@arcana/tarot-core';
 import { SYSTEM_LABELS } from '../../lib/systems';
+import { urlDeArchivo } from '../../services/api';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
 import type { Pattern } from '../../types';
@@ -79,7 +80,9 @@ export default function ResultScreen() {
     name: p.cardName,
     glyph: p.glyph,
     subtitle: undefined,
-    imageUrl: p.card.arcanaId ? cardsById[p.card.arcanaId]?.imageUrl : undefined,
+    /* La URL viene del backend como ruta relativa y hay que volverla
+       absoluta: si no, el navegador la pide al servidor de Vite y da 404. */
+    imageUrl: urlDeArchivo(p.card.arcanaId ? cardsById[p.card.arcanaId]?.imageUrl : undefined),
     reversed: p.card.reversed,
   }));
 

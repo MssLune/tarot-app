@@ -88,6 +88,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data;
 }
 
+/**
+ * Origen del backend, sin el sufijo `/api`.
+ *
+ * Va aparte porque hay URLs que NO pasan por `API_URL`: las imágenes de las
+ * cartas las sirve el backend en `/assets/cards/...`, fuera del prefijo de la
+ * API.
+ */
+const ORIGEN = API_URL.replace(/\/api\/?$/, '');
+
+/**
+ * Convierte una ruta de archivo del backend en una URL absoluta.
+ *
+ * Sin esto, una imagen guardada como `/assets/cards/la-torre.jpg` se la pide
+ * al ORIGEN DE LA PÁGINA, que en desarrollo es el de Vite (5173), y no al del
+ * backend (4000): la petición da 404, el `onError` del `<img>` cae al glifo y
+ * la imagen no aparece nunca. Es un fallo invisible porque el resto de la app
+ * funciona: sólo falta el dibujo.
+ *
+ * Si la URL ya es absoluta se devuelve tal cual, y si es nula o vacía también:
+ * el valor null significa "esta carta no tiene imagen" y hay que respetarlo.
+ */
+export function urlDeArchivo(ruta: string | null | undefined): string | undefined {
+  if (!ruta) return undefined;
+  if (/^https?:\/\//i.test(ruta) || ruta.startsWith('data:')) return ruta;
+  return ruta.startsWith('/') ? `${ORIGEN}${ruta}` : `${ORIGEN}/${ruta}`;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body: unknown) =>

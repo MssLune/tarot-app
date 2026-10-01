@@ -21,6 +21,23 @@ app.use(cors({ origin: env.frontendUrl }));
    conexión tienen que ser archivos que el navegador pueda pedir por URL.
    `index: false` y el dotfiles en "deny" evitan que se liste la carpeta o se
    sirva algo con punto adelante. */
+/* Filtro antes del static: `express.static` sirve cualquier archivo de la
+   carpeta, y lo único que hay ahí además de los JPG es el README. No es un
+   problema de seguridad —es un archivo nuestro— pero es una URL que no
+   debería existir.
+
+   Se responde el 404 acá mismo y no con `next('router')`, que sólo funciona
+   dentro de un router y no en la app. */
+app.use(CARDS_ROUTE, (req, res, next) => {
+  if (/\.(jpe?g|png|webp)$/i.test(req.path)) {
+    next();
+    return;
+  }
+  res.status(404).json({
+    success: false,
+    error: { code: 'NOT_FOUND', message: 'No existe ese archivo.' },
+  });
+});
 app.use(
   CARDS_ROUTE,
   express.static(CARDS_DIR, { index: false, dotfiles: 'deny', maxAge: '30d' }),
