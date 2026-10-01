@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { RESOURCE_UNIT, usePlan } from '../../lib/usePlan';
+import { useReadingStore } from '../../store/useReadingStore';
 import type { LimitedResource } from '../../types';
 import Button from '../ui/Button';
 
@@ -9,18 +10,22 @@ import Button from '../ui/Button';
 
    INVASIVIDAD, que es el requisito: no aparece siempre. Sólo cuando el
    usuario llegó al tope de algo, porque en ese momento sí le está estorbando.
-   Un banner permanentevueno arriba de la app sería tráfico de la versión de
-   pago sobre el producto, y además entrena al usuario a ignorar los avisos.
+   Un banner permanente arriba de la app sería tráfico de la versión de pago
+   sobre el producto, y además entrena al usuario a ignorar los avisos.
 
    Se puede cerrar. Y si lo cerró, no vuelve a aparecer en esa sesión: no hay
-   forma de que algo que annoying se repita cada vez que cambia de pantalla.
+   forma de que algo molesto se repita cada vez que cambia de pantalla.
+
+   El botón NO abre el pago. Lleva a la pantalla de planes, donde hay tres
+   opciones y se elige. Tirar al checkout desde un aviso sería empujar al
+   usuario a comprar algo sin haberle dicho cuánto cuesta ni cuánto dura.
    ========================================================================== */
 
 export default function LimitBanner() {
-  const { isPro, atLimit, subscribe, notice, dismissNotice } = usePlan();
+  const { isPro, atLimit, notice, dismissNotice } = usePlan();
+  const goTo = useReadingStore((s) => s.goTo);
   /* `cerrado` es por sesión. Al recargar vuelve a poder mostrarse. */
   const [cerrado, setCerrado] = useState(false);
-  const [ocupado, setOcupado] = useState(false);
 
   if (isPro) return null;
 
@@ -34,13 +39,6 @@ export default function LimitBanner() {
 
   if (cerrado) return null;
   if (!mensajeAviso && faltantes.length === 0) return null;
-
-  const alSuscribirse = async () => {
-    setOcupado(true);
-    dismissNotice();
-    await subscribe();
-    setOcupado(false);
-  };
 
   return (
     <AnimatePresence>
@@ -70,10 +68,12 @@ export default function LimitBanner() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={ocupado}
-                onClick={() => void alSuscribirse()}
+                onClick={() => {
+                  dismissNotice();
+                  goTo('plan');
+                }}
               >
-                {ocupado ? 'Abriendo…' : 'Pasar al Pro'}
+                Ver el Pro
               </Button>
               <button
                 type="button"

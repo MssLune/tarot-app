@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Plan, PlanLimits, PlanUsage } from '../types';
+import type { Plan, PlanLimits, PlanTier, PlanUsage } from '../types';
 
 /* ==========================================================================
    Servicios de plan y cobro.
@@ -8,6 +8,8 @@ import type { Plan, PlanLimits, PlanUsage } from '../types';
 export interface SubscriptionInfo {
   plan: Plan;
   status: string;
+  /** Cuál de los tres Pro, o null si está en gratuito. */
+  tier: PlanTier | null;
   limits: PlanLimits;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
@@ -24,9 +26,14 @@ export const billingService = {
    */
   getSubscription: (): Promise<SubscriptionInfo> => api.get<SubscriptionInfo>('/billing/usage'),
 
-  /** Genera el checkout de Stripe y devuelve la URL a la que redirigir. */
-  createCheckout: (): Promise<{ url: string; yaSosPro?: boolean }> =>
-    api.post<{ url: string; yaSosPro?: boolean }>('/billing/checkout', {}),
+  /**
+   * Genera el checkout de Stripe y devuelve la URL a la que redirigir.
+   *
+   * El plan va explícito: el backend necesita saber si es suscripción o pago
+   * único, porque en Stripe son dos APIs distintas.
+   */
+  createCheckout: (tier: PlanTier): Promise<{ url: string; yaSosPro?: boolean; dePorVida?: boolean }> =>
+    api.post<{ url: string; yaSosPro?: boolean; dePorVida?: boolean }>('/billing/checkout', { tier }),
 
   /** Portal de Stripe: cambiar tarjeta, ver facturas, cancelar. */
   createPortal: (): Promise<{ url: string }> =>

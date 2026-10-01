@@ -59,9 +59,21 @@ stripeWebhookRouter.post(
     try {
       switch (event.type) {
         case 'checkout.session.completed': {
-          /* Es el evento que más importa: sin él, el usuario paga y no se le
-             activa el Pro hasta que llegue otro. */
+          /* El evento que más importa: sin él, el usuario paga y no se le
+             activa el Pro hasta que llegue otro.
+
+             Y hay que separar los dos modos, porque no se comportan igual:
+             una compra de por vida no deja suscripción, así que este evento
+             es el ÚNICO lugar donde se puede conceder. Si se lo salteara por
+             buscar `session.subscription` y no lo encontrara, el usuario
+             pagaría de una sola vez y no se le daría nada. */
           const session = event.data.object;
+
+          if (session.mode === 'payment') {
+            await billingService.grantLifetime(session.id);
+            break;
+          }
+
           if (session.subscription) {
             const subId =
               typeof session.subscription === 'string'

@@ -7,8 +7,8 @@ import { PrismaClient } from '@prisma/client';
    que se cargue el módulo. `vi.hoisted` corre antes que cualquier import;
    escribir `process.env` en el cuerpo del archivo ya sería tarde. */
 const PRECIO_PRO = vi.hoisted(() => {
-  const valor = 'price_test_pro_123';
-  process.env.STRIPE_PRO_PRICE_ID = valor;
+  const valor = 'price_test_mensual_123';
+  process.env.STRIPE_MONTHLY_PRICE_ID = valor;
   /* También la secret: sin ella el cliente de Stripe no se puede construir y
      el servicio lanzaría al intentar usarlo. */
   process.env.STRIPE_SECRET_KEY = 'sk_test_falsa_solo_para_tests';
@@ -104,6 +104,7 @@ describe('el webhook escribe la suscripción en la base', () => {
 
     const fila = await prisma.subscription.findUnique({ where: { userId: usuarioA.id } });
     expect(fila?.plan).toBe('pro');
+    expect(fila?.tier).toBe('monthly');
     expect(fila?.status).toBe('active');
     expect(fila?.stripeSubscriptionId).toBe(`sub_stripe${SUFIJO}`);
     expect(fila?.stripePriceId).toBe(PRECIO_PRO);
@@ -150,6 +151,7 @@ describe('los usuarios no se ven entre sí', () => {
   it('el primero quedó en pro', async () => {
     const subA = await getSubscription(usuarioA.id);
     expect(subA.plan).toBe('pro');
+    expect(subA.tier).toBe('monthly');
     expect(subA.limits.readings).toBe(Number.POSITIVE_INFINITY);
   });
 });
@@ -170,7 +172,7 @@ describe('cancelación', () => {
     /* Y el plan efectivo sí es free ahora. */
     const sub = await getSubscription(usuarioA.id);
     expect(sub.plan).toBe('free');
-    expect(sub.limits.readings).toBe(20);
+    expect(sub.limits.readings).toBe(10);
   });
 
   it('una suscripción desconocida devuelve null y no rompe', async () => {

@@ -1,9 +1,10 @@
 import { ApiError } from '../utils/ApiError';
+import { configuredTiers } from '../config/env';
 
 /* ==========================================================================
    Planes y límites.
 
-   La regla de diseño: el lectura es el producto. Todo lo que hace que una
+   La regla de diseño: la lectura es el producto. Todo lo que hace que una
    lectura sirva tiene que ser gratis para siempre —las 78 cartas, las fichas,
    la interpretación, la fase lunar— porque poner eso detrás de un muro es
    cobrarle a alguien por la razón por la que vino.
@@ -18,6 +19,45 @@ import { ApiError } from '../utils/ApiError';
 
 export type Plan = 'free' | 'pro';
 
+/**
+ * Cuál de los tres Pro se compró.
+ *
+ * Los tres dan el mismo plan. La distinción existe sólo para poder hablar con
+ * precisión: "se renueva el 3 de marzo" contra "no se renueva nunca". Un
+ * `tier` mal guardado no le da más cosas al usuario, así que el riesgo es
+ * cosmético, no de acceso.
+ */
+export type PlanTier = 'monthly' | 'annual' | 'lifetime';
+
+/** Los tres, en el orden en que se ofrecen. */
+export const PLAN_TIERS: PlanTier[] = ['monthly', 'annual', 'lifetime'];
+
+/** Rótulo corto de cada uno, para la interfaz. */
+export const TIER_LABEL: Record<PlanTier, string> = {
+  monthly: 'Mensual',
+  annual: 'Anual',
+  lifetime: 'De por vida',
+};
+
+/**
+ * Qué plan es, según el price id de Stripe.
+ *
+ * El precio decide, nunca un flag escrito a mano. Es la misma regla para los
+ * tres: si el id no está en la lista, es `free`. Así un precio desconocido —o
+ * un `prod_` en vez de un `price_`— degrada a gratuito en vez de regalar Pro
+ * por error. Cobrar de menos se arregla; regalar acceso no.
+ */
+export function tierFromPriceId(priceId: string | null | undefined): PlanTier | null {
+  /* La comprobación de vacío va primero a propósito: si un plan no está
+     configurado, su id es '' y compararlo contra el precio real nunca
+     coincidiría, pero con un `priceId` vacío entraría. */
+  if (!priceId) return null;
+  for (const tier of PLAN_TIERS) {
+    if (configuredTiers[tier] && configuredTiers[tier] === priceId) return tier;
+  }
+  return null;
+}
+
 export interface PlanLimits {
   /** Lecturas guardadas en el historial. */
   readings: number;
@@ -31,16 +71,20 @@ export interface PlanLimits {
   pdfExport: boolean;
   /** Muestra el banner que promociona el Pro. */
   showBanner: boolean;
-  /** Rakel de sincronización entre navegadores. */
+  /** Respaldo en la nube de los datos del navegador. */
   cloudSync: boolean;
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: {
-    readings: 20,
-    decks: 2,
-    spreads: 3,
-    rituals: 5,
+    /* A la mitad de lo que había. El límite tiene que aparecer mientras el
+       usuario todavía recuerda que la app le sirvió: alguien que lee una vez
+       por semana tarda más de dos meses en llegar a diez, y para entonces
+       ya se olvidó de qué era esto. */
+    readings: 10,
+    decks: 1,
+    spreads: 2,
+    rituals: 3,
     pdfExport: false,
     showBanner: true,
     /* Sin límite de tiempo, pero el respaldo en la nube de los datos del
@@ -87,6 +131,26 @@ export function limitsFor(plan: Plan, status: string): PlanLimits {
 export function planFrom(plan: string | null | undefined, status: string): Plan {
   if (plan !== 'pro') return 'free';
   return limitsFor('pro', status) === PLAN_LIMITS.pro ? 'pro' : 'free';
+}
+
+/**
+ * El tier que REALMENTE aplica, después de mirar el estado de Stripe.
+ *
+ * El de por vida es el caso raro: se compró una vez con un pago único y no hay
+ * suscripción que se pueda cancelar ni tarjeta que pueda fallar. Por eso
+ * `status` no lo toca nunca. Un `canceled` que llegara después —por ejemplo un
+ * webhook atrasado de una suscripción que el usuario tuvo antes— no puede
+ * dejar sin Pro a alguien que ya pagó de por vida.
+ */
+export function effectiveTier(
+  tier: string | null | undefined,
+  status: string,
+): PlanTier | null {
+  if (tier === 'lifetime') return 'lifetime';
+  if (tier !== 'monthly' && tier !== 'annual') return null;
+  /* Mensual y anual dependen del estado: una suscripción cancelada deja de
+     valer al terminar el período que ya estaba pagado. */
+  return limitsFor('pro', status) === PLAN_LIMITS.pro ? tier : null;
 }
 
 /**

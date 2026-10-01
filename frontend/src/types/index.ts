@@ -4,6 +4,14 @@
 
 export type Plan = 'free' | 'pro';
 
+/**
+ * Cuál de los tres Pro.
+ *
+ * Los tres dan lo mismo. La distinción es para poder decir la verdad: "se
+ * renueva el 3 de marzo" contra "no se renueva nunca".
+ */
+export type PlanTier = 'monthly' | 'annual' | 'lifetime';
+
 /** Nombres de los recursos con tope, para mostrar "3 de 20 lecturas". */
 export type LimitedResource = 'readings' | 'decks' | 'spreads' | 'rituals';
 

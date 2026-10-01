@@ -3,7 +3,7 @@ import { useAuth } from '@clerk/react';
 import { billingService, type SubscriptionInfo } from '../services/billingService';
 import { ApiRequestError } from '../services/api';
 import { useReadingStore } from '../store/useReadingStore';
-import type { LimitedResource, Plan } from '../types';
+import type { LimitedResource, Plan, PlanTier } from '../types';
 
 /* ==========================================================================
    Plan del usuario.
@@ -66,6 +66,7 @@ export function usePlan() {
   }, [isAuthLoaded, refresh]);
 
   const plan: Plan = info?.plan ?? 'free';
+  const tier: PlanTier | null = info?.tier ?? null;
   const limits = info?.limits;
   const usage = info?.usage;
 
@@ -89,20 +90,33 @@ export function usePlan() {
     [limits, usage],
   );
 
-  /** Va al checkout de Stripe. Devuelve si se pudo. */
-  const subscribe = useCallback(async (): Promise<'ok' | 'ya-pro' | 'error'> => {
-    try {
-      const { url, yaSosPro } = await billingService.createCheckout();
-      if (yaSosPro) {
-        await refresh();
-        return 'ya-pro';
+  /**
+   * Va al checkout de Stripe para un plan concreto.
+   *
+   * `yaSosPro` viene del backend cuando el usuario ya es Pro: en ese caso no
+   * hay checkout que abrir y lo que corresponde es el portal, no una compra
+   * que Stripe va a rechazar.
+   */
+  const subscribe = useCallback(
+    async (tier: PlanTier): Promise<'ok' | 'ya-pro' | 'de-por-vida' | 'error'> => {
+      try {
+        const { url, yaSosPro, dePorVida } = await billingService.createCheckout(tier);
+        if (dePorVida) {
+          await refresh();
+          return 'de-por-vida';
+        }
+        if (yaSosPro) {
+          await refresh();
+          return 'ya-pro';
+        }
+        window.location.href = url;
+        return 'ok';
+      } catch {
+        return 'error';
       }
-      window.location.href = url;
-      return 'ok';
-    } catch {
-      return 'error';
-    }
-  }, [refresh]);
+    },
+    [refresh],
+  );
 
   /** Abre el portal de Stripe para gestionar la suscripción. */
   const manage = useCallback(async (): Promise<boolean> => {
@@ -115,9 +129,16 @@ export function usePlan() {
     }
   }, []);
 
+  /* El de por vida no tiene nada que gestionar: no hay suscripción, ni
+     facturas, ni tarjeta. Mandar al portal a alguien que compró para siempre
+     sería mostrarle una pantalla vacía. */
+  const isLifetime = tier === 'lifetime';
+
   return {
     plan,
+    tier,
     isPro: plan === 'pro',
+    isLifetime,
     limits,
     usage,
     status: info?.status ?? 'inactive',

@@ -21,6 +21,10 @@ if (!isStripeConfigured) {
 
   billingRouter.get('/subscription', asyncHandler(billingController.getMySubscription));
   billingRouter.get('/usage', asyncHandler(billingController.getUsage));
+  /* El catálogo no necesita ser secreto: es la lista de precios pública. Va
+     detrás de `requireAuth` igual porque el router entero lo exige, y así no
+     hace falta una excepción. */
+  billingRouter.get('/plans', asyncHandler(billingController.getPlans));
   billingRouter.post('/checkout', asyncHandler(billingController.createCheckout));
   billingRouter.post('/portal', asyncHandler(billingController.createPortal));
 }

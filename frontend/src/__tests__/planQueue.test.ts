@@ -34,9 +34,7 @@ const fail = (code: string, message: string) => ({
 });
 
 /** Qué hace el fetch simulado en una llamada. */
-type RespuestaSimulada =
-  | { red: true }
-  | { red: false; status: number; body: unknown };
+type RespuestaSimulada = { red: true } | { red: false; status: number; body: unknown };
 
 /**
  * Intercepta fetch y devuelve lo que se le pida. Devuelve un restaurador.
@@ -72,7 +70,7 @@ describe('cola de reintentos y límites del plan', () => {
     const restaurar = mockFetch({
       red: false,
       status: 402,
-      body: fail('PLAN_LIMIT_REACHED', 'Llegaste al límite de 2 mazos.'),
+      body: fail('PLAN_LIMIT_REACHED', 'Llegaste al límite de 1 mazos.'),
     });
 
     await useReadingStore.getState().syncDeck(deck('deck_x'));
@@ -84,7 +82,7 @@ describe('cola de reintentos y límites del plan', () => {
     expect(pendingOps).toHaveLength(0);
     expect(planNotice).not.toBeNull();
     expect(planNotice?.code).toBe('PLAN_LIMIT_REACHED');
-    expect(planNotice?.message).toContain('2 mazos');
+    expect(planNotice?.message).toContain('1 mazos');
   });
 
   it('un 409 tampoco entra en la cola: el id va a seguir chocando', async () => {

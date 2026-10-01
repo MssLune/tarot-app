@@ -29,21 +29,38 @@ Dashboard → Developers → API keys. Copiá la que empieza con `sk_test_`.
 
 Nunca la de producción mientras estés probando: `sk_live_` cobra dinero real.
 
-## 3. Crear el producto y el precio
+## 3. Crear los TRES precios
 
-Dashboard → Products → Add product.
+Dashboard → Products → Add product. Un producto ("Arcana Pro") con tres
+precios:
 
-- Nombre: `Arcana Pro`
-- Precio mensual, en la moneda que quieras
-- El precio genera un id tipo `price_1AbCdEf...`
+| Precio | Cómo | Para qué variable |
+| --- | --- | --- |
+| Mensual | Recurrente, cada mes | `STRIPE_MONTHLY_PRICE_ID` |
+| Anual | Recurrente, cada año | `STRIPE_ANNUAL_PRICE_ID` |
+| De por vida | **Una sola vez** | `STRIPE_LIFETIME_PRICE_ID` |
 
-Copiá ese id. Es el `STRIPE_PRO_PRICE_ID`.
+Copiá el `price_...` de cada uno.
 
-> El backend decide si una suscripción es Pro **comparando ese id contra el
-> precio de cada item**, no por un flag guardado a mano. Si el id no coincide,
-> el usuario queda en gratuito aunque haya pagado. Por eso si creás el precio
-> antes de definir la variable, el plan nunca se activa y es difícil de
-> encontrar.
+> **Que empiece con `price_`, no con `prod_`.** El product id identifica el
+> producto y el price id identifica el precio. Si ponés un `prod_` donde va un
+> `price_`, **no da ningún error**: el backend compara el precio de cada item
+> contra ese valor, la comparación nunca coincide, el usuario paga y queda en
+> gratuito, y no hay ningún aviso. Es el error más caro de esta sección
+> justamente porque es invisible.
+
+El de por vida tiene que ser un precio de **pago único**. No se puede
+configurar como recurrente: el checkout de suscripción de Stripe rechaza los
+precios que no se renuevan, así que el código tiene un camino aparte para ese.
+
+## 3 bis. El período de prueba
+
+`STRIPE_TRIAL_DAYS=7` en el `.env`. Va en el mensual y el anual. El de por
+vida no puede tener prueba: no hay nada que renovar cuando termine.
+
+La prueba **pide la tarjeta igual**. Stripe cobra al final de los 7 días, así
+que sin tarjeta el usuario tiene 7 días de Pro sin límites y después cae al
+plan gratuito sin haberte pagado nada. Pedirla al principio es lo honesto.
 
 ## 4. Probar el webhook en local
 
@@ -69,7 +86,10 @@ En `backend/.env`:
 ```
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
-STRIPE_PRO_PRICE_ID="price_..."
+STRIPE_MONTHLY_PRICE_ID="price_..."
+STRIPE_ANNUAL_PRICE_ID="price_..."
+STRIPE_LIFETIME_PRICE_ID="price_..."
+STRIPE_TRIAL_DAYS=7
 ```
 
 Reiniciá el backend. El aviso `[billing] Stripe sin configurar` tiene que
@@ -124,8 +144,13 @@ Y en la terminal de `stripe listen`, cada evento debería salir con
 - **`current_period_end` sale del item**, no de la suscripción. Ya se movió
   adentro del item; hay un test que falla si vuelve al lugar viejo.
 - **`past_due` conserva el acceso.** El mes ya está pagado.
-- **La app con el cobro apagado.** Las cuatro rutas dan 404 (no 401), el resto de
-  la API sigue contestando, y el plan gratuito se calcula igual. 9 tests.
+- **La app con el cobro apagado.** Las cinco rutas dan 404 (no 401), el resto
+  de la API sigue contestando, y el plan gratuito se calcula igual. 10 tests.
+- **El Pro de por vida.** 13 tests: que conceda, y sobre todo que NO conceda
+  ante un pago de otro precio, una suscripción mensual, una sesión sin
+  items, o una compra que no se puede atribuir a nadie. Y que un webhook
+  atrasado de una suscripción vieja no le saque el Pro a alguien que ya pagó
+  de por vida.
 
 ## Lo único que no se puede testear sin esta cuenta
 

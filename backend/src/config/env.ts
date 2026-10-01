@@ -11,8 +11,25 @@ export const env = {
      gratuito. Es el mismo patrón que Clerk: se monta sólo si está todo. */
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
-  /* Price id de la suscripción Pro, del panel de Stripe. */
-  stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID ?? '',
+
+  /* Los TRES price ids del Pro. Son `price_...`, NO `prod_...`: el product id
+     identifica el producto y el price id identifica el precio. El backend
+     compara el precio de cada item contra estos, así que poner un `prod_`
+     acá no da error: la comparación simplemente nunca coincide, el usuario
+     paga y queda en gratuito, y no hay ningún aviso.
+
+     Verificá que empiecen con `price_`. Es el error más caro de esta sección
+     porque es invisible. */
+  stripeMonthlyPriceId: process.env.STRIPE_MONTHLY_PRICE_ID ?? '',
+  stripeAnnualPriceId: process.env.STRIPE_ANNUAL_PRICE_ID ?? '',
+  /* El de por vida es un PAGO ÚNICO, no una suscripción. Stripe rechaza los
+     precios que no se renuevan en un checkout de suscripción, así que va por
+     su propio camino (`mode: 'payment'`). */
+  stripeLifetimePriceId: process.env.STRIPE_LIFETIME_PRICE_ID ?? '',
+
+  /* Días de prueba. Va en el mensual y el anual, no en el de por vida: Stripe
+     no soporta pruebas en un pago de una sola vez. */
+  stripeTrialDays: Number(process.env.STRIPE_TRIAL_DAYS ?? 7),
 
   // Clerk
   clerkSecretKey: process.env.CLERK_SECRET_KEY ?? '',
@@ -29,13 +46,30 @@ export const isProduction = env.nodeEnv === 'production';
 export const isClerkConfigured = Boolean(env.clerkSecretKey && env.clerkPublishableKey);
 
 /**
+ * Los price ids del Pro que están configurados de verdad.
+ *
+ * Se calculan y no se escriben a mano porque los tres planes se pueden dar de
+ * alta por separado: se puede estar vendiendo el mensual y el anual sin haber
+ * creado todavía el de por vida. Un plan sin precio no se ofrece, pero los
+ * demás siguen funcionando.
+ */
+export const configuredTiers = {
+  monthly: env.stripeMonthlyPriceId,
+  annual: env.stripeAnnualPriceId,
+  lifetime: env.stripeLifetimePriceId,
+};
+
+/** Cuántos de los tres planes se pueden comprar. */
+export const configuredTierCount = Object.values(configuredTiers).filter(Boolean).length;
+
+/**
  * true si Stripe está configurado para cobrar.
  *
- * Requiere las tres claves: la secret para hablar con la API, la del webhook
- * para verificar las firmas, y el price id del plan Pro. Si falta cualquiera,
- * `billingRouter` no se monta y las rutas de pago devuelven 503 con un
- * mensaje claro. La app sigue funcionando entera en plan gratuito.
+ * Requiere la secret para hablar con la API, la del webhook para verificar las
+ * firmas, y al menos un precio. Si falta cualquiera, `billingRouter` no se
+ * monta y las rutas de pago devuelven 404. La app sigue funcionando entera en
+ * plan gratuito.
  */
 export const isStripeConfigured = Boolean(
-  env.stripeSecretKey && env.stripeWebhookSecret && env.stripeProPriceId,
+  env.stripeSecretKey && env.stripeWebhookSecret && configuredTierCount > 0,
 );

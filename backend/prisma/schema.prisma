@@ -51,6 +51,16 @@ model Subscription {
   /// 'past_due' | 'canceled' | 'incomplete' | 'unpaid'.
   status String @default("inactive")
 
+  /// Cuál de los tres Pro compró: 'monthly' | 'annual' | 'lifetime'.
+  ///
+  /// Va aparte de `plan` porque los tres dan el MISMO plan. Sin esto la app no
+  /// puede decir "se renueva el 3 de marzo" y tampoco "no se renueva nunca",
+  /// que es justo lo que distingue un pago único de una suscripción.
+  ///
+  /// 'lifetime' es el único que no tiene `stripeSubscriptionId`: se compró con
+  /// un pago de una sola vez y no existe suscripción que lo referencie.
+  tier String?
+
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
   stripePriceId        String?

@@ -45,7 +45,7 @@ export default function UserMenu() {
   const syncInFlight = useReadingStore((s) => s.syncInFlight);
   const pendingCount = useReadingStore((s) => s.pendingOps.length);
   const { profile, isAdmin } = useProfile();
-  const { isPro, usage } = usePlan();
+  const { isPro, isLifetime, usage } = usePlan();
 
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -203,7 +203,7 @@ export default function UserMenu() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-xs text-gold-100">
-                {isPro ? 'Plan Pro' : 'Plan gratuito'}
+                {isPro ? (isLifetime ? 'Pro de por vida' : 'Plan Pro') : 'Plan gratuito'}
               </span>
               <span className="block text-[0.6rem] text-gold-100/55">
                 {usage ? resumenDeUso(usage) : 'Ver límites y_usage'}

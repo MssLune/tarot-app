@@ -80,10 +80,23 @@ describe('crear un checkout sin precio configurado', () => {
     /* El mensaje importa: es lo que el usuario vería si el botón "Pasar al
        Pro" quedara habilitado sin configuración. Tiene que decir qué pasa,
        no "Cannot read properties of undefined". */
-    await expect(createCheckoutSession('user_cualquiera', 'a@b.c')).rejects.toMatchObject({
+    await expect(
+      createCheckoutSession('user_cualquiera', 'a@b.c', 'monthly'),
+    ).rejects.toMatchObject({
       statusCode: 503,
-      code: 'BILLING_NOT_CONFIGURED',
+      code: 'TIER_NOT_CONFIGURED',
     });
+  });
+
+  it('sin ningún precio, ningún plan se puede comprar', async () => {
+    /* Los tres dan el mismo error: no hay ninguno configurado. La pantalla
+       tiene que poder ofrecer sólo los que existen, pero si ofrece uno que
+       no, el backend contesta en vez de fallar en silencio. */
+    for (const tier of ['monthly', 'annual', 'lifetime'] as const) {
+      await expect(
+        createCheckoutSession('user_cualquiera', 'a@b.c', tier),
+      ).rejects.toMatchObject({ statusCode: 503, code: 'TIER_NOT_CONFIGURED' });
+    }
   });
 });
 
@@ -95,7 +108,8 @@ describe('leer el plan sin Stripe configurado', () => {
     const sub = await getSubscription('user_que_no_existe_999');
     expect(sub.plan).toBe('free');
     expect(sub.status).toBe('inactive');
-    expect(sub.limits.readings).toBe(20);
+    expect(sub.tier).toBeNull();
+    expect(sub.limits.readings).toBe(10);
     expect(sub.limits.pdfExport).toBe(false);
   });
 
