@@ -96,14 +96,39 @@ describe('las pantallas renderizan contenido', () => {
     });
   });
 
-  it('el calendario pinta una celda por día del mes', () => {
+  it('el calendario pinta un disco por día del mes, y sólo esos', () => {
     conEstado(() => {
       const html = renderToStaticMarkup(<MoonCalendar />);
-      /* Entre 28 y 42 celdas: depende del mes. Cada celda tiene su disco. */
+      /* Un disco por día del mes. Los días del mes vecino NO llevan disco: su
+         celda no es interactiva y no hay forma de tocar un día que no está en
+         el mes que se está mirando. Con relleno, el total de celdas llega a 42
+         pero los discos son 28 a 31. */
       const svg = (html.match(/<svg/g) ?? []).length;
       expect(svg).toBeGreaterThanOrEqual(28);
-      expect(svg).toBeLessThanOrEqual(42);
+      expect(svg).toBeLessThanOrEqual(31);
       expect(textoVisible(html)).toContain('Luna');
+    });
+  });
+
+  it('los días del mes se pueden tocar y los del vecino no', () => {
+    conEstado(() => {
+      const html = renderToStaticMarkup(<MoonCalendar />);
+      /* Un `<button>` por día del mes, y ninguno por día de relleno. Si los
+         de relleno fueran tocables, abrirían un detalle de un día que no
+         pertenece al mes visible. */
+      const botones = (html.match(/aria-label="Día /g) ?? []).length;
+      expect(botones).toBeGreaterThanOrEqual(28);
+      expect(botones).toBeLessThanOrEqual(31);
+    });
+  });
+
+  it('el calendario explica la leyenda de los puntos', () => {
+    conEstado(() => {
+      const texto = textoVisible(renderToStaticMarkup(<MoonCalendar />));
+      /* Los tres tipos de punto tienen que estar legality explicados, o el
+         usuario ve unos puntitos de colores sin saber qué son. */
+      expect(texto).toContain('Festividad');
+      expect(texto).toContain('retrógrado');
     });
   });
 

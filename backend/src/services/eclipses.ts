@@ -10,7 +10,7 @@ import { prisma } from '../database/prisma';
    da 404. Por eso el que se usa es el IMCCE, que sí publica lunares.
 
    Por qué esto no se calcula como las fases: un eclipse depende de la
-   closeness de la Luna a un nodo de su órbita, y predecirlo con series es el
+   cercanía de la Luna a un nodo de su órbita, y predecirlo con series es el
    capítulo más difícil de Meeus. Traerlo hecho, de un observatorio nacional y
    con efemérides INPOP19A, sale más barato y más exacto.
 
@@ -18,7 +18,7 @@ import { prisma } from '../database/prisma';
    que son la geometría de dónde se ve el eclipse, punto por punto. Nada de eso
    lo usa la app. Por eso se guarda sólo una versión recortada a seis campos, y
    por eso la llamada se cachea: no se puede pedir 1,5 MB a un servidor
-  francés cada vez que alguien abre la pantalla de la luna.
+   * francés cada vez que alguien abre la pantalla de la luna.
    ========================================================================== */
 
 const BASE = 'https://opale.imcce.fr/api/v1/phenomena/eclipses';

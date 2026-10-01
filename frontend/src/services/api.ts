@@ -189,3 +189,37 @@ export async function estadoLunar(): Promise<{ hoy: LunarEclipse | null; proximo
     return { hoy: null, proximo: null };
   }
 }
+
+/* ==========================================================================
+   Luna: retrógrados planetarios
+   ========================================================================== */
+
+export type PlanetId = 'mercury' | 'venus' | 'mars' | 'jupiter' | 'saturn';
+
+export interface RetrogradePeriod {
+  planeta: PlanetId;
+  nombre: string;
+  /** Instante en que empieza, ISO. */
+  desde: string;
+  /** Instante en que termina, ISO. */
+  hasta: string;
+  /** Días que dura. */
+  dias: number;
+}
+
+/**
+ * Retrógrados de un año.
+ *
+ * Nunca lanza. Si el backend no responde o el JPL está caído, devuelve la lista
+ * vacía y la pantalla de la Luna sigue mostrando fases y festividades: el
+ * retrógrado es un dato lindo, no algo de lo que la pantalla dependa.
+ */
+export async function retrogradosDelAnio(anio?: number): Promise<RetrogradePeriod[]> {
+  try {
+    const q = anio ? `?anio=${anio}` : '';
+    const datos = await request<{ retrogrados: RetrogradePeriod[] }>(`/moon/retrogrados${q}`);
+    return datos.retrogrados ?? [];
+  } catch {
+    return [];
+  }
+}

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { eclipsesLunares, eclipseVigente, proximoEclipse, type LunarEclipse } from '../services/eclipses';
+import { retrogradosDe } from '../services/retrogrados';
 
 export const moonRouter = Router();
 
@@ -49,6 +50,31 @@ moonRouter.get(
         hoy: vigente?.esHoy ? vigente.eclipse : null,
         proximo: proximo,
       },
+    });
+  }),
+);
+
+/**
+ * Retrógrados planetarios de un año.
+ *
+ * `?anio=` es opcional: sin él, el de hoy. Devuelve los cinco planetas
+ * visibles (Mercurio, Venus, Marte, Júpiter y Saturno), ordenados por fecha de
+ * inicio.
+ *
+ * La Luna y el Sol NO aparecen, y no es una omisión: nunca están retrógrados.
+ * La Luna orbita la Tierra en 27,55 días siempre hacia adelante, y el Sol no
+ * orbita nada. Sus posiciones salen de las efemérides DE441 del JPL y se
+ * cachean por año, así que abrir la pantalla no le pega a la NASA.
+ */
+moonRouter.get(
+  '/retrogrados',
+  asyncHandler(async (req, res) => {
+    const pedido = Number(req.query.anio);
+    const anio = Number.isFinite(pedido) && pedido > 1000 ? Math.trunc(pedido) : new Date().getFullYear();
+
+    res.json({
+      success: true,
+      data: { anio, retrogrados: await retrogradosDe(anio) },
     });
   }),
 );
