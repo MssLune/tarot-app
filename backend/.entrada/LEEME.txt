@@ -1,0 +1,13 @@
+Dejá acá el PDF del mazo.
+
+  .entrada/el-mazo.pdf
+
+Y después:
+
+  npx tsx tools/extraerImagenes.ts
+
+El script busca dentro del PDF las imágenes que ya están incrustadas y las
+saca tal cual, sin recomprimirlas, a assets/cards/.
+
+Avisa antes de copiar nada. No escribe en la base: eso es un paso aparte, para
+poder revisar las imágenes con calma antes de que aparezcan en la app.

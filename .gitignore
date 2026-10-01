@@ -13,3 +13,6 @@ backend/assets/cards/*
 
 # Las claves de Clerk nunca se versionan.
 frontend/.env
+backend/assets/cards/_extraidas/
+backend/.entrada/*
+!backend/.entrada/LEEME.txt
