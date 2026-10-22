@@ -228,6 +228,22 @@ con una cuenta que no es admin, 403. El rol se guarda en la tabla `users` y se
 cambia desde el panel de administración. El frontend hoy sólo consume los
 `GET`; el resto queda listo para editar el contenido desde ese panel.
 
+**Administración** (`/api/admin/*`, rol `admin`)
+
+Listar usuarios, cambiar su rol y borrarlos. Borrar un usuario es completo:
+cancela su suscripción en Stripe, borra su cuenta en Clerk y después sus
+datos (`services/accounts.ts`, `borrarCuenta`). Un admin no puede borrarse ni
+quitarse el rol a sí mismo.
+
+**Webhooks** (sin sesión, verificados por firma, montados antes de
+`express.json()` porque la firma se calcula sobre el cuerpo crudo)
+
+- `POST /webhooks/stripe` — ver [`docs/stripe.md`](docs/stripe.md).
+- `POST /api/webhooks/clerk` — `user.created` / `user.updated` sincronizan la
+  fila; `user.deleted` cancela el cobro y borra los datos. Un usuario nuevo
+  sólo reutiliza una fila existente si su email está **verificado**, y nunca
+  hereda el rol de admin.
+
 **Datos del usuario** (`/api/user/*`, siempre con sesión)
 
 Mazos (`/decks`), tiradas propias (`/spreads`), lecturas (`/readings`) y

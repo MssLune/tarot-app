@@ -55,7 +55,12 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('¿Estás seguro de que querés eliminar este usuario?')) return;
+    if (
+      !confirm(
+        '¿Eliminar este usuario? Se cancela su suscripción en Stripe, se borra su cuenta de Clerk y todos sus datos. No se puede deshacer.',
+      )
+    )
+      return;
     try {
       await api.delete(`/admin/users/${userId}`);
       setUsers((prev) => prev.filter((u) => u.id !== userId));

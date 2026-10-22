@@ -47,6 +47,9 @@ app.use(
    crudo. Si el cuerpo llegara parseado, la firma (un HMAC sobre los bytes
    exactos) no coincidiría y Stripe rechazaría todos los eventos. */
 app.use(stripeWebhookRouter);
+/* El de Clerk, por el mismo motivo: Svix firma los bytes exactos del cuerpo.
+   Se registra aparte porque no usa sesión, sino firma Svix. */
+app.use('/api/webhooks', webhookRouter);
 app.use(express.json());
 app.use(morgan(isProduction ? 'combined' : 'dev'));
 
@@ -63,9 +66,6 @@ if (isClerkConfigured) {
       'faltan): las rutas /api/user y /api/admin responden 401.',
   );
 }
-
-// Webhook de Clerk: se registra aparte porque no usa sesión, sino firma Svix.
-app.use('/api/webhooks', webhookRouter);
 
 // Cobro. El router trae sus propios requireAuth y no se monta si Stripe no
 // está configurado.

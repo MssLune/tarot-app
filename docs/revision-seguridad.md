@@ -75,21 +75,37 @@ reemplaza.
 > `checkout.session.async_payment_failed`, `charge.refunded` y
 > `charge.dispute.closed` (ver `docs/stripe.md`).
 
+### 7. La firma del webhook de Clerk se verificaba sobre JSON re-armado — importante
+
+**Solución:** `routes/webhook.ts` recibe el cuerpo crudo (`raw`) y se monta en
+`app.ts` antes de `express.json()`, igual que el de Stripe. Firma inválida →
+400; error al procesar → 500, para que Svix reintente.
+
+### 8. Una cuenta nueva heredaba la fila de otra por email — importante
+
+**Solución:** nuevo `services/accounts.ts` con `sincronizarUsuario`, que usan
+tanto `requireAuth` como el webhook. Sólo un email **verificado** identifica a
+una persona; una cuenta nueva con el mismo email verificado reutiliza la fila,
+pero el rol de admin no se hereda (queda `user` y se vuelve a dar a mano).
+
+### 9. Borrar un usuario no cancelaba su cobro — importante
+
+**Solución:** `borrarCuenta` cancela primero la suscripción en Stripe
+(`cancelSubscriptionForDeletedUser`), después borra la cuenta en Clerk (sólo
+desde el panel; desde el webhook `user.deleted` ya no existe) y por último la
+fila. Si Stripe falla, no se borra nada. El panel ya no permite borrarse ni
+quitarse el admin a uno mismo.
+
+**Tests:** `backend/src/__tests__/accounts.test.ts` (12 tests).
+
 ## Pendientes
 
 ### Importantes
 
-- [ ] **7. La firma del webhook de Clerk se verifica sobre el JSON
-  re-serializado** (`JSON.stringify(req.body)` en `webhook.ts`). Svix firma
-  los bytes exactos: hay que usar el cuerpo crudo con `raw()`.
-- [ ] **8. Una cuenta con el mismo email hereda la fila, rol admin incluido**
-  (`resolveUser` en `middleware/clerk.ts`). Exigir email verificado.
-- [ ] **9. Borrar un usuario no cancela su suscripción en Stripe**, y
-  `resolveUser` lo vuelve a crear si sigue existiendo en Clerk.
 - [ ] **10. `backend/.env` y `backend/prisma/dev.db` entraron en git y se
   subieron a GitHub** (commit «first commit: tarot app», 22/10/2026).
   - [x] `.gitignore` los excluye (`backend/.env`, `.env`, `backend/prisma/*.db`).
-  - [ ] Sacarlos del repositorio sin borrarlos del disco:
+  - [x] Sacarlos del repositorio sin borrarlos del disco:
     `git rm --cached backend/.env backend/prisma/dev.db`, commit y push.
   - [ ] Antes de hacer público el repositorio o sumar colaboradores: rotar
     las claves que había en `backend/.env` (Stripe y Clerk: secret keys y

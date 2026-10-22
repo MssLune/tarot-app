@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { getAuth, clerkClient } from '@clerk/express';
 import { env } from '../config/env';
 import { prisma } from '../database/prisma';
+import { desdeApiDeClerk, sincronizarUsuario } from '../services/accounts';
 
 /* ==========================================================================
    Autenticación con Clerk.
@@ -14,7 +15,10 @@ import { prisma } from '../database/prisma';
 
 /**
  * Devuelve el usuario autenticado, creándolo en la base si es la primera vez.
- * `null` si la sesión no es válida o si Clerk está sin configurar.
+ *
+ * La alta pasa por `sincronizarUsuario`, la misma función que usa el webhook
+ * de Clerk: sólo un email VERIFICADO puede hacer que una cuenta nueva
+ * reutilice una fila existente, y nunca se hereda el rol de admin.
  */
 async function resolveUser(clerkUserId: string) {
   const existing = await prisma.user.findUnique({ where: { id: clerkUserId } });
@@ -22,27 +26,7 @@ async function resolveUser(clerkUserId: string) {
 
   // Primera vez: pedimos los datos a Clerk para tener email/nombre/avatar.
   const clerkUser = await clerkClient.users.getUser(clerkUserId);
-  const email =
-    clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
-      ?.emailAddress ??
-    clerkUser.emailAddresses[0]?.emailAddress ??
-    `${clerkUserId}@sin-correo.local`;
-  const name =
-    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || clerkUser.username || null;
-
-  /* La columna email es única: si Clerk ya nos mandó un alta previa con otro
-     id pero el mismo correo, reutilizamos esa fila en vez de fallar. */
-  const byEmail = await prisma.user.findUnique({ where: { email } });
-  if (byEmail) {
-    return prisma.user.update({
-      where: { id: byEmail.id },
-      data: { name, avatarUrl: clerkUser.imageUrl },
-    });
-  }
-
-  return prisma.user.create({
-    data: { id: clerkUserId, email, name, avatarUrl: clerkUser.imageUrl },
-  });
+  return sincronizarUsuario(desdeApiDeClerk(clerkUser));
 }
 
 /**

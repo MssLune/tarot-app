@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { sendSuccess } from '../utils/response';
 import { prisma } from '../database/prisma';
 import { ApiError } from '../utils/ApiError';
+import { borrarCuenta } from '../services/accounts';
 
 /* ==========================================================================
    Controlador de administración: gestión de usuarios.
@@ -45,6 +46,11 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   if (!['user', 'admin'].includes(role)) {
     throw ApiError.badRequest('INVALID_ROLE', 'El rol debe ser "user" o "admin".');
   }
+  /* Quitarse el admin a uno mismo puede dejar la app sin ningún admin, y
+     entonces no hay desde dónde devolverlo sin tocar la base a mano. */
+  if (req.params.id === (req as any).dbUserId && role !== 'admin') {
+    throw ApiError.badRequest('CANNOT_DEMOTE_SELF', 'No podés quitarte el rol de admin a vos mismo.');
+  }
 
   const user = await prisma.user.update({
     where: { id: req.params.id },
@@ -66,6 +72,12 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
   const user = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!user) throw ApiError.notFound('USER_NOT_FOUND', 'No existe un usuario con ese id.');
 
-  await prisma.user.delete({ where: { id: req.params.id } });
+  if (req.params.id === (req as any).dbUserId) {
+    throw ApiError.badRequest('CANNOT_DELETE_SELF', 'No podés borrar tu propia cuenta desde el panel.');
+  }
+
+  /* Borrado completo: cancela la suscripción en Stripe, borra la cuenta en
+     Clerk y después la fila. Ver `borrarCuenta`. */
+  await borrarCuenta(req.params.id, { borrarEnClerk: true });
   sendSuccess(res, { id: req.params.id });
 };

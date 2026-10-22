@@ -624,6 +624,32 @@ export async function markCanceled(
   return sub.userId;
 }
 
+/**
+ * Cancela en Stripe la suscripción de un usuario que se va a borrar.
+ *
+ * Sin esto, borrar la cuenta dejaba la suscripción cobrando: la fila con el
+ * `stripeSubscriptionId` desaparecía en cascada y ya no había forma de saber
+ * de quién era. Se cancela de inmediato (no al final del período), porque la
+ * cuenta deja de existir.
+ *
+ * El de por vida no tiene nada que cancelar. Una suscripción que Stripe ya no
+ * conoce (`resource_missing`) cuenta como cancelada. Cualquier otro error se
+ * propaga: el que llama no debe borrar la cuenta si el cobro sigue vivo.
+ */
+export async function cancelSubscriptionForDeletedUser(userId: string): Promise<boolean> {
+  const sub = await prisma.subscription.findUnique({ where: { userId } });
+  if (!sub?.stripeSubscriptionId || sub.tier === 'lifetime') return false;
+  if (sub.status === 'canceled' || sub.status === 'incomplete_expired') return false;
+
+  try {
+    await stripe().subscriptions.cancel(sub.stripeSubscriptionId);
+  } catch (err) {
+    if ((err as { code?: string }).code === 'resource_missing') return false;
+    throw err;
+  }
+  return true;
+}
+
 /** Verifica la firma de un webhook crudo. */
 export function verifyWebhook(
   payload: Buffer,
