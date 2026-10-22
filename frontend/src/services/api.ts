@@ -165,7 +165,7 @@ export interface LunarEclipse {
   fecha: string;
   kind: EclipseKind;
   magnitud: number;
-  /** Duración de la totalidad. Sólo los eclipsos totales lo tienen. */
+  /** Duración de la totalidad. Sólo los eclipses totales lo tienen. */
   totalidad: string | null;
   parcial: string | null;
   penumbral: string | null;

@@ -48,7 +48,6 @@ export default function UserMenu() {
   const { isPro, isLifetime, usage } = usePlan();
 
   const [open, setOpen] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -59,13 +58,11 @@ export default function UserMenu() {
     const handleClickOutside = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
-        setConfirming(false);
       }
     };
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpen(false);
-        setConfirming(false);
       }
     };
 
@@ -103,8 +100,21 @@ export default function UserMenu() {
     .map((part) => part.charAt(0).toUpperCase())
     .join('');
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    /* Al cerrar sesión se borran del navegador los datos de la cuenta (ver
+       `limpiarDatosLocales`). Lo ya subido está a salvo; si quedó algo en la
+       cola sin subir, se intenta una última vez antes de borrar, sin
+       preguntarle nada al usuario. Si tampoco se puede (sin conexión), se
+       cierra sesión igual. */
+    if (pendingCount > 0) {
+      try {
+        await retrySync();
+      } catch {
+        /* Sin conexión: no hay nada más que hacer. */
+      }
+    }
     restart();
+    useReadingStore.getState().limpiarDatosLocales();
     void signOut({ redirectUrl: window.location.origin });
   };
 
@@ -115,7 +125,6 @@ export default function UserMenu() {
         type="button"
         onClick={() => {
           setOpen((v) => !v);
-          setConfirming(false);
         }}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -277,30 +286,9 @@ export default function UserMenu() {
               </div>
             )}
 
-            {confirming ? (
-              <div className="space-y-2">
-                <p className="text-center text-[0.68rem] text-gold-100/60">
-                  ¿Cerrar sesión en este dispositivo?
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="danger" className="flex-1" onClick={handleSignOut}>
-                    Sí, salir
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="flex-1"
-                    onClick={() => setConfirming(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button size="sm" variant="ghost" fullWidth onClick={() => setConfirming(true)}>
-                Cerrar sesión
-              </Button>
-            )}
+            <Button size="sm" variant="ghost" fullWidth onClick={handleSignOut}>
+              Cerrar sesión
+            </Button>
           </div>
         </div>
       )}

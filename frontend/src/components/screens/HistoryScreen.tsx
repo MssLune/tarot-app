@@ -7,6 +7,7 @@ import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
 import SpreadMini from '../cards/SpreadMini';
 import Button from '../ui/Button';
+import InvitacionCuenta from '../ui/InvitacionCuenta';
 import SectionHeading from '../ui/SectionHeading';
 
 /* ==========================================================================
@@ -43,6 +44,7 @@ export default function HistoryScreen() {
   const deck = useReadingStore((s) => s.deck);
   const goTo = useReadingStore((s) => s.goTo);
   const restart = useReadingStore((s) => s.restart);
+  const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
   const cardsById = useContentStore((s) => s.cardsById);
 
   const [tab, setTab] = useState<Tab>('readings');
@@ -62,6 +64,20 @@ export default function HistoryScreen() {
     chooseSpread(spread);
   };
 
+  /* Modo invitado: no hay historial que mostrar (nada se guarda sin cuenta). */
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-8">
+        <SectionHeading overline="Historial" title="Tu archivo" />
+        <InvitacionCuenta
+          titulo="Guardá tus lecturas"
+          texto="Con una cuenta, las lecturas, tiradas y mazos que guardes quedan en tu historial y los ves desde cualquier dispositivo. Sin cuenta podés seguir leyendo: sólo no se guardan."
+          glifo="✦"
+        />
+      </div>
+    );
+  }
+
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: 'readings', label: 'Lecturas', count: history.length },
     { id: 'spreads', label: 'Mis tiradas', count: customSpreads.length },
@@ -71,9 +87,9 @@ export default function HistoryScreen() {
   return (
     <div className="space-y-8">
       <SectionHeading
-        overline="Guardado en este dispositivo"
+        overline="Guardado en tu cuenta"
         title="Tu archivo"
-        subtitle="Las lecturas y las tiradas que creaste se guardan en tu navegador. Nada sale de tu dispositivo."
+        subtitle="Las lecturas, tiradas y mazos que guardaste, en todos tus dispositivos."
       />
 
       {/* ---------------- Pestañas ---------------- */}

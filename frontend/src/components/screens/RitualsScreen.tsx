@@ -9,6 +9,7 @@ import FestivalList from '../moon/FestivalList';
 import MoonCalendar from '../moon/MoonCalendar';
 import Button from '../ui/Button';
 import SectionHeading from '../ui/SectionHeading';
+import InvitacionCuenta from '../ui/InvitacionCuenta';
 
 /* ==========================================================================
    Fase lunar y rituales.
@@ -47,6 +48,7 @@ export default function RitualsScreen() {
   const rituals = useReadingStore((s) => s.rituals);
   const saveRitual = useReadingStore((s) => s.saveRitual);
   const deleteRitual = useReadingStore((s) => s.deleteRitual);
+  const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
 
   const hoy = useMemo(() => moonPhase(), []);
   const ciclo = useMemo(() => phasesOfLunation(), []);
@@ -135,34 +137,44 @@ export default function RitualsScreen() {
       )}
 
       {/* ---------------- Rituales de hoy ---------------- */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-3">
-          <h3 className="font-display text-xs uppercase tracking-[0.24em] text-gold-200/80">
-            Para esta fase
-          </h3>
-          <span className="hairline h-px flex-1 opacity-60" />
-          <Button size="sm" onClick={() => setEditando(nuevoRitual(hoy.id))}>
-            + Anotar ritual
-          </Button>
-        </div>
-
-        {delDia.length === 0 ? (
-          <p className="panel px-5 py-8 text-center text-xs text-gold-100/40">
-            No tenés rituales anotados para {hoy.name.toLowerCase()}.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {delDia.map((ritual) => (
-              <RitualCard
-                key={ritual.id}
-                ritual={ritual}
-                onEdit={() => setEditando(ritual)}
-                onDelete={() => setBorrando(ritual.id)}
-              />
-            ))}
+      {/* Sin cuenta, la Luna se ve entera; anotar rituales es lo único que
+          pide cuenta, porque se guarda. */}
+      {!isAuthenticated ? (
+        <InvitacionCuenta
+          compacta
+          titulo="Tus rituales"
+          texto="Con una cuenta podés anotar los rituales que practicás en cada fase, con su fuente, y verlos en cualquier dispositivo."
+        />
+      ) : (
+        <section className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h3 className="font-display text-xs uppercase tracking-[0.24em] text-gold-200/80">
+              Para esta fase
+            </h3>
+            <span className="hairline h-px flex-1 opacity-60" />
+            <Button size="sm" onClick={() => setEditando(nuevoRitual(hoy.id))}>
+              + Anotar ritual
+            </Button>
           </div>
-        )}
-      </section>
+
+          {delDia.length === 0 ? (
+            <p className="panel px-5 py-8 text-center text-xs text-gold-100/40">
+              No tenés rituales anotados para {hoy.name.toLowerCase()}.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {delDia.map((ritual) => (
+                <RitualCard
+                  key={ritual.id}
+                  ritual={ritual}
+                  onEdit={() => setEditando(ritual)}
+                  onDelete={() => setBorrando(ritual.id)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ---------------- El resto, por fase ---------------- */}
       {porFase.length > 0 && (

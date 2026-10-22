@@ -11,9 +11,9 @@ import { moonDiscSvg, PALETA } from './moonDiscSvg';
    Por qué un string y no elementos de React: hay una herramienta que
    rasteriza ese mismo string a PNG para poder mirarlo
    (`herramientas/renderLuna.ts`). Si el componente dibujara con JSX aparte,
-   habría dos implementations y la herramienta podría estar mostrando una
+   habría dos implementaciones y la herramienta podría estar mostrando una
    cosa y la pantalla otra, sin que nada se quejara. Con un solo origen no hay
-   forma de que divergan.
+   forma de que diverjan.
 
    `dangerouslySetInnerHTML` suena peor de lo que es acá: el string lo genera
    este mismo módulo, sin nada que venga del usuario. No hay entrada externa
@@ -21,7 +21,7 @@ import { moonDiscSvg, PALETA } from './moonDiscSvg';
 
    CADA INSTANCIA NECESITA SU `uid`: los ids de los `<defs>` (`url(#luna-oro)`)
    son globales al documento. Con dos discos en la misma pantalla, sin
-   distinguishse, el segundo usaría el degradado del primero — y si uno está
+   distinguirse, el segundo usaría el degradado del primero — y si uno está
    en Luna Nueva y el otro en Llena, se vería el disco entero del color que
    tocara.
    ========================================================================== */

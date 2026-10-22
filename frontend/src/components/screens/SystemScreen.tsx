@@ -63,6 +63,7 @@ const OPTIONS: SystemOption[] = [
 export default function SystemScreen() {
   const chooseSystem = useReadingStore((s) => s.chooseSystem);
   const deckCount = useReadingStore((s) => s.customDecks.length);
+  const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
   const cards = useContentStore((s) => s.cards);
 
   return (
@@ -119,6 +120,15 @@ export default function SystemScreen() {
                 <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/[0.08] px-3 py-1 text-[0.65rem] text-gold-200/80">
                   <span className="h-1.5 w-1.5 rounded-full bg-gold-300" />
                   {deckCount} {deckCount === 1 ? 'mazo guardado' : 'mazos guardados'}
+                </p>
+              )}
+
+              {/* Sin cuenta: avisar antes del clic que el mazo propio se guarda
+                  en la cuenta (al tocarlo, se pide iniciar sesión). */}
+              {option.id === 'custom-deck' && !isAuthenticated && (
+                <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/[0.08] px-3 py-1 text-[0.65rem] text-gold-200/80">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gold-300" />
+                  Con cuenta
                 </p>
               )}
 

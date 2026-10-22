@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/react';
 import AppShell from './components/layout/AppShell';
 import DeckScreen from './components/screens/DeckScreen';
@@ -56,9 +56,15 @@ export default function App() {
   const setIsAuthenticated = useReadingStore((s) => s.setIsAuthenticated);
   const loadUserData = useReadingStore((s) => s.loadUserData);
   const migrateLocalData = useReadingStore((s) => s.migrateLocalData);
+  const prepararSesion = useReadingStore((s) => s.prepararSesion);
+  const limpiarDatosLocales = useReadingStore((s) => s.limpiarDatosLocales);
+  const authView = useReadingStore((s) => s.authView);
+  const authMotivo = useReadingStore((s) => s.authMotivo);
+  const setAuthView = useReadingStore((s) => s.setAuthView);
+  const cerrarCuenta = useReadingStore((s) => s.cerrarCuenta);
+  const completarGuardadoPendiente = useReadingStore((s) => s.completarGuardadoPendiente);
 
-  const { isSignedIn, isLoaded } = useAuth();
-  const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+  const { isSignedIn, isLoaded, userId } = useAuth();
 
   /* Las cartas y tiradas predefinidas vienen de la API: se piden una sola vez al arrancar. */
   useEffect(() => {
@@ -72,24 +78,60 @@ export default function App() {
     }
   }, [isLoaded, isSignedIn, setIsAuthenticated]);
 
+  /* Sin sesión (cerró sesión, o expiró, o la cerró en otra pestaña): los
+     datos del navegador que tienen dueño se borran. Están a salvo en su
+     cuenta, y así quien use este equipo después no ve el historial de otro.
+     Los datos SIN dueño (de antes de las cuentas) se conservan para subirlos
+     la primera vez que alguien inicie sesión. */
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && useReadingStore.getState().ownerId) {
+      limpiarDatosLocales();
+    }
+  }, [isLoaded, isSignedIn, limpiarDatosLocales]);
+
   /* Al iniciar sesión: primero se sube lo que quedó en el navegador y recién
      después se recarga desde la API. El orden importa: loadUserData reemplaza
      el estado con la respuesta del server, así que migrar después perdería
      los datos locales. Además, sólo corre una vez por sesión. */
-  const migratedRef = useRef(false);
+  /* Guarda el id del usuario ya preparado, no sólo "sí/no": si se cambia de
+     cuenta sin cerrar sesión (Clerk admite varias sesiones), hay que volver a
+     preparar con el usuario nuevo. */
+  const migratedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!isSignedIn || !isAuthenticated) {
-      migratedRef.current = false;
+    if (!isSignedIn || !isAuthenticated || !userId) {
+      migratedRef.current = null;
       return;
     }
-    if (migratedRef.current) return;
-    migratedRef.current = true;
+    if (migratedRef.current === userId) return;
+    migratedRef.current = userId;
 
     void (async () => {
+      /* PRIMERO, antes de subir nada: si lo que hay en el navegador es de
+         otra cuenta, se descarta. Si no, `migrateLocalData` subiría a esta
+         cuenta las lecturas de otra persona. */
+      prepararSesion(userId);
       await migrateLocalData();
       await loadUserData();
+      /* Si entró para guardar la lectura que acababa de hacer como invitado,
+         se guarda ahora, ya en su cuenta. */
+      completarGuardadoPendiente();
     })();
-  }, [isSignedIn, isAuthenticated, migrateLocalData, loadUserData]);
+  }, [
+    isSignedIn,
+    isAuthenticated,
+    userId,
+    prepararSesion,
+    migrateLocalData,
+    loadUserData,
+    completarGuardadoPendiente,
+  ]);
+
+  /* Con sesión iniciada, la pantalla de cuenta no tiene nada que hacer. Se
+     cierra sin `cerrarCuenta`, que descartaría la lectura apartada antes de
+     que `completarGuardadoPendiente` llegue a guardarla. */
+  useEffect(() => {
+    if (isSignedIn && authView) useReadingStore.setState({ authView: null, authMotivo: null });
+  }, [isSignedIn, authView]);
 
   /* Al cambiar de pantalla, volvemos arriba: evita aterrizar a mitad de página. */
   useEffect(() => {
@@ -113,32 +155,36 @@ export default function App() {
     );
   }
 
-  /* Mostrar autenticación si el usuario no está autenticado */
-  if (!isSignedIn) {
+  /* Pantalla de cuenta, SÓLO si se pidió. La app se usa sin cuenta (modo
+     invitado): esta pantalla aparece al tocar "Iniciar sesión" o al intentar
+     algo que se guarda (una lectura, un mazo, un ritual). */
+  if (!isSignedIn && authView) {
     return (
       <>
         <Starfield />
         <AppShell>
           <div className="space-y-8">
             <div className="text-center">
-              <p className="overline mb-3">Bienvenido a Arcana</p>
-              <h1 className="text-gold-gradient text-3xl sm:text-4xl">Iniciá sesión o creá tu cuenta</h1>
+              <p className="overline mb-3">Tu cuenta en Arcana</p>
+              <h1 className="text-gold-gradient text-3xl sm:text-4xl">
+                {authView === 'sign-in' ? 'Iniciá sesión' : 'Creá tu cuenta'}
+              </h1>
               <p className="mt-3 text-sm text-gold-100/50">
-                Guardá tus mazos, tiradas y lecturas en todos tus dispositivos.
+                {authMotivo ?? 'Guardá tus mazos, tiradas y lecturas en todos tus dispositivos.'}
               </p>
             </div>
             {/* Alternamos en estado: la app no tiene router, así que un <a href>
                 haría una recarga completa hacia una ruta que el dev server no
                 sirve y quedaría en blanco. */}
-            {authMode === 'sign-in' ? <SignInPage /> : <SignUpPage />}
+            {authView === 'sign-in' ? <SignInPage /> : <SignUpPage />}
 
-            <div className="text-center">
-              {authMode === 'sign-in' ? (
+            <div className="space-y-3 text-center">
+              {authView === 'sign-in' ? (
                 <p className="text-sm text-gold-100/50">
                   ¿No tenés cuenta?{' '}
                   <button
                     type="button"
-                    onClick={() => setAuthMode('sign-up')}
+                    onClick={() => setAuthView('sign-up')}
                     className="text-gold-300 transition-colors hover:text-gold-200"
                   >
                     Registrate
@@ -149,13 +195,20 @@ export default function App() {
                   ¿Ya tenés cuenta?{' '}
                   <button
                     type="button"
-                    onClick={() => setAuthMode('sign-in')}
+                    onClick={() => setAuthView('sign-in')}
                     className="text-gold-300 transition-colors hover:text-gold-200"
                   >
                     Iniciá sesión
                   </button>
                 </p>
               )}
+              <button
+                type="button"
+                onClick={cerrarCuenta}
+                className="font-display text-[0.68rem] uppercase tracking-[0.2em] text-gold-100/45 transition-colors hover:text-gold-100"
+              >
+                ← Seguir sin cuenta
+              </button>
             </div>
           </div>
         </AppShell>

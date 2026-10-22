@@ -90,6 +90,7 @@ export default function SpreadScreen() {
   const editSpread = useReadingStore((s) => s.editSpread);
   const deleteCustomSpread = useReadingStore((s) => s.deleteCustomSpread);
   const goTo = useReadingStore((s) => s.goTo);
+  const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
   const presetSpreads = useContentStore((s) => s.spreads);
 
   const systemLabel = system ? SYSTEM_LABELS[system] : 'Sistema';
@@ -135,6 +136,11 @@ export default function SpreadScreen() {
         <span className="min-w-0">
           <span className="block font-display text-base uppercase tracking-[0.18em] text-gold-100 sm:text-lg">
             Crear tirada personalizada
+            {!isAuthenticated && (
+              <span className="ml-2 align-middle rounded-full border border-gold-400/25 bg-gold-400/[0.08] px-2 py-0.5 font-body text-[0.6rem] normal-case tracking-normal text-gold-200/80">
+                Con cuenta
+              </span>
+            )}
           </span>
           <span className="mt-1 block text-xs text-gold-100/45 sm:text-sm">
             Nombre, cantidad de posiciones, nombre de cada una y layout a elección —o arrastrando las

@@ -25,10 +25,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const screen = useReadingStore((s) => s.screen);
   const goTo = useReadingStore((s) => s.goTo);
   const restart = useReadingStore((s) => s.restart);
-  const historyCount = useReadingStore((s) => s.history.length);
+  /* Sin sesión no se muestra el número: es información de una cuenta. */
+  const historyCount = useReadingStore((s) => (s.isAuthenticated ? s.history.length : 0));
   const system = useReadingStore((s) => s.system);
   const spread = useReadingStore((s) => s.spread);
   const deck = useReadingStore((s) => s.deck);
+  const pedirCuenta = useReadingStore((s) => s.pedirCuenta);
+  const authView = useReadingStore((s) => s.authView);
   /* El acceso a administración vive en el menú de cuenta (UserMenu), no acá. */
 
   /* Con mazo propio el flujo tiene un paso más: elegir/crear el mazo. */
@@ -53,7 +56,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen flex-col">
       {/* ---------------- Cabecera ---------------- */}
       <header className="sticky top-0 z-40 border-b border-gold-400/10 bg-ink-950/70 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
           {/* Marca. En móvil va sólo el ícono: con el texto completo la fila
               mide 459px y desborda los 375px de un iPhone SE. Medido con un
               modelo de ancho de texto: ícono 40px + "ARCANA" 103px + nav 235px
@@ -83,7 +86,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
             <button
               onClick={() => goTo('history')}
-              className={`relative rounded-full px-2.5 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
+              className={`relative rounded-full px-2 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
                 screen === 'history'
                   ? 'bg-gold-400/15 text-gold-200'
                   : 'text-gold-100/50 hover:bg-white/5 hover:text-gold-100'
@@ -98,7 +101,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button
               onClick={() => goTo('rituals')}
-              className={`rounded-full px-2.5 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
+              className={`rounded-full px-2 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] transition-colors sm:px-4 sm:text-xs ${
                 screen === 'rituals'
                   ? 'bg-gold-400/15 text-gold-200'
                   : 'text-gold-100/50 hover:bg-white/5 hover:text-gold-100'
@@ -108,20 +111,48 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button
               onClick={restart}
-              className="rounded-full border border-gold-400/25 px-2.5 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] text-gold-200/80 transition-colors hover:border-gold-300/60 hover:bg-gold-400/10 hover:text-gold-100 sm:px-4 sm:text-xs"
+              className="rounded-full border border-gold-400/25 px-2 py-2 font-display text-[0.65rem] uppercase tracking-[0.18em] text-gold-200/80 transition-colors hover:border-gold-300/60 hover:bg-gold-400/10 hover:text-gold-100 sm:px-4 sm:text-xs"
             >
               Nueva
             </button>
 
-            {/* Menú de cuenta: sólo con sesión iniciada. */}
+            {/* Menú de cuenta con sesión; sin ella, el botón para entrar. La app
+                se usa igual sin cuenta: esto es para guardar. */}
             <Show when="signed-in">
               <UserMenu />
+            </Show>
+            <Show when="signed-out">
+              {/* En móvil no entra el texto (la fila tiene que caber en 320px):
+                  ahí va un ícono, con el texto para lectores de pantalla y en
+                  el tooltip. Desde `sm`, el texto completo. */}
+              <button
+                type="button"
+                onClick={() => pedirCuenta()}
+                title="Iniciar sesión"
+                aria-label="Iniciar sesión"
+                className="flex h-8 w-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-gold-sheen font-display text-[0.65rem] uppercase tracking-[0.18em] text-ink-900 shadow-glow transition-shadow hover:shadow-glow-strong sm:h-auto sm:w-auto sm:px-4 sm:py-2 sm:text-xs"
+              >
+                <svg
+                  className="h-4 w-4 sm:hidden"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+                <span className="hidden sm:inline">Iniciar sesión</span>
+              </button>
             </Show>
           </nav>
         </div>
 
         {/* ---------------- Indicador de pasos ---------------- */}
-        {['system', 'decks', 'spread', 'input', 'result'].includes(screen) && (
+        {!authView && ['system', 'decks', 'spread', 'input', 'result'].includes(screen) && (
           <div className="mx-auto w-full max-w-6xl px-4 pb-3 sm:px-6">
             <ol className="flex items-center gap-1 sm:gap-2">
               {STEPS.map((step, i) => {

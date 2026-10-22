@@ -83,6 +83,43 @@ interface ReadingState {
   /* -------- Autenticación -------- */
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
+  /**
+   * Id de Clerk del usuario al que pertenecen los datos guardados en ESTE
+   * navegador. `null` = datos de antes de que existieran las cuentas (o
+   * ninguno). Se persiste junto con los datos.
+   */
+  ownerId: string | null;
+  /**
+   * Se llama al iniciar sesión, ANTES de migrar o cargar nada. Si los datos
+   * del navegador son de otra cuenta, se descartan: nunca se suben ni se
+   * muestran a otro usuario. Después marca al usuario actual como dueño.
+   */
+  prepararSesion: (userId: string) => void;
+  /** Borra del navegador los datos del usuario (al cerrar sesión). */
+  limpiarDatosLocales: () => void;
+
+  /* -------- Modo invitado --------
+     Sin sesión la app se usa igual (lecturas con tiradas predeterminadas,
+     la Luna). Lo que se guarda pide cuenta: en vez de hacerlo, muestra la
+     pantalla de inicio de sesión con el motivo. */
+  /** Pantalla de cuenta abierta encima de la app, o null. No se persiste. */
+  authView: 'sign-in' | 'sign-up' | null;
+  /** Por qué se pidió la cuenta, para decírselo al usuario. */
+  authMotivo: string | null;
+  /** Abre la pantalla de cuenta. `guardarLectura` deja la lectura en curso
+   *  apartada para guardarla en cuanto inicie sesión. */
+  pedirCuenta: (
+    motivo?: string | null,
+    opciones?: { modo?: 'sign-in' | 'sign-up'; guardarLectura?: { title?: string } },
+  ) => void;
+  /** Cambia entre iniciar sesión y crear cuenta. */
+  setAuthView: (modo: 'sign-in' | 'sign-up') => void;
+  /** "Seguir sin cuenta": cierra la pantalla y descarta lo apartado. */
+  cerrarCuenta: () => void;
+  /** Tras iniciar sesión: guarda la lectura apartada, si la hay. */
+  completarGuardadoPendiente: () => void;
+  /** true si la lectura en pantalla se acaba de guardar al iniciar sesión. */
+  lecturaRecienGuardada: boolean;
 
   /* -------- Importar / exportar -------- */
   /**
@@ -173,6 +210,68 @@ interface ReadingState {
   /* Reinicio */
   resetSession: () => void;
   restart: () => void;
+}
+
+/* --------------------------------------------------------------------------
+   Lectura apartada (modo invitado)
+   -------------------------------------------------------------------------- */
+
+const CLAVE_APARTADA = 'arcana-lectura-pendiente';
+
+/** Arma la lectura en curso como se guarda en el historial. */
+function armarLectura(
+  state: Pick<ReadingState, 'spread' | 'cards' | 'system' | 'question' | 'questionCategory' | 'deck'>,
+  title?: string,
+): Reading | null {
+  const { spread, cards, system, question, questionCategory, deck } = state;
+  if (!spread || !system) return null;
+  return {
+    id: uid('read'),
+    createdAt: Date.now(),
+    system,
+    // Copia profunda de la tirada para que el histórico no se rompa
+    // si luego se edita o borra la tirada personalizada original.
+    spread: {
+      ...spread,
+      positions: spread.positions.map((p) => ({ ...p })),
+    },
+    // Igual con el mazo propio: la lectura guardada queda autocontenida.
+    deck: deck ? { ...deck, cards: deck.cards.map((c) => ({ ...c })) } : undefined,
+    cards: spread.positions.map((pos) => {
+      const c = cards[pos.id];
+      return c ? { ...c } : { positionId: pos.id, reversed: false };
+    }),
+    question: question.trim() || undefined,
+    questionCategory: questionCategory !== 'general' ? questionCategory : undefined,
+    title: title?.trim() || undefined,
+  };
+}
+
+/* sessionStorage puede no existir (tests, modo privado estricto): todo va con
+   try, y si falla, simplemente no se aparta nada. */
+function apartarLectura(lectura: Reading): void {
+  try {
+    sessionStorage.setItem(CLAVE_APARTADA, JSON.stringify(lectura));
+  } catch {
+    /* sin sessionStorage */
+  }
+}
+
+function leerLecturaApartada(): Reading | null {
+  try {
+    const raw = sessionStorage.getItem(CLAVE_APARTADA);
+    return raw ? (JSON.parse(raw) as Reading) : null;
+  } catch {
+    return null;
+  }
+}
+
+function descartarLecturaApartada(): void {
+  try {
+    sessionStorage.removeItem(CLAVE_APARTADA);
+  } catch {
+    /* sin sessionStorage */
+  }
 }
 
 export const useReadingStore = create<ReadingState>()(
@@ -281,12 +380,89 @@ export const useReadingStore = create<ReadingState>()(
         history: [],
         rituals: [],
         isAuthenticated: false,
+        ownerId: null,
+        authView: null,
+        authMotivo: null,
+        lecturaRecienGuardada: false,
         syncInFlight: 0,
         pendingOps: [],
         planNotice: null,
         dismissPlanNotice: () => set({ planNotice: null }),
         /* ---------------- Autenticación ---------------- */
         setIsAuthenticated: (value) => set({ isAuthenticated: value }),
+
+        /* PRIVACIDAD. Antes los datos del navegador no tenían dueño: quedaban
+           visibles después de cerrar sesión, y si otra persona iniciaba sesión
+           en el mismo equipo, `migrateLocalData` le subía a SU cuenta las
+           lecturas del anterior. Ahora cada navegador recuerda de quién son
+           sus datos y no se los da a nadie más. */
+        prepararSesion: (userId) => {
+          const { ownerId } = get();
+          if (ownerId && ownerId !== userId) {
+            /* Son de otra cuenta: fuera, sin subir nada. Sus datos siguen a
+               salvo en SU cuenta, en el servidor. */
+            get().limpiarDatosLocales();
+          }
+          /* `null` es el caso de los datos de antes de las cuentas: se
+             adoptan una sola vez y se suben a esta cuenta, como siempre. */
+          set({ ownerId: userId });
+        },
+
+        /* ---------------- Modo invitado ---------------- */
+        pedirCuenta: (motivo, opciones) => {
+          if (opciones?.guardarLectura) {
+            const lectura = armarLectura(get(), opciones.guardarLectura.title);
+            /* sessionStorage y no memoria: al iniciar sesión Clerk puede
+               recargar la página, y con ella se iría la lectura. Es de ESTA
+               pestaña y se borra sola al cerrarla, así que no la ve nadie
+               más que use el equipo después. */
+            if (lectura) apartarLectura(lectura);
+          }
+          set({ authView: opciones?.modo ?? 'sign-in', authMotivo: motivo ?? null });
+        },
+
+        setAuthView: (modo) => set({ authView: modo }),
+
+        cerrarCuenta: () => {
+          descartarLecturaApartada();
+          set({ authView: null, authMotivo: null });
+        },
+
+        completarGuardadoPendiente: () => {
+          const lectura = leerLecturaApartada();
+          descartarLecturaApartada();
+          if (!lectura || !get().isAuthenticated) return;
+          if (get().history.some((r) => r.id === lectura.id)) return;
+          set((state) => ({
+            history: [lectura, ...state.history].slice(0, 100),
+            /* Se vuelve a la lectura, ya guardada, como si nunca se hubiera
+               ido: aunque la página se haya recargado al iniciar sesión. */
+            system: lectura.system,
+            spread: lectura.spread,
+            cards: Object.fromEntries(lectura.cards.map((c) => [c.positionId, c])),
+            question: lectura.question ?? '',
+            questionCategory: lectura.questionCategory ?? 'general',
+            deck: null,
+            viewingReadingId: null,
+            screen: 'result',
+            lecturaRecienGuardada: true,
+          }));
+          void get().syncReading(lectura);
+        },
+
+        limpiarDatosLocales: () =>
+          set({
+            customSpreads: [],
+            customDecks: [],
+            history: [],
+            rituals: [],
+            ownerId: null,
+            pendingOps: [],
+            viewingReadingId: null,
+            editingDeck: null,
+            editingSpread: null,
+            deck: null,
+          }),
 
         /* ---------------- Importar / exportar ---------------- */
         importArchive: (archive) => {
@@ -452,9 +628,15 @@ export const useReadingStore = create<ReadingState>()(
         },
 
         /* ---------------- Navegación ---------------- */
-        goTo: (screen) => set({ screen }),
+        /* Navegar cierra la pantalla de cuenta: tocar "Historial" o "Nueva"
+           mientras está abierta lleva ahí, no deja la cuenta encima. */
+        goTo: (screen) => set({ screen, authView: null, authMotivo: null }),
 
-        chooseSystem: (system) =>
+        chooseSystem: (system) => {
+          if (system === 'custom-deck' && !get().isAuthenticated) {
+            get().pedirCuenta('Iniciá sesión para crear y usar tus propios mazos.');
+            return;
+          }
           set({
             system,
             // El mazo personalizable necesita un paso extra: elegir/crear el mazo.
@@ -463,7 +645,8 @@ export const useReadingStore = create<ReadingState>()(
             cards: {},
             deck: null,
             viewingReadingId: null,
-          }),
+          });
+        },
 
         chooseSpread: (spread) => {
           // Inicializa una carta vacía por posición para que el formulario sea controlado.
@@ -520,7 +703,13 @@ export const useReadingStore = create<ReadingState>()(
         },
 
         /* ---------------- Creador de tiradas ---------------- */
-        startNewSpread: () => set({ editingSpread: null, screen: 'builder' }),
+        startNewSpread: () => {
+          if (!get().isAuthenticated) {
+            get().pedirCuenta('Iniciá sesión para crear y guardar tus propias tiradas.');
+            return;
+          }
+          set({ editingSpread: null, screen: 'builder' });
+        },
 
         editSpread: (spread) => set({ editingSpread: spread, screen: 'builder' }),
 
@@ -564,7 +753,13 @@ export const useReadingStore = create<ReadingState>()(
 
         /** Abre el editor. Sin base arranca un mazo en blanco; con base la usa
          *  como plantilla (ya viene con ids nuevos). */
-        startNewDeck: (base) => set({ editingDeck: base ?? blankDeck(), screen: 'decks' }),
+        startNewDeck: (base) => {
+          if (!get().isAuthenticated) {
+            get().pedirCuenta('Iniciá sesión para crear y usar tus propios mazos.');
+            return;
+          }
+          set({ editingDeck: base ?? blankDeck(), screen: 'decks' });
+        },
 
         editDeck: (deck) => set({ editingDeck: deck, screen: 'decks' }),
 
@@ -624,28 +819,17 @@ export const useReadingStore = create<ReadingState>()(
 
         /* ---------------- Historial ---------------- */
         saveReading: (title) => {
-          const { spread, cards, system, question, questionCategory, deck } = get();
-          if (!spread || !system) return;
-          const reading: Reading = {
-            id: uid('read'),
-            createdAt: Date.now(),
-            system,
-            // Copia profunda de la tirada para que el histórico no se rompa
-            // si luego se edita o borra la tirada personalizada original.
-            spread: {
-              ...spread,
-              positions: spread.positions.map((p) => ({ ...p })),
-            },
-            // Igual con el mazo propio: la lectura guardada queda autocontenida.
-            deck: deck ? { ...deck, cards: deck.cards.map((c) => ({ ...c })) } : undefined,
-            cards: spread.positions.map((pos) => {
-              const c = cards[pos.id];
-              return c ? { ...c } : { positionId: pos.id, reversed: false };
-            }),
-            question: question.trim() || undefined,
-            questionCategory: questionCategory !== 'general' ? questionCategory : undefined,
-            title: title?.trim() || undefined,
-          };
+          /* Invitado: no se guarda nada en el navegador (lo vería quien use el
+             equipo después). Se aparta la lectura y se pide la cuenta; al
+             entrar, `completarGuardadoPendiente` la guarda. */
+          if (!get().isAuthenticated) {
+            get().pedirCuenta('Iniciá sesión para guardar esta lectura en tu historial.', {
+              guardarLectura: { title },
+            });
+            return;
+          }
+          const reading = armarLectura(get(), title);
+          if (!reading) return;
           set((state) => ({
             history: [reading, ...state.history].slice(0, 100),
           }));
@@ -691,6 +875,10 @@ export const useReadingStore = create<ReadingState>()(
 
         /* ---------------- Rituales ---------------- */
         saveRitual: (ritual) => {
+          if (!get().isAuthenticated) {
+            get().pedirCuenta('Iniciá sesión para anotar y guardar tus rituales.');
+            return;
+          }
           /* `sourceVerified` no se fuerza: es una afirmación del usuario sobre
              su propia fuente, no algo que la app pueda comprobar. Lo único que
              garantizamos es que no se marque como verificada sola. */
@@ -733,6 +921,9 @@ export const useReadingStore = create<ReadingState>()(
         restart: () =>
           set({
             screen: 'system',
+            authView: null,
+            authMotivo: null,
+            lecturaRecienGuardada: false,
             system: null,
             spread: null,
             cards: {},
@@ -756,6 +947,7 @@ export const useReadingStore = create<ReadingState>()(
         customDecks: state.customDecks,
         history: state.history,
         rituals: state.rituals,
+        ownerId: state.ownerId,
       }),
     },
   ),

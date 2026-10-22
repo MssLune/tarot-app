@@ -55,7 +55,10 @@ export default function ResultScreen() {
 
   const [focused, setFocused] = useState<number | null>(null);
   const [title, setTitle] = useState('');
-  const [saved, setSaved] = useState(false);
+  const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
+  /* Arranca en "guardada" si se acaba de guardar al iniciar sesión (el
+     invitado tocó Guardar, inició sesión y volvió acá). */
+  const [saved, setSaved] = useState(() => useReadingStore.getState().lecturaRecienGuardada);
   const [copied, setCopied] = useState(false);
   const [ficha, setFicha] = useState<{ id: string; reversed: boolean } | null>(null);
 
@@ -123,8 +126,10 @@ export default function ResultScreen() {
   };
 
   const handleSave = () => {
+    /* Sin cuenta, `saveReading` no guarda: aparta la lectura y abre el inicio
+       de sesión. Marcarla como guardada acá sería mentir. */
     saveReading(title);
-    setSaved(true);
+    if (isAuthenticated) setSaved(true);
   };
 
   return (
