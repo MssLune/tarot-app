@@ -11,9 +11,16 @@ backend/*.pdf
 backend/assets/cards/*
 !backend/assets/cards/README.md
 
-# Las claves de Clerk nunca se versionan.
+# Las claves (Clerk, Stripe) nunca se versionan. Los .env.example sí.
 frontend/.env
 backend/.env
+.env
+*.env.local
+
+# La base SQLite de desarrollo tiene datos de usuarios: no se versiona.
+# Se recrea con `npm run db:migrate` y `npm run db:seed`.
+backend/prisma/*.db
+backend/prisma/*.db-journal
 backend/assets/cards/_extraidas/
 backend/.entrada/*
 !backend/.entrada/LEEME.txt
