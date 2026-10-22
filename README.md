@@ -41,16 +41,18 @@ Tarot/
 │   └── src/
 │       ├── routes/          Definición de endpoints
 │       ├── controllers/     Parseo de request / formateo de response
-│       ├── services/        Lógica de negocio + acceso a Prisma
+│       ├── services/        Lógica de negocio + acceso a Prisma (limits.ts: topes del plan)
 │       ├── models/          DTOs públicos + validación
-│       ├── middleware/      Manejo de errores, 404
+│       ├── middleware/      Errores, 404, autenticación (Clerk) y límites del plan
 │       ├── database/        Cliente Prisma
 │       └── config/          Variables de entorno
 │   └── prisma/
 │       ├── schema.prisma    Modelo de datos
 │       └── seed.ts          Carga inicial (78 cartas + 8 tiradas + 5 combinaciones)
 │
-└── docs/              (reservado para documentación futura)
+└── docs/
+    ├── stripe.md              Puesta en marcha del cobro
+    └── revision-seguridad.md  Estado de la revisión de seguridad
 ```
 
 ## Decisiones arquitectónicas
@@ -196,9 +198,9 @@ Todas las respuestas siguen el mismo sobre:
 | ------ | ----------------- | -------------------------------------------------------- |
 | GET    | `/api/cards`       | Lista cartas. Filtros opcionales: `search`, `element`, `axis`, `energy`, `arcanaType` (mayor/menor), `suit` (bastos/copas/espadas/oros) |
 | GET    | `/api/cards/:id`   | Detalle de una carta                                    |
-| POST   | `/api/cards`       | Crea una carta                                           |
-| PUT    | `/api/cards/:id`   | Edita una carta                                          |
-| DELETE | `/api/cards/:id`   | Elimina una carta                                        |
+| POST   | `/api/cards`       | Crea una carta **(admin)**                               |
+| PUT    | `/api/cards/:id`   | Edita una carta **(admin)**                              |
+| DELETE | `/api/cards/:id`   | Elimina una carta **(admin)**                            |
 
 **Tiradas**
 
@@ -206,9 +208,9 @@ Todas las respuestas siguen el mismo sobre:
 | ------ | -------------------- | -------------------------------------- |
 | GET    | `/api/spreads`        | Lista tiradas. Filtro opcional: `search` |
 | GET    | `/api/spreads/:id`    | Detalle de una tirada (con posiciones) |
-| POST   | `/api/spreads`        | Crea una tirada                        |
-| PUT    | `/api/spreads/:id`    | Edita una tirada (reemplaza posiciones)|
-| DELETE | `/api/spreads/:id`    | Elimina una tirada                     |
+| POST   | `/api/spreads`        | Crea una tirada **(admin)**            |
+| PUT    | `/api/spreads/:id`    | Edita una tirada (reemplaza posiciones) **(admin)** |
+| DELETE | `/api/spreads/:id`    | Elimina una tirada **(admin)**         |
 
 **Combinaciones**
 
@@ -216,12 +218,48 @@ Todas las respuestas siguen el mismo sobre:
 | ------ | ------------------------- | ------------------------------------------ |
 | GET    | `/api/combinations`        | Lista combinaciones                        |
 | GET    | `/api/combinations/:id`    | Detalle de una combinación                 |
-| POST   | `/api/combinations`        | Crea una combinación (2-3 ids de carta)    |
-| PUT    | `/api/combinations/:id`    | Edita una combinación                      |
-| DELETE | `/api/combinations/:id`    | Elimina una combinación                    |
+| POST   | `/api/combinations`        | Crea una combinación (2-3 ids de carta) **(admin)** |
+| PUT    | `/api/combinations/:id`    | Edita una combinación **(admin)**          |
+| DELETE | `/api/combinations/:id`    | Elimina una combinación **(admin)**        |
 
-El frontend hoy sólo consume los `GET` (el contenido editorial se gestiona
-a mano/DB); el resto de los verbos queda listo para un futuro panel admin.
+Los `GET` del contenido editorial son públicos. `POST`, `PUT` y `DELETE`
+exigen sesión con rol `admin` (`requireAdmin`): sin sesión responden 401 y
+con una cuenta que no es admin, 403. El rol se guarda en la tabla `users` y se
+cambia desde el panel de administración. El frontend hoy sólo consume los
+`GET`; el resto queda listo para editar el contenido desde ese panel.
+
+**Datos del usuario** (`/api/user/*`, siempre con sesión)
+
+Mazos (`/decks`), tiradas propias (`/spreads`), lecturas (`/readings`) y
+rituales (`/rituals`). El `PUT /:id` de mazos, tiradas y rituales es un
+*upsert*: si el id no existe, lo crea.
+
+## Planes y límites
+
+Los topes del plan gratuito están en `backend/src/services/plans.ts`
+(`PLAN_LIMITS`) y se comprueban **sólo en el backend**, en un único lugar:
+`assertCanCreate` en `backend/src/services/limits.ts`. Lo usan los dos
+caminos que crean datos:
+
+- el middleware `enforceLimit`, delante de cada `POST`;
+- los upsert de `userService`, cuando un `PUT` va a crear un id nuevo.
+
+Editar o borrar lo que el usuario ya tiene siempre está permitido, aunque
+esté en el tope. Pasado el tope, la API responde `402 PLAN_LIMIT_REACHED`.
+
+Los middleware async (`enforceLimit`, `requirePro`) van envueltos en
+`asyncHandler`: Express 4 no captura los rechazos de las funciones async, y
+sin envolver un error terminaría el proceso.
+
+## Tests
+
+```bash
+npm test               # todos los workspaces
+npm test -w backend    # sólo la API
+```
+
+Los tests de integración del backend usan la base de desarrollo
+(`backend/prisma/dev.db`) con usuarios propios que se borran al terminar.
 
 ## Tecnologías
 
@@ -233,9 +271,8 @@ a mano/DB); el resto de los verbos queda listo para un futuro panel admin.
 
 - Panel de administración para editar cartas y tiradas desde una UI (la API ya soporta el CRUD completo).
 - Si se agregan cuentas de usuario, migrar mazos personalizados, tiradas propias e historial de localStorage a la base de datos.
-- Autenticación (deliberadamente fuera de alcance por ahora).
 - Paginación en `/api/cards` y `/api/spreads` si el catálogo crece mucho más allá de su tamaño actual.
-- Tests automatizados (unitarios para el motor de interpretación y de integración para la API).
+- Resolver los puntos pendientes de [`docs/revision-seguridad.md`](docs/revision-seguridad.md).
 - **Exportar/importar mazos propios como archivo JSON** (alternativa a
   cuentas de usuario, evaluada y pospuesta por pedido explícito): un botón
   "Exportar mazo" que serializa un `CustomDeck` a un `.json` descargable, y

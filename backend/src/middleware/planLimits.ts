@@ -1,8 +1,9 @@
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '../database/prisma';
+import type { RequestHandler } from 'express';
 import * as billingService from '../services/billingService';
-import { assertWithinLimit, type LimitedResource } from '../services/plans';
+import { assertCanCreate } from '../services/limits';
+import type { LimitedResource } from '../services/plans';
 import { ApiError } from '../utils/ApiError';
+import { asyncHandler } from '../utils/asyncHandler';
 
 /* ==========================================================================
    Límites del plan.
@@ -13,65 +14,48 @@ import { ApiError } from '../utils/ApiError';
    único lugar donde el límite es real.
 
    El frontend sí los muestra, pero sólo como información: de esa forma el
-   contador de "3 de 20" y el rechazo real nunca pueden discrepar.
+   contador de "3 de 10" y el rechazo real nunca pueden discrepar.
+
+   LOS DOS MIDDLEWARES VAN ENVUELTOS EN `asyncHandler`. Express 4 no captura
+   los rechazos de un middleware async: el `throw` del 402 se convertía en una
+   promesa rechazada que nadie escuchaba, Node terminaba el proceso, y un
+   usuario gratuito que llegaba a su tope tumbaba el servidor para todos.
+   Envueltos, el error llega al `errorHandler` y sale como un 402 normal.
    ========================================================================== */
 
 /**
  * Middleware que rechaza la creación si el usuario ya alcanzó el tope.
  *
- * Sólo se usa en crear (POST), no en actualizar (PUT): un usuario free que
- * llegó a 20 lecturas tiene que poder editar las que ya tiene, no queda
- * trabado con un error al corregir una.
+ * Sólo se usa en crear (POST). Los upsert por PUT hacen la misma comprobación
+ * por dentro, en `userService`, sólo cuando el id no existía.
  */
-export function enforceLimit(resource: LimitedResource) {
-  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+export function enforceLimit(resource: LimitedResource): RequestHandler {
+  return asyncHandler(async (req, _res, next) => {
     const userId = (req as any).dbUserId as string;
     if (!userId) {
       throw new ApiError(401, 'UNAUTHENTICATED', 'Iniciá sesión para usar esta función.');
     }
-    const [sub, current] = await Promise.all([
-      billingService.getSubscription(userId),
-      countResource(userId, resource),
-    ]);
-    assertWithinLimit(sub.plan, sub.status, resource, current);
+    await assertCanCreate(userId, resource);
     next();
-  };
-}
-
-/** Cuántos elementos tiene el usuario de un tipo. */
-async function countResource(userId: string, resource: LimitedResource): Promise<number> {
-  switch (resource) {
-    case 'readings':
-      return prisma.userReading.count({ where: { userId } });
-    case 'decks':
-      return prisma.userDeck.count({ where: { userId } });
-    case 'spreads':
-      return prisma.userSpread.count({ where: { userId } });
-    case 'rituals':
-      return prisma.userRitual.count({ where: { userId } });
-  }
+  });
 }
 
 /**
  * Middleware que exige plan Pro.
  *
- * Sirve para lo que no se puede contar: exportar a PDF, por ejemplo, no es
- * "crear un objeto más" sino una operación cara.
+ * Sirve para lo que no se puede contar. Hoy no lo usa ninguna ruta (el PDF es
+ * gratis), pero queda listo y seguro para cuando haga falta.
  */
-export function requirePro() {
-  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+export function requirePro(): RequestHandler {
+  return asyncHandler(async (req, _res, next) => {
     const userId = (req as any).dbUserId as string;
     if (!userId) {
       throw new ApiError(401, 'UNAUTHENTICATED', 'Iniciá sesión para usar esta función.');
     }
     const sub = await billingService.getSubscription(userId);
     if (sub.plan !== 'pro') {
-      throw new ApiError(
-        402,
-        'PLAN_REQUIRED',
-        'Esta función es del plan Pro.',
-      );
+      throw new ApiError(402, 'PLAN_REQUIRED', 'Esta función es del plan Pro.');
     }
     next();
-  };
+  });
 }

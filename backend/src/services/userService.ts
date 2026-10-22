@@ -1,5 +1,6 @@
 import { prisma } from '../database/prisma';
 import { ApiError } from '../utils/ApiError';
+import { assertCanCreate } from './limits';
 
 /* ==========================================================================
    Servicios de datos de usuario: mazos, tiradas y lecturas.
@@ -99,6 +100,11 @@ export async function upsertUserDeck(userId: string, id: string, input: Partial<
         'Para crear un mazo hacen falta "name" y "cards".',
       );
     }
+    /* El PUT también crea, así que también tiene que respetar el tope del
+       plan. Sin esto, mandar ids nuevos por PUT esquivaba el `enforceLimit`
+       del POST y el plan gratuito no tenía límite. */
+    await assertCanCreate(userId, 'decks');
+
     const created = await prisma.userDeck.create({
       data: {
         id,
@@ -196,6 +202,9 @@ export async function upsertUserSpread(
         'Para crear una tirada hacen falta "name" y "positions".',
       );
     }
+    /* Mismo tope que el POST: ver `upsertUserDeck`. */
+    await assertCanCreate(userId, 'spreads');
+
     const created = await prisma.userSpread.create({
       data: {
         id,
@@ -368,6 +377,9 @@ export async function upsertUserRitual(userId: string, id: string, input: Partia
         'Para crear un ritual hacen falta "title" y "body".',
       );
     }
+    /* Mismo tope que el POST: ver `upsertUserDeck`. */
+    await assertCanCreate(userId, 'rituals');
+
     const created = await prisma.userRitual.create({
       data: {
         id,

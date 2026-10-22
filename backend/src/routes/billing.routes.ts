@@ -13,7 +13,8 @@ if (!isStripeConfigured) {
   console.warn(
     '[billing] Stripe sin configurar: el cobro queda deshabilitado y todos los ' +
       'usuarios están en plan gratuito. Revisar STRIPE_SECRET_KEY, ' +
-      'STRIPE_WEBHOOK_SECRET y STRIPE_PRO_PRICE_ID en backend/.env',
+      'STRIPE_WEBHOOK_SECRET y al menos uno de STRIPE_MONTHLY_PRICE_ID, ' +
+      'STRIPE_ANNUAL_PRICE_ID o STRIPE_LIFETIME_PRICE_ID en backend/.env',
   );
 } else {
   /* Todas exigen sesión: nadie puede abrir un checkout sin estar identificado. */
