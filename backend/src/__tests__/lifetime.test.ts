@@ -21,6 +21,7 @@ import {
   markCanceled,
   syncSubscription,
   grantLifetime,
+  revokeLifetime,
 } from '../services/billingService';
 import { prisma as prismaDeLaApp } from '../database/prisma';
 
@@ -70,6 +71,8 @@ function sesionPagoUnico(over: Record<string, unknown> = {}) {
     id: `cs_venta${SUFIJO}`,
     object: 'checkout.session',
     mode: 'payment',
+    /* Las sesiones reales siempre lo traen. Sin 'paid' no se concede nada. */
+    payment_status: 'paid',
     customer: `cus_venta${SUFIJO}`,
     metadata: { clerkUserId: usuario.id },
     line_items: {
@@ -85,6 +88,13 @@ beforeAll(async () => {
      dejó preparado en `sesionActual`. */
   globalThis.fetch = (async (input: string | URL) => {
     const url = String(input);
+    /* La búsqueda de sesiones por payment_intent (`revokeLifetime`). */
+    if (url.includes('/v1/checkout/sessions?') && sesionActual) {
+      return new Response(
+        JSON.stringify({ object: 'list', data: [sesionActual], has_more: false, url: '/v1/checkout/sessions' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
     if (url.includes('/v1/checkout/sessions/') && sesionActual) {
       return new Response(JSON.stringify(sesionActual), {
         status: 200,
@@ -297,5 +307,95 @@ describe('el de por vida no se puede quitar por error', () => {
       expect(sub.tier).toBe('lifetime');
       void status;
     }
+  });
+});
+
+describe('el de por vida sólo se concede con el pago cobrado', () => {
+  beforeAll(async () => {
+    await prisma.subscription.deleteMany({ where: { userId: usuario.id } });
+  });
+
+  it('una sesión completada pero sin cobrar (pago diferido) no da Pro', async () => {
+    /* Con SEPA o transferencia, `checkout.session.completed` llega antes que
+       el dinero. Conceder ahí sería regalar el de por vida si el pago falla. */
+    const restaurar = simularStripe(sesionPagoUnico({ payment_status: 'unpaid' }));
+    const r = await grantLifetime(`cs_venta${SUFIJO}`);
+    restaurar();
+
+    expect(r).toBeNull();
+    expect(await prisma.subscription.count({ where: { userId: usuario.id } })).toBe(0);
+  });
+
+  it('cuando el pago diferido llega, se concede', async () => {
+    /* Es lo que hace el webhook con `checkout.session.async_payment_succeeded`:
+       vuelve a llamar a `grantLifetime`, y ahora la sesión dice 'paid'. */
+    const restaurar = simularStripe(sesionPagoUnico());
+    const r = await grantLifetime(`cs_venta${SUFIJO}`);
+    restaurar();
+
+    expect(r).toBe(usuario.id);
+    expect((await getSubscription(usuario.id)).tier).toBe('lifetime');
+  });
+
+  it('un cupón del 100 % (no_payment_required) también lo concede', async () => {
+    await prisma.subscription.deleteMany({ where: { userId: usuario.id } });
+    const restaurar = simularStripe(sesionPagoUnico({ payment_status: 'no_payment_required' }));
+    const r = await grantLifetime(`cs_venta${SUFIJO}`);
+    restaurar();
+
+    expect(r).toBe(usuario.id);
+  });
+});
+
+describe('reembolso y disputa perdida quitan el de por vida', () => {
+  beforeAll(async () => {
+    await prisma.subscription.deleteMany({ where: { userId: usuario.id } });
+    const restaurar = simularStripe(sesionPagoUnico());
+    await grantLifetime(`cs_venta${SUFIJO}`);
+    restaurar();
+  });
+
+  it('un reembolso de un cobro que NO es la compra de por vida no toca nada', async () => {
+    /* Por ejemplo, la devolución de una factura del mensual. */
+    const restaurar = simularStripe(
+      sesionPagoUnico({
+        line_items: { data: [{ price: { id: PRECIOS.monthly, object: 'price' } }] },
+      }),
+    );
+    const r = await revokeLifetime(`pi_venta${SUFIJO}`, 'refunded');
+    restaurar();
+
+    expect(r).toBeNull();
+    expect((await getSubscription(usuario.id)).tier).toBe('lifetime');
+  });
+
+  it('el reembolso total de la compra lo deja en gratuito', async () => {
+    const restaurar = simularStripe(sesionPagoUnico());
+    const r = await revokeLifetime(`pi_venta${SUFIJO}`, 'refunded');
+    restaurar();
+
+    expect(r).toBe(usuario.id);
+    const sub = await getSubscription(usuario.id);
+    expect(sub.plan).toBe('free');
+    expect(sub.tier).toBeNull();
+    expect(sub.limits.readings).toBe(10);
+
+    const fila = await prisma.subscription.findUnique({ where: { userId: usuario.id } });
+    expect(fila?.status).toBe('refunded');
+  });
+
+  it('una disputa perdida también lo quita', async () => {
+    let restaurar = simularStripe(sesionPagoUnico());
+    await grantLifetime(`cs_venta${SUFIJO}`);
+    restaurar();
+
+    restaurar = simularStripe(sesionPagoUnico());
+    await revokeLifetime(`pi_venta${SUFIJO}`, 'dispute_lost');
+    restaurar();
+
+    const sub = await getSubscription(usuario.id);
+    expect(sub.plan).toBe('free');
+    const fila = await prisma.subscription.findUnique({ where: { userId: usuario.id } });
+    expect(fila?.status).toBe('dispute_lost');
   });
 });

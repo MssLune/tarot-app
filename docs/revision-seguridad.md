@@ -40,26 +40,45 @@ permitido en el tope.
 **Tests:** `backend/src/__tests__/planLimits.test.ts` (20 tests) cubre los
 tres puntos.
 
+### 4. El webhook de Stripe perdía eventos — grave
+
+`stripeWebhook.routes.ts` respondía 200 aunque el procesamiento fallara, así
+que Stripe no reintentaba. En el pago de por vida, el usuario pagaba y no
+recibía nada.
+
+**Solución:** un error de procesamiento se registra y se relanza: el
+`errorHandler` responde 500 y Stripe reintenta durante tres días. Es seguro
+porque todo es idempotente. Además, los eventos `customer.subscription.*`
+ahora sincronizan el estado actual pedido a la API, porque Stripe no garantiza
+el orden de entrega.
+
+### 5. El de por vida se concedía sin comprobar el cobro — importante
+
+**Solución:** `grantLifetime` exige `payment_status` `paid` (o
+`no_payment_required`, un cupón del 100 %). Los pagos diferidos se conceden
+con `checkout.session.async_payment_succeeded`. Nuevo `revokeLifetime`: un
+reembolso total (`charge.refunded`) o una disputa perdida
+(`charge.dispute.closed` con estado `lost`) devuelven al usuario a gratuito,
+siempre que el cobro sea el de la compra de por vida.
+
+### 6. Un evento atrasado de una suscripción vieja pisaba la activa — importante
+
+**Solución:** `syncSubscription` ignora un evento de otra suscripción ya
+muerta cuando la guardada sigue vigente. Una suscripción nueva y viva sí la
+reemplaza.
+
+**Tests:** `lifetime.test.ts` (6 tests nuevos) y `billingWebhook.test.ts`
+(8 tests).
+
+> **Acción en el panel de Stripe:** activar en el endpoint del webhook los
+> eventos nuevos `checkout.session.async_payment_succeeded`,
+> `checkout.session.async_payment_failed`, `charge.refunded` y
+> `charge.dispute.closed` (ver `docs/stripe.md`).
+
 ## Pendientes
-
-### Graves
-
-- [ ] **4. El webhook de Stripe pierde eventos ante errores transitorios.**
-  `stripeWebhook.routes.ts` responde 200 aunque el procesamiento falle, así
-  que Stripe no reintenta. En el pago de por vida, el usuario paga y no
-  recibe nada. Hay que responder 500 ante errores de procesamiento: todo es
-  idempotente (`upsert`) y Stripe reintenta durante 3 días.
 
 ### Importantes
 
-- [ ] **5. El de por vida se concede sin comprobar el cobro.** `grantLifetime`
-  no mira `session.payment_status === 'paid'`; con pagos diferidos (SEPA,
-  transferencia) el evento llega `unpaid`. Falta manejar
-  `checkout.session.async_payment_succeeded` y los reembolsos y disputas
-  (`charge.refunded`, `charge.dispute.created`).
-- [ ] **6. Un evento atrasado de una suscripción vieja pisa la activa.**
-  `syncSubscription` no compara `subscription.id` con el
-  `stripeSubscriptionId` guardado.
 - [ ] **7. La firma del webhook de Clerk se verifica sobre el JSON
   re-serializado** (`JSON.stringify(req.body)` en `webhook.ts`). Svix firma
   los bytes exactos: hay que usar el cuerpo crudo con `raw()`.

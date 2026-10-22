@@ -48,25 +48,29 @@ stripeWebhookRouter.post(
 
     const event = billingService.verifyWebhook(payload, signature);
 
-    /* Se responde 200 aunque el procesamiento falle. Si devolviéramos un 5xx,
-       Stripe reintenta el evento; y como nosotros aplicamos con `upsert`, el
-       reintento produce el mismo resultado, así que sólo se gasta cuota. Peor:
-       si el error fuera de red, avisar un 5xx hace que Stripe siga
-       reintentando para siempre sin que nada cambie.
+    /* Si el PROCESAMIENTO falla, se responde 500 y Stripe reintenta.
 
-       O sea: el error se loguea para revisión manual, pero la respuesta es
-       200 siempre. Lo que no se puede es no responder. */
+       Antes se respondía 200 siempre, y eso perdía eventos: si la base estaba
+       ocupada o la API de Stripe no contestaba en ese momento, Stripe daba el
+       evento por entregado y no lo volvía a mandar. En el pago de por vida,
+       que se concede sólo con este evento, el usuario pagaba y no recibía
+       nada.
+
+       Reintentar es seguro porque todo se aplica con `upsert` y se deriva del
+       estado actual: el mismo evento dos veces deja el mismo resultado.
+       Stripe reintenta con espera creciente durante tres días.
+
+       Lo que NO es un error no lanza: un evento que no se puede atribuir a
+       nadie, o un precio que no es nuestro, se loguea y se responde 200,
+       porque reintentarlo daría siempre lo mismo. */
     try {
       switch (event.type) {
-        case 'checkout.session.completed': {
-          /* El evento que más importa: sin él, el usuario paga y no se le
-             activa el Pro hasta que llegue otro.
-
-             Y hay que separar los dos modos, porque no se comportan igual:
-             una compra de por vida no deja suscripción, así que este evento
-             es el ÚNICO lugar donde se puede conceder. Si se lo salteara por
-             buscar `session.subscription` y no lo encontrara, el usuario
-             pagaría de una sola vez y no se le daría nada. */
+        case 'checkout.session.completed':
+        case 'checkout.session.async_payment_succeeded': {
+          /* Una compra de por vida no deja suscripción, así que este evento
+             es el ÚNICO lugar donde se concede. `grantLifetime` comprueba que
+             el pago esté cobrado: con pagos diferidos, `completed` llega
+             antes que el dinero y `async_payment_succeeded` llega con él. */
           const session = event.data.object;
 
           if (session.mode === 'payment') {
@@ -88,15 +92,55 @@ stripeWebhookRouter.post(
           break;
         }
 
+        case 'checkout.session.async_payment_failed': {
+          console.warn('[billing] Falló el pago diferido de un checkout.', {
+            session: event.data.object.id,
+          });
+          break;
+        }
+
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.resumed': {
-          await billingService.syncSubscription(event.data.object);
+          /* Stripe no garantiza el orden de entrega: un `updated` viejo puede
+             llegar después de uno nuevo. Por eso no se usa el objeto del
+             evento sino el estado ACTUAL, pedido a la API en este momento. */
+          const subscription = await billingService.retrieveSubscription(event.data.object.id);
+          await billingService.syncSubscription(subscription);
           break;
         }
 
         case 'customer.subscription.deleted': {
           await billingService.markCanceled(event.data.object.id);
+          break;
+        }
+
+        case 'charge.refunded': {
+          /* Sólo el reembolso TOTAL quita el de por vida. Uno parcial es un
+             descuento o una compensación, no una devolución de la compra. */
+          const charge = event.data.object;
+          const pi =
+            typeof charge.payment_intent === 'string'
+              ? charge.payment_intent
+              : charge.payment_intent?.id;
+          if (charge.refunded && pi) {
+            await billingService.revokeLifetime(pi, 'refunded');
+          }
+          break;
+        }
+
+        case 'charge.dispute.closed': {
+          /* Se quita al PERDER la disputa, no al abrirse: mientras está
+             abierta todavía se puede ganar, y quitarle el acceso a quien
+             después resulta tener razón no se arregla con un perdón. */
+          const dispute = event.data.object;
+          const pi =
+            typeof dispute.payment_intent === 'string'
+              ? dispute.payment_intent
+              : dispute.payment_intent?.id;
+          if (dispute.status === 'lost' && pi) {
+            await billingService.revokeLifetime(pi, 'dispute_lost');
+          }
           break;
         }
 
@@ -115,16 +159,9 @@ stripeWebhookRouter.post(
           break;
       }
     } catch (err) {
-      /* Un error de PROCESAMIENTO no puede hacer fallar el webhook: Stripe
-         dejaría de entregar eventos y se perderían cambios de suscripción.
-         Se loguea para revisión manual y se responde 200 igual.
-
-         Ojo la diferencia: los errores de arriba (firma inválida, Stripe sin
-         configurar) SÍ se propagan, y van a caer en el errorHandler. Eso es
-         correcto: son errores de configuración o de ataque, y responder 200 a
-         un POST con firma falsa le diría a Stripe que la entrega está bien
-         cuando en realidad nunca va a funcionar. */
-      console.error(`[billing] Error procesando el evento ${event.type}:`, err);
+      console.error(`[billing] Error procesando el evento ${event.type} (${event.id}):`, err);
+      /* Al errorHandler: responde 500 y Stripe reintenta. */
+      throw err;
     }
 
     res.json({ received: true });

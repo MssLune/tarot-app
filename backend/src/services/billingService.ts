@@ -5,7 +5,9 @@ import { ApiError } from '../utils/ApiError';
 import {
   planFrom,
   effectiveTier,
+  limitsFor,
   tierFromPriceId,
+  PLAN_LIMITS,
   PLAN_TIERS,
   type Plan,
   type PlanTier,
@@ -69,7 +71,6 @@ export interface SubscriptionView {
 }
 
 export async function getSubscription(userId: string): Promise<SubscriptionView> {
-  const { limitsFor } = await import('./plans');
   const sub = await prisma.subscription.findUnique({ where: { userId } });
   if (!sub) {
     /* Sin fila todavía: es un usuario que nunca intentó pagar. No se crea
@@ -219,6 +220,21 @@ export async function grantLifetime(sessionId: string): Promise<string | null> {
     expand: ['line_items.data.price'],
   });
 
+  /* `checkout.session.completed` NO significa "cobrado". Con medios de pago
+     diferidos (SEPA, transferencia, etc.) la sesión se completa con
+     `payment_status: 'unpaid'` y el dinero llega días después, o nunca. Se
+     concede sólo con el pago confirmado; si queda pendiente, el evento
+     `checkout.session.async_payment_succeeded` vuelve a llamar acá cuando
+     llega el cobro. `no_payment_required` es un cupón del 100 %: no hay nada
+     que esperar. */
+  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+    console.warn(
+      `[billing] La sesión ${sessionId} todavía no está cobrada (payment_status ` +
+        `"${session.payment_status}"). El Pro de por vida se concede cuando llegue el pago.`,
+    );
+    return null;
+  }
+
   const priceId = session.line_items?.data[0]?.price?.id ?? null;
   if (tierFromPriceId(priceId) !== 'lifetime') {
     /* No es el precio de por vida: no se concede nada. Puede ser un pago
@@ -277,6 +293,54 @@ export async function grantLifetime(sessionId: string): Promise<string | null> {
       cancelAtPeriodEnd: false,
     },
   });
+  return userId;
+}
+
+/**
+ * Quita el Pro de por vida cuando el pago que lo concedió se devolvió entero
+ * o se perdió una disputa (contracargo).
+ *
+ * Se parte del `payment_intent` del cobro y se busca la sesión de checkout que
+ * lo creó: sólo si ESA sesión fue la compra de por vida se quita algo. Un
+ * reembolso de una factura del mensual no tiene sesión de pago único detrás, y
+ * de esos se encarga el ciclo de vida de la suscripción.
+ *
+ * El `tier` pasa a null y el `plan` a free, que es lo que hace que
+ * `getSubscription` lo trate como gratuito. La fila no se borra: queda el
+ * `status` con el motivo, para poder investigar.
+ */
+export async function revokeLifetime(
+  paymentIntentId: string,
+  motivo: 'refunded' | 'dispute_lost',
+): Promise<string | null> {
+  const lista = await stripe().checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 });
+  const resumen = lista.data[0];
+  if (!resumen) return null;
+
+  const session = await stripe().checkout.sessions.retrieve(resumen.id, {
+    expand: ['line_items.data.price'],
+  });
+  const priceId = session.line_items?.data[0]?.price?.id ?? null;
+  if (session.mode !== 'payment' || tierFromPriceId(priceId) !== 'lifetime') return null;
+
+  const customerId =
+    typeof session.customer === 'string' ? session.customer : (session.customer?.id ?? null);
+  const userId = await resolveUserId(customerId ?? undefined, session.metadata);
+  if (!userId) {
+    console.error(
+      `[billing] Llegó ${motivo} del pago ${paymentIntentId}, pero no pude atribuirlo a nadie.`,
+    );
+    return null;
+  }
+
+  const fila = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
+  if (fila?.tier !== 'lifetime') return userId;
+
+  await prisma.subscription.update({
+    where: { userId },
+    data: { tier: null, plan: 'free', status: motivo, cancelAtPeriodEnd: false },
+  });
+  console.warn(`[billing] Se quitó el Pro de por vida a ${userId}: ${motivo} (${paymentIntentId}).`);
   return userId;
 }
 
@@ -474,12 +538,33 @@ export async function syncSubscription(
    * antes de escribir evita que un evento atrasado sea el que decide. */
   const actual = await prisma.subscription.findUnique({
     where: { userId },
-    select: { tier: true },
+    select: { tier: true, status: true, stripeSubscriptionId: true },
   });
   if (actual?.tier === 'lifetime') {
     console.warn(
       `[billing] La suscripción ${subscription.id} intentó cambiar el plan de un usuario ` +
         'que ya tiene Pro de por vida. Se ignora: no hay nada por encima de por vida.',
+    );
+    return userId;
+  }
+
+  /* Un evento de OTRA suscripción, ya muerta, no pisa la que está vigente.
+   *
+   * Pasa con un webhook atrasado: el usuario canceló el mensual, después se
+   * suscribió al anual, y llega tarde un `updated` del mensual con estado
+   * `canceled`. Sin esta comprobación, ese evento viejo sobrescribía la fila y
+   * el usuario perdía el Pro que está pagando. Una suscripción nueva y viva sí
+   * reemplaza a la guardada: es el caso normal de volver a suscribirse. */
+  const esViva = (status: string) => limitsFor('pro', status) === PLAN_LIMITS.pro;
+  if (
+    actual?.stripeSubscriptionId &&
+    actual.stripeSubscriptionId !== subscription.id &&
+    esViva(actual.status) &&
+    !esViva(subscription.status)
+  ) {
+    console.warn(
+      `[billing] Se ignora la suscripción ${subscription.id} (${subscription.status}): ` +
+        `el usuario ${userId} tiene vigente ${actual.stripeSubscriptionId}.`,
     );
     return userId;
   }

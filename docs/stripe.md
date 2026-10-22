@@ -62,6 +62,29 @@ La prueba **pide la tarjeta igual**. Stripe cobra al final de los 7 días, así
 que sin tarjeta el usuario tiene 7 días de Pro sin límites y después cae al
 plan gratuito sin haberte pagado nada. Pedirla al principio es lo honesto.
 
+## 3 ter. Los eventos del webhook
+
+En producción (Dashboard → Webhooks → Add endpoint →
+`https://<tu-dominio>/webhooks/stripe`) hay que activar:
+
+| Evento | Qué hace |
+| --- | --- |
+| `checkout.session.completed` | Activa el Pro. El de por vida, sólo si el pago ya está cobrado |
+| `checkout.session.async_payment_succeeded` | Concede el de por vida cuando llega un pago diferido (SEPA, transferencia) |
+| `checkout.session.async_payment_failed` | Sólo se registra |
+| `customer.subscription.created` / `updated` / `resumed` | Sincroniza el estado, pedido a la API en ese momento |
+| `customer.subscription.deleted` | Marca la suscripción como cancelada |
+| `charge.refunded` | Reembolso **total** de la compra de por vida: vuelve a gratuito |
+| `charge.dispute.closed` | Disputa **perdida** de la compra de por vida: vuelve a gratuito |
+| `invoice.payment_failed` | Sólo se registra; el `past_due` llega con `subscription.updated` |
+
+**Si el procesamiento falla, el webhook responde 500** y Stripe reintenta
+durante tres días. Es seguro porque todo se aplica con `upsert`: el mismo
+evento dos veces deja el mismo resultado. Un evento que no se puede atribuir a
+nadie, o con un precio que no es nuestro, se registra y responde 200, porque
+reintentarlo daría siempre lo mismo. En `stripe listen`, un `--> 500` indica un
+error real que hay que mirar en los logs del backend.
+
 ## 4. Probar el webhook en local
 
 La app corre en `http://localhost:4000`, pero Stripe no puede llegar ahí. Se
@@ -128,7 +151,8 @@ sqlite3 backend/prisma/dev.db "SELECT plan, status, currentPeriodEnd FROM subscr
 ```
 
 Y en la terminal de `stripe listen`, cada evento debería salir con
-`--> 200` en la última línea. Si sale `400`, la firma no coincidió.
+`--> 200` en la última línea. Si sale `400`, la firma no coincidió; si sale
+`500`, falló el procesamiento y el detalle está en los logs del backend.
 
 ---
 
@@ -146,11 +170,15 @@ Y en la terminal de `stripe listen`, cada evento debería salir con
 - **`past_due` conserva el acceso.** El mes ya está pagado.
 - **La app con el cobro apagado.** Las cinco rutas dan 404 (no 401), el resto
   de la API sigue contestando, y el plan gratuito se calcula igual. 10 tests.
-- **El Pro de por vida.** 13 tests: que conceda, y sobre todo que NO conceda
-  ante un pago de otro precio, una suscripción mensual, una sesión sin
-  items, o una compra que no se puede atribuir a nadie. Y que un webhook
-  atrasado de una suscripción vieja no le saque el Pro a alguien que ya pagó
-  de por vida.
+- **El Pro de por vida.** 19 tests en `lifetime.test.ts`: que conceda, y sobre
+  todo que NO conceda ante un pago de otro precio, una suscripción mensual,
+  una sesión sin items, una compra que no se puede atribuir a nadie o un pago
+  diferido todavía sin cobrar. Que un webhook atrasado de una suscripción
+  vieja no le saque el Pro a alguien que ya pagó de por vida, y que un
+  reembolso total o una disputa perdida sí se lo quiten.
+- **Reintentos y suscripciones viejas.** `billingWebhook.test.ts`: con la API
+  de Stripe caída, el webhook responde 500 (Stripe reintenta); un evento
+  atrasado de una suscripción ya cancelada no pisa la vigente.
 
 ## Lo único que no se puede testear sin esta cuenta
 
