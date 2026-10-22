@@ -64,8 +64,28 @@ plan gratuito sin haberte pagado nada. Pedirla al principio es lo honesto.
 
 ## 3 ter. Los eventos del webhook
 
-En producción (Dashboard → Webhooks → Add endpoint →
-`https://<tu-dominio>/webhooks/stripe`) hay que activar:
+Los webhooks ya no están en un menú propio del panel: viven en **Workbench**
+(menú **Developers**, abajo a la izquierda → pestaña **Webhooks**). Acceso
+directo: https://dashboard.stripe.com/webhooks
+
+**Sólo hace falta para producción.** Stripe exige una URL pública HTTPS, así
+que `localhost` no sirve; en local se usa la CLI (paso 4).
+
+Para crearlo:
+
+1. **Create new destination**.
+2. Dejar la versión de API que ofrece y elegir **Events on your account**.
+3. Marcar los eventos de la tabla de abajo → **Continue**.
+4. Tipo **Webhook** → **Endpoint URL**: `https://<tu-dominio>/webhooks/stripe`.
+5. **Create destination**.
+6. En el destino creado, revelar el **Signing secret** (`whsec_...`) y ponerlo
+   como `STRIPE_WEBHOOK_SECRET` en el `.env` del servidor.
+
+Las entregas y sus reintentos se ven en el destino → pestaña **Event
+deliveries**. En un sandbox, Stripe reintenta sólo tres veces en pocas horas;
+en producción, durante tres días.
+
+Eventos que hay que activar:
 
 | Evento | Qué hace |
 | --- | --- |
@@ -90,17 +110,39 @@ error real que hay que mirar en los logs del backend.
 La app corre en `http://localhost:4000`, pero Stripe no puede llegar ahí. Se
 usa la CLI de Stripe, que abre un túnel y te da una clave de firma local.
 
-Instalar: https://docs.stripe.com/stripe-cli
+**Instalar la CLI** (es un programa aparte; sin ella, `stripe` no existe como
+comando). En Windows, con Node ya instalado:
+
+```bash
+npm install -g @stripe/cli
+```
+
+Alternativa: `winget install Stripe.StripeCLI`. Después hay que **abrir una
+terminal nueva** y comprobar con `stripe version`.
+
+**Conectar y escuchar.** Las versiones actuales de la CLI exigen decir qué
+eventos reenviar (sin `--events` da el error *must specify events to forward*).
+Con los mismos que maneja el backend, en una sola línea:
 
 ```bash
 stripe login
-stripe listen --forward-to localhost:4000/webhooks/stripe
+stripe listen --forward-to localhost:4000/webhooks/stripe --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,customer.subscription.created,customer.subscription.updated,customer.subscription.resumed,customer.subscription.deleted,charge.refunded,charge.dispute.closed,invoice.payment_failed
 ```
 
-Copiá el `whsec_...` que imprime y ponelo como `STRIPE_WEBHOOK_SECRET`.
+`--all-snapshot` en lugar de `--events ...` reenvía todos; funciona igual,
+porque el backend ignora los que no usa, pero llena la terminal de ruido.
 
-**Ojo:** es una clave distinta a la del dashboard. La de la CLI vale sólo para
-eventos que tú dispares con `stripe trigger`; no sirve en producción.
+Copiá el `whsec_...` que imprime y ponelo como `STRIPE_WEBHOOK_SECRET`. Es el
+mismo cada vez que la volvés a lanzar con esta cuenta, así que se configura una
+sola vez.
+
+`stripe listen` tiene que quedar **abierto mientras se prueban pagos**: es el
+túnel por el que llegan los eventos. Se cierra con Ctrl + C. Para trabajar en
+el resto de la app no hace falta.
+
+**Ojo:** es una clave distinta a la del destino de producción. La de la CLI
+vale sólo para los eventos que reenvía la CLI en tu PC; no sirve en
+producción.
 
 ## 5. Poner's las tres variables
 

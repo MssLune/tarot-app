@@ -86,9 +86,15 @@ reemplaza.
   (`resolveUser` en `middleware/clerk.ts`). Exigir email verificado.
 - [ ] **9. Borrar un usuario no cancela su suscripción en Stripe**, y
   `resolveUser` lo vuelve a crear si sigue existiendo en Clerk.
-- [ ] **10. `backend/.env` y `backend/prisma/dev.db` no están en
-  `.gitignore`.** Hoy no están en git, pero un `git add .` subiría las claves
-  y los datos de los usuarios.
+- [ ] **10. `backend/.env` y `backend/prisma/dev.db` entraron en git y se
+  subieron a GitHub** (commit «first commit: tarot app», 22/10/2026).
+  - [x] `.gitignore` los excluye (`backend/.env`, `.env`, `backend/prisma/*.db`).
+  - [ ] Sacarlos del repositorio sin borrarlos del disco:
+    `git rm --cached backend/.env backend/prisma/dev.db`, commit y push.
+  - [ ] Antes de hacer público el repositorio o sumar colaboradores: rotar
+    las claves que había en `backend/.env` (Stripe y Clerk: secret keys y
+    signing secrets de webhooks). Siguen en el historial de git; hoy el
+    repositorio es privado y de un solo usuario, así que el riesgo es bajo.
 
 ### Menores
 
