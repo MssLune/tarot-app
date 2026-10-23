@@ -34,11 +34,17 @@ import { useReadingStore } from './store/useReadingStore';
  * entero obliga al navegador a componerlo en una capa propia, y la Luna tiene
  * 42 SVG inline. Al entrar y al salir se difuminaban los 42 a la vez.
  *
- * Un desenfoque además hace que la salida dependa de terminar a tiempo: con
- * `AnimatePresence mode="wait"`, si el exit no concludes, la pantalla nueva no
- * se monta y el área de contenido queda VACÍA — se ve el menú y nada más.
- * Sacar el blur deja la transición como una opacidad y un desplazamiento, que
- * no dependen de que el navegador pueda seguir el paso.
+ * SIN `mode="wait"`. Con "wait", la pantalla nueva recién se monta cuando
+ * TERMINA la animación de salida de la vieja; si esa salida no termina (se
+ * cambia de pantalla dos veces seguidas, o la pestaña pasa a segundo plano y
+ * el navegador pausa las animaciones), la nueva no se monta nunca y el área
+ * de contenido queda VACÍA hasta recargar: se ve el menú y nada más.
+ *
+ * Con `mode="popLayout"` la pantalla nueva se monta EN EL ACTO y la vieja se
+ * saca del flujo (queda superpuesta, en `absolute`) mientras se desvanece. Si
+ * su salida no terminara, lo peor que pasa es que tarda en irse; la pantalla
+ * correcta ya está. El contenedor de afuera es `relative` para que la vieja se
+ * superponga en el mismo lugar.
  */
 const pageTransition = {
   initial: { opacity: 0, y: 24 },
@@ -281,17 +287,20 @@ export default function App() {
     <>
       <Starfield />
       <AppShell>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={screen}
-            initial={pageTransition.initial}
-            animate={pageTransition.animate}
-            exit={pageTransition.exit}
-            transition={pageTransition.transition}
-          >
-            {renderScreen()}
-          </motion.div>
-        </AnimatePresence>
+        <div className="relative">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+              key={screen}
+              initial={pageTransition.initial}
+              animate={pageTransition.animate}
+              exit={pageTransition.exit}
+              transition={pageTransition.transition}
+              className="w-full"
+            >
+              {renderScreen()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </AppShell>
     </>
   );
