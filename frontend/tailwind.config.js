@@ -33,6 +33,29 @@ export default {
           400: '#e0a072',
           500: '#c07a4c',
         },
+        // Pantalla Luna: superficies nocturnas, lavanda para el texto
+        // secundario y un rosa apagado para los eventos especiales.
+        noche: {
+          950: '#0D0717',
+          900: '#130D1E',
+          800: '#1B102B',
+          700: '#241638',
+          600: '#3A2952',
+        },
+        lavanda: {
+          100: '#EFE9F3',
+          200: '#D8CCDF',
+          300: '#BCAECA',
+          400: '#9F8FB0',
+        },
+        luna: {
+          300: '#E5CA87',
+          400: '#D8B66D',
+        },
+        rosa: {
+          300: '#D9A9B8',
+          400: '#C48A9C',
+        },
       },
       fontFamily: {
         display: ['Cinzel', 'Playfair Display', 'serif'],

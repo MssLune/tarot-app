@@ -103,9 +103,11 @@ describe('las pantallas renderizan contenido', () => {
          celda no es interactiva y no hay forma de tocar un día que no está en
          el mes que se está mirando. Con relleno, el total de celdas llega a 42
          pero los discos son 28 a 31. */
-      const svg = (html.match(/<svg/g) ?? []).length;
-      expect(svg).toBeGreaterThanOrEqual(28);
-      expect(svg).toBeLessThanOrEqual(31);
+      /* Se cuentan los discos de la grilla por su marca, no los `<svg>`: la
+         pantalla también tiene íconos y el disco grande del detalle del día. */
+      const discos = (html.match(/data-disco-lunar="dia"/g) ?? []).length;
+      expect(discos).toBeGreaterThanOrEqual(28);
+      expect(discos).toBeLessThanOrEqual(31);
       expect(textoVisible(html)).toContain('Luna');
     });
   });
@@ -125,8 +127,8 @@ describe('las pantallas renderizan contenido', () => {
   it('el calendario explica la leyenda de los puntos', () => {
     conEstado(() => {
       const texto = textoVisible(renderToStaticMarkup(<MoonCalendar />));
-      /* Los tres tipos de punto tienen que estar legality explicados, o el
-         usuario ve unos puntitos de colores sin saber qué son. */
+      /* Cada tipo de marca tiene que estar explicado en la leyenda, o el
+         usuario ve formas sin saber qué son. */
       expect(texto).toContain('Festividad');
       expect(texto).toContain('retrógrado');
     });

@@ -4,11 +4,11 @@ import { fromJulianDay, moonPhase, phasesOfLunation, toJulianDay } from '../src/
 /* ==========================================================================
    Astronomía lunar.
 
-   Serie de Meeus ("Astronomical Algorithms", 2ª edición, cap. 49). Las cuatro
-   fases principales salen con un desvío de 1 a 8 minutos respecto de los
-   instantes publicados. Las cuatro intermedias se interpolan entre anclas: no
-   tienen precisión de efemérides y sirven para saber en qué fase estamos, no
-   para publicar el instante.
+   Serie de Meeus ("Astronomical Algorithms", 2ª edición, cap. 49), con el
+   término W de los cuartos, las correcciones planetarias y ΔT (TT → UT). Las
+   cuatro fases principales salen a menos de un minuto de los instantes
+   publicados. Las cuatro intermedias son tramos, no instantes: su fecha es una
+   referencia para ordenar, no para publicar.
 
    Los valores de referencia SON los publicados, con la zona horaria ya
    convertida a UTC. Si algún día se cambia la serie, estos tests avisan.
@@ -40,8 +40,13 @@ const REFERENCIAS = [
   },
 ] as const;
 
-/** Margen en minutos. La serie de Meeus promete unos pocos. */
-const TOLERANCIA_MIN = 10;
+/**
+ * Margen en minutos. Con la serie completa el desvío medido es de menos de
+ * un minuto; 2 deja lugar al redondeo de las referencias publicadas (que
+ * vienen al minuto) sin tapar un error real. Antes era 10, porque los cuartos
+ * salían hasta 8 minutos antes.
+ */
+const TOLERANCIA_MIN = 2;
 
 describe('día juliano', () => {
   it('J2000.0 es exactamente 2451545', () => {

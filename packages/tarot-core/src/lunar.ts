@@ -12,12 +12,21 @@
 
    PRECISIÓN HONESTA:
    - Las 4 fases principales (Luna Nueva, Cuarto Creciente, Luna Llena, Cuarto
-     Menguante) usan su propia serie de correcciones de Meeus: error de ~2 min.
-   - Las 4 fases intermedias (crecientes, gibosas) NO tienen serie propia en el
-     libro. Se obtienen por interpolación entre las principales, así que su
-     error es de hasta ~12 h. Para lo que hace la app —"¿qué fase es hoy?"—
-     es irrelevante, pero no es un dato astronómico fino y no se debe usar para
-     calcular un eclipse.
+     Menguante) usan su propia serie de correcciones de Meeus. La serie da el
+     instante en Tiempo Terrestre (TT); se pasa a Tiempo Universal restando
+     ΔT (ver `deltaT`). Error típico: 1 a 3 minutos. Por eso la interfaz
+     muestra la hora al minuto y la presenta como aproximada, nunca segundos.
+   - Las 4 fases intermedias (crecientes, gibosas) NO son instantes: son los
+     tramos entre principales. `phasesOfLunation` les pone una fecha de
+     referencia (el punto medio), que sirve para ordenar, no para publicar.
+   - La fracción iluminada sale de la elongación real de la Luna (Meeus, cap.
+     48, fórmula de baja precisión): error menor a 1 punto porcentual. La
+     interfaz la redondea a un entero.
+
+   CONVENCIÓN DEL NOMBRE DEL DÍA (`lunaDelDia`): una fase principal es un
+   instante, así que su nombre se le da sólo al día local en que cae ese
+   instante. Los demás días llevan el nombre del tramo (creciente, gibosa,
+   etc.). Es la convención de los almanaques y calendarios lunares.
 
    Todo es client-side: aritmética sobre una fecha, sin red.
    ========================================================================== */
@@ -40,32 +49,45 @@ export type MoonPhaseId =
 export interface MoonPhase {
   id: MoonPhaseId;
   name: string;
-  /** Qué suele invocarse de esta fase en la práctica del tarot. */
+  /** Qué suele invocarse de esta fase en la práctica del tarot (simbólico). */
   note: string;
+  /** Qué pasa en el cielo en esta fase (astronómico, no simbólico). */
+  descripcion: string;
   /** Momento exacto de la fase. */
   date: Date;
   /** Días desde la Luna Nueva: 0 = nueva, ~14,77 = llena. */
   age: number;
-  /** Fracción iluminada del disco, de 0 a 1. */
+  /**
+   * Fracción iluminada del disco, de 0 a 1.
+   *
+   * En `phasesOfLunation` es el valor NOMINAL de la fase (0, 0,5, 1...). En
+   * `moonPhase` es el real en el instante pedido.
+   */
   illumination: number;
   /** Ángulo dentro del ciclo, de 0 a 2π. Sirve para dibujar el disco. */
   angle: number;
-  /** `true` si el momento viene de la serie de Meeus, `false` si interpolado. */
+  /** `true` si el momento viene de la serie de Meeus, `false` si es el punto medio de un tramo. */
   exact: boolean;
 }
 
-const PHASE_META: Record<MoonPhaseId, { name: string; note: string }> = {
+const PHASE_META: Record<MoonPhaseId, { name: string; note: string; descripcion: string }> = {
   new: {
     name: 'Luna Nueva',
     note: 'Intención y comienzos. Buen momento para decidir qué se pregunta.',
+    descripcion:
+      'La Luna pasa entre la Tierra y el Sol. La cara que mira hacia acá no recibe luz y sale y se pone casi junto con el Sol, así que no se ve.',
   },
   'waxing-crescent': {
     name: 'Luna Creciente',
     note: 'Impulso inicial: la energía crece pero todavía no tiene forma.',
+    descripcion:
+      'Un filo iluminado que crece cada noche. Se ve al anochecer, bajo hacia el oeste, poco después de la puesta del Sol.',
   },
   'first-quarter': {
     name: 'Cuarto Creciente',
     note: 'Primer obstáculo. Se pide una decisión, no una definición.',
+    descripcion:
+      'Media Luna iluminada. Sale hacia el mediodía, está alta al anochecer y se pone hacia la medianoche.',
   },
   'waxing-gibbous': {
     /* "Gibosa" es el termino tecnico correcto y casi nadie lo usa. "Casi
@@ -73,25 +95,35 @@ const PHASE_META: Record<MoonPhaseId, { name: string; note: string }> = {
        no se pierde: vive en el id ('waxing-gibbous') y en el PDF. */
     name: 'Casi Llena',
     note: 'Más de la mitad iluminada, todavía no llena. Momento de afinar y revisar lo que ya se sabe.',
+    descripcion:
+      'Más de la mitad iluminada y en aumento. Se ve desde la tarde y durante buena parte de la noche.',
   },
   full: {
     name: 'Luna Llena',
     note: 'Revelación. Lo que estaba oculto se hace visible.',
+    descripcion:
+      'La Tierra queda entre el Sol y la Luna y el disco se ve entero. Sale al atardecer, se pone al amanecer y está en el cielo toda la noche.',
   },
   'waning-gibbous': {
     /* Ninguno de los ocho nombres se repite ni se confunde con otro: aqui
        "menguante" es la gibosa, el cuarto menguante es el cuarto, y la ultima
-       del ciclo es la balsema. */
+       del ciclo es la balsámica. */
     name: 'Luna Menguante',
     note: 'La Luna ya pasó la llena y le empieza a bajar la luz. Momento de distribuir lo aprendido: compartir, enseñar o pedir consejo.',
+    descripcion:
+      'Más de la mitad iluminada y en disminución. Sale después del anochecer y se ve hasta la mañana.',
   },
   'last-quarter': {
     name: 'Cuarto Menguante',
     note: 'Segundo obstáculo. Corregir, soltar, cerrar un ciclo.',
+    descripcion:
+      'La otra media Luna iluminada. Sale hacia la medianoche y se ve alta al amanecer.',
   },
   'waning-crescent': {
-    name: 'Luna Balsema',
+    name: 'Luna Balsámica',
     note: 'Reposo. Balance y preparación para el ciclo siguiente.',
+    descripcion:
+      'Un filo cada vez más fino. Se ve de madrugada, hacia el este, antes de la salida del Sol.',
   },
 };
 
@@ -117,6 +149,52 @@ export function toJulianDay(date: Date): number {
 /** Día juliano a fecha. */
 export function fromJulianDay(jd: number): Date {
   return new Date((jd - 2440587.5) * 86400000);
+}
+
+/**
+ * ΔT = TT − UT, en segundos, para un año decimal.
+ *
+ * Polinomios de Espenak y Meeus (NASA, "Polynomial Expressions for Delta T"),
+ * por tramos. La app sólo acepta años entre 1900 y 2100 (ver las rutas de la
+ * Luna), así que sólo están esos tramos; fuera de ellos se usa el extremo.
+ * Después de 2005 el polinomio es una extrapolación: en 2026 da ~75 s contra
+ * ~69 s medidos. Seis segundos no cambian el minuto que se muestra.
+ */
+export function deltaT(anio: number): number {
+  const y = Math.min(2150, Math.max(1900, anio));
+  if (y < 1920) {
+    const t = y - 1900;
+    return -2.79 + 1.494119 * t - 0.0598939 * t ** 2 + 0.0061966 * t ** 3 - 0.000197 * t ** 4;
+  }
+  if (y < 1941) {
+    const t = y - 1920;
+    return 21.2 + 0.84493 * t - 0.0761 * t ** 2 + 0.0020936 * t ** 3;
+  }
+  if (y < 1961) {
+    const t = y - 1950;
+    return 29.07 + 0.407 * t - t ** 2 / 233 + t ** 3 / 2547;
+  }
+  if (y < 1986) {
+    const t = y - 1975;
+    return 45.45 + 1.067 * t - t ** 2 / 260 - t ** 3 / 718;
+  }
+  if (y < 2005) {
+    const t = y - 2000;
+    return (
+      63.86 +
+      0.3345 * t -
+      0.060374 * t ** 2 +
+      0.0017275 * t ** 3 +
+      0.000651814 * t ** 4 +
+      0.00002373599 * t ** 5
+    );
+  }
+  if (y < 2050) {
+    const t = y - 2000;
+    return 62.92 + 0.32217 * t + 0.005589 * t ** 2;
+  }
+  const u = (y - 1820) / 100;
+  return -20 + 32 * u ** 2 - 0.5628 * (2150 - y);
 }
 
 /** Año decimal: el año entero más la parte del día transcurrido. */
@@ -282,14 +360,14 @@ function correctionFull({ M, Mp, F, Omega, E }: Elements): number {
 }
 
 /**
- * Cuarto Creciente. Tabla 49.A de Meeus.
+ * Cuartos (creciente y menguante). Meeus, cap. 49: los dos cuartos comparten
+ * la MISMA serie, y se distinguen por el término W, que se suma en el Cuarto
+ * Creciente y se resta en el Menguante (ver `correctionW`).
  *
- * Los dos cuartos comparten casi todos los coeficientes, pero NO son la misma
- * serie: el Menguante no tiene el término `-0,01183 E sin(M' + M)` y trae
- * `+0,00023 sin(M + 2F)` sin el factor E. Usar la misma serie para los dos
- * dejaba al Cuarto Menguante desviado.
+ * Antes cada cuarto tenía su serie, con signos cambiados en varios términos
+ * y sin W: los cuartos salían entre 2 y 8 minutos antes de lo publicado.
  */
-function correctionFirstQuarter({ M, Mp, F, Omega, E }: Elements): number {
+function correctionQuarter({ M, Mp, F, Omega, E }: Elements): number {
   return (
     -0.62801 * sin(Mp) +
     0.17172 * E * sin(M) -
@@ -297,58 +375,71 @@ function correctionFirstQuarter({ M, Mp, F, Omega, E }: Elements): number {
     0.00862 * sin(2 * Mp) +
     0.00804 * sin(2 * F) +
     0.00454 * E * sin(Mp - M) +
-    0.00204 * E * E * sin(2 * M) +
-    0.0018 * sin(Mp - 2 * F) +
-    0.0007 * sin(Mp + 2 * F) -
-    0.0004 * sin(2 * Mp + M) +
-    0.00034 * E * sin(M + 2 * F) +
-    0.00032 * E * sin(Mp - M + 2 * F) +
-    0.00032 * E * sin(Mp + 2 * F) -
-    0.00028 * E * E * sin(2 * Mp - M) +
-    0.00027 * E * sin(2 * Mp + M) +
-    0.00017 * sin(Omega) -
-    0.00005 * sin(Mp - 2 * F) +
-    0.00004 * sin(2 * Mp + 2 * F) -
-    0.00004 * sin(M) +
-    0.00003 * sin(Mp + M - 2 * F) +
-    0.00003 * sin(2 * Mp - 2 * F) +
-    0.00003 * sin(Mp + M + 2 * F) +
-    0.00003 * sin(Mp - M + 2 * F) -
-    0.00002 * sin(Mp - M - 2 * F) -
-    0.00002 * sin(3 * Mp + M) +
-    0.00002 * sin(4 * Mp)
-  );
-}
-
-/** Cuarto Menguante. Tabla 49.A de Meeus. */
-function correctionLastQuarter({ M, Mp, F, Omega, E }: Elements): number {
-  return (
-    -0.62801 * sin(Mp) +
-    0.17172 * E * sin(M) +
-    0.00862 * sin(2 * Mp) +
-    0.00804 * sin(2 * F) +
-    0.00454 * E * sin(Mp - M) +
     0.00204 * E * E * sin(2 * M) -
     0.0018 * sin(Mp - 2 * F) -
     0.0007 * sin(Mp + 2 * F) -
-    0.0004 * sin(2 * Mp + M) +
-    0.00033 * E * sin(M + 2 * F) -
-    0.00023 * E * sin(Mp + M) +
-    0.00023 * sin(M + 2 * F) +
-    0.00021 * E * sin(2 * Mp) -
-    0.00019 * E * sin(Mp - M) +
+    0.0004 * sin(3 * Mp) -
+    0.00034 * E * sin(2 * Mp - M) +
+    0.00032 * E * sin(M + 2 * F) +
+    0.00032 * E * sin(M - 2 * F) -
+    0.00028 * E * E * sin(Mp + 2 * M) +
+    0.00027 * E * sin(2 * Mp + M) -
     0.00017 * sin(Omega) -
-    0.00011 * sin(Mp - 2 * F) -
-    0.00011 * sin(Mp + M) -
-    0.00005 * sin(Mp + 2 * F) +
+    0.00005 * sin(Mp - M - 2 * F) +
     0.00004 * sin(2 * Mp + 2 * F) -
-    0.00004 * sin(M) +
+    0.00004 * sin(Mp + M + 2 * F) +
+    0.00004 * sin(Mp - 2 * M) +
     0.00003 * sin(Mp + M - 2 * F) +
-    0.00003 * sin(Mp - M + 2 * F) -
-    0.00002 * sin(Mp - M - 2 * F) -
-    0.00002 * sin(3 * Mp + M) +
-    0.00002 * sin(4 * Mp)
+    0.00003 * sin(3 * M) +
+    0.00002 * sin(2 * Mp - 2 * F) +
+    0.00002 * sin(Mp - M + 2 * F) -
+    0.00002 * sin(3 * Mp + M)
   );
+}
+
+/** Término W de los cuartos: +W en el Creciente, −W en el Menguante. */
+function correctionW({ M, Mp, F, E }: Elements): number {
+  const cos = (deg: number) => Math.cos((deg * Math.PI) / 180);
+  return (
+    0.00306 -
+    0.00038 * E * cos(M) +
+    0.00026 * cos(Mp) -
+    0.00002 * cos(Mp - M) +
+    0.00002 * cos(Mp + M) +
+    0.00002 * cos(2 * F)
+  );
+}
+
+/**
+ * Correcciones adicionales (planetarias), comunes a las cuatro fases.
+ * Meeus, cap. 49, argumentos A1 a A14. `k` es el fraccionario de la fase
+ * (k + 0,25 para el Cuarto Creciente, etc.). Suman hasta ~1 minuto.
+ */
+const PLANETARIAS: [number, number, number][] = [
+  [299.77, 0.107408, 0.000325],
+  [251.88, 0.016321, 0.000165],
+  [251.83, 26.651886, 0.000164],
+  [349.42, 36.412478, 0.000126],
+  [84.66, 18.206239, 0.00011],
+  [141.74, 53.303771, 0.000062],
+  [207.14, 2.453732, 0.00006],
+  [154.84, 7.30686, 0.000056],
+  [34.52, 27.261239, 0.000047],
+  [207.19, 0.121824, 0.000042],
+  [291.34, 1.844379, 0.00004],
+  [161.72, 24.198154, 0.000037],
+  [239.56, 25.513099, 0.000035],
+  [331.55, 3.592518, 0.000023],
+];
+
+function correctionPlanetary(k: number, T: number): number {
+  let total = 0;
+  PLANETARIAS.forEach(([base, porK, coef], i) => {
+    /* A1 lleva además un término en T². */
+    const arg = base + porK * k - (i === 0 ? 0.009173 * T ** 2 : 0);
+    total += coef * sin(arg);
+  });
+  return total;
 }
 
 /** Las 4 fases principales tienen índice par dentro de la lista de 8. */
@@ -363,7 +454,7 @@ const PRINCIPAL_INDEX = [0, 2, 4, 6] as const;
  *
  * `principalJDE` acepta índices fuera de 0..6 a propósito: con índice 8 devuelve
  * la Luna Nueva del lunación siguiente, que es justo lo que necesita la fase
- * intermedia final (Luna Balsema).
+ * intermedia final (Luna Balsámica).
  */
 function phaseJDE(k: number, index: number): number {
   if (PRINCIPAL_INDEX.includes(index as (typeof PRINCIPAL_INDEX)[number])) {
@@ -383,67 +474,97 @@ function principalJDE(k: number, index: number): number {
     0.00000000073 * el.T ** 4;
   const instant = base + SYNODIC * (index / 8);
   const correction =
-    index === 0 || index === 8
+    (index === 0 || index === 8
       ? correctionNew(el)
       : index === 4
         ? correctionFull(el)
         : index === 2
-          ? correctionFirstQuarter(el)
-          : correctionLastQuarter(el);
-  return instant + correction;
+          ? correctionQuarter(el) + correctionW(el)
+          : correctionQuarter(el) - correctionW(el)) + correctionPlanetary(k + index / 8, el.T);
+  /* La serie da Tiempo Terrestre (TT). Los relojes marcan Tiempo Universal:
+     la diferencia, ΔT, es de ~69 s en 2026. Sin restarla, todas las fases
+     salían un minuto largo tarde. */
+  return instant + correction - deltaT(2000 + k / 12.3685) / 86400;
 }
 
 /**
- * Iluminación en cada una de las 8 fases.
+ * Iluminación NOMINAL de cada una de las 8 fases.
  *
- * Se deriva de la elongación, que avanza 45° por fase, así que la illuminated
- * fraction es (1 - cos(elongación)) / 2:
+ * Se deriva de la elongación, que avanza 45° por fase, así que la fracción
+ * iluminada es (1 - cos(elongación)) / 2:
  *
  *   0,000  nueva      0,146  creciente     0,500  cuarto creciente
  *   0,854  gibosa     1,000  llena         0,854  gibosa menguante
  *   0,500  cuarto menguante                 0,146  menguante
+ *
+ * Es el valor que define a la fase, no el que tiene la Luna en un momento
+ * dado: para eso está `iluminacionEn`.
  */
 const ILLUMINATION_ANCHORS = PHASE_ORDER.map(
   (_, i) => (1 - Math.cos((2 * Math.PI * i) / 8)) / 2,
 );
 
+const DIA_MS = 86400000;
+const norm360 = (x: number) => ((x % 360) + 360) % 360;
+
 /**
- * Fracción iluminada en una fecha, interpolando entre las fases del lunación.
+ * Elongación de la Luna respecto del Sol, en longitud, de 0 a 360°.
  *
- * Naïve sería (1 - cos(2π·edad/lunación)) / 2, que asume que la Luna recorre la
- * órbita a velocidad constante. No lo hace, y el error se nota justo donde más
- * importa: en los cuartos. El Cuarto Creciente da por definición medio disco
- * iluminado, y la fórmula ingenua daba 0,42.
+ * 0° es Luna Nueva, 90° Cuarto Creciente, 180° Llena, 270° Cuarto Menguante.
+ * Argumentos medios de Meeus cap. 47 (ec. 47.2 a 47.4) y las seis
+ * correcciones principales de la ec. 48.4. Error típico: unas décimas de
+ * grado, que en la fracción iluminada es menos de un punto porcentual.
  *
- * Interpolar entre anclas da 0, 0,5 y 1 exactos en las 8 fases y una curva
- * suave entre ellas. Para dibujar un disco es indistinguible del valor real.
+ * Antes la iluminación se interpolaba en línea recta entre las anclas de las
+ * fases. Eso acertaba en los 8 puntos y se equivocaba entre ellos (hasta ~7
+ * puntos a mitad de un tramo, porque la curva real es un coseno).
  */
-function illuminationAt(k: number, index: number, date: Date): number {
-  const t = date.getTime();
-  const start = fromJulianDay(phaseJDE(k, index)).getTime();
-  /* La fase que sigue: para la última, la Luna Nueva del lunación siguiente. */
-  const end =
-    index === 7
-      ? fromJulianDay(phaseJDE(k + 1, 0)).getTime()
-      : fromJulianDay(phaseJDE(k, index + 1)).getTime();
-  if (t <= start) return ILLUMINATION_ANCHORS[index];
-  if (t >= end) return ILLUMINATION_ANCHORS[(index + 1) % 8];
-  const f = (t - start) / (end - start);
-  return ILLUMINATION_ANCHORS[index] + (ILLUMINATION_ANCHORS[(index + 1) % 8] - ILLUMINATION_ANCHORS[index]) * f;
+export function elongacionLunar(date: Date): number {
+  /* La serie va en Tiempo Terrestre: se suma ΔT al instante del reloj. */
+  const jde = toJulianDay(date) + deltaT(decimalYear(date)) / 86400;
+  const T = (jde - 2451545) / 36525;
+  const D =
+    297.8501921 + 445267.1114034 * T - 0.0018819 * T ** 2 + T ** 3 / 545868 - T ** 4 / 113065000;
+  const M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T ** 2 + T ** 3 / 24490000;
+  const Mp =
+    134.9633964 + 477198.8675055 * T + 0.0087414 * T ** 2 + T ** 3 / 69699 - T ** 4 / 14712000;
+  return norm360(
+    D +
+      6.289 * sin(Mp) -
+      2.1 * sin(M) +
+      1.274 * sin(2 * D - Mp) +
+      0.658 * sin(2 * D) +
+      0.214 * sin(2 * Mp) +
+      0.11 * sin(D),
+  );
+}
+
+/** Fracción iluminada real y ángulo para dibujar el disco, en un instante. */
+export function iluminacionEn(date: Date): { illumination: number; angle: number } {
+  const e = (elongacionLunar(date) * Math.PI) / 180;
+  return { illumination: (1 - Math.cos(e)) / 2, angle: e };
+}
+
+/** El tramo intermedio que corresponde a una elongación (en radianes). */
+function tramoPorAngulo(angle: number): MoonPhaseId {
+  const deg = norm360((angle * 180) / Math.PI);
+  if (deg < 90) return 'waxing-crescent';
+  if (deg < 180) return 'waxing-gibbous';
+  if (deg < 270) return 'waning-gibbous';
+  return 'waning-crescent';
 }
 
 function buildPhase(k: number, index: number, jd: number): MoonPhase {
   const id = PHASE_ORDER[index];
-  const age = jd - JDE_REFERENCE - SYNODIC * k;
   return {
     id,
     name: PHASE_META[id].name,
     note: PHASE_META[id].note,
+    descripcion: PHASE_META[id].descripcion,
     date: fromJulianDay(jd),
-    age,
-    /* La edad en días sirve para dibujar (gira de 0 a 2π a lo largo del
-       lunación); la iluminación va interpolada, que es lo correcto. */
-    angle: (2 * Math.PI * age) / SYNODIC,
+    /* Días reales desde la Luna Nueva de este lunación, no desde la media. */
+    age: jd - phaseJDE(k, 0),
+    angle: (2 * Math.PI * index) / 8,
     illumination: ILLUMINATION_ANCHORS[index],
     exact: PRINCIPAL_INDEX.includes(index as (typeof PRINCIPAL_INDEX)[number]),
   };
@@ -456,11 +577,13 @@ export function phasesOfLunation(date: Date = new Date()): MoonPhase[] {
 }
 
 /**
- * Fase vigente en una fecha, con la siguiente.
+ * Fase vigente en un INSTANTE, con la siguiente de las ocho.
  *
- * `lunationNumber` devuelve el lunación cuyo inicio es anterior a la fecha, así
- * que si estamos en los últimos días del lunación anterior (antes de su Luna
- * Nueva) hay que retroceder uno.
+ * Es la vista "por tramos": la fase es la última de las 8 referencias que ya
+ * pasó. Para el nombre que lleva un DÍA del calendario está `lunaDelDia`, que
+ * sigue la convención de los almanaques. La usa el PDF de la lectura.
+ *
+ * La iluminación, el ángulo y la edad son los reales en `date`.
  */
 export function moonPhase(date: Date = new Date()): MoonPhase & { next: MoonPhase } {
   let k = lunationNumber(date);
@@ -472,98 +595,152 @@ export function moonPhase(date: Date = new Date()): MoonPhase & { next: MoonPhas
   for (let i = 0; i < phases.length; i += 1) {
     if (phases[i].date.getTime() <= date.getTime()) index = i;
   }
-  const nextIndex = (index + 1) % 8;
+  /* Después de la Balsámica viene la Luna Nueva del lunación SIGUIENTE. Con
+     `(index + 1) % 8` se devolvía la nueva de este, que ya había pasado. */
+  const next = index === 7 ? buildPhase(k + 1, 0, phaseJDE(k + 1, 0)) : phases[index + 1];
   return {
     ...phases[index],
-    illumination: illuminationAt(k, index, date),
-    next: {
-      ...phases[nextIndex],
-      illumination: ILLUMINATION_ANCHORS[nextIndex],
-    },
+    ...iluminacionEn(date),
+    age: (date.getTime() - phases[0].date.getTime()) / DIA_MS,
+    next,
   };
 }
 
 /* --------------------------------------------------------------------------
-   Fase de cada día: para el calendario
+   Fases principales como instantes
+   -------------------------------------------------------------------------- */
+
+export interface FasePrincipal {
+  id: Extract<MoonPhaseId, 'new' | 'first-quarter' | 'full' | 'last-quarter'>;
+  name: string;
+  /** Instante de la fase (UTC dentro del Date; se muestra en hora local). */
+  date: Date;
+}
+
+/**
+ * Las fases principales cuyo instante cae en [desde, hasta).
+ *
+ * Recorre todos los lunaciones que pueden tocar el rango, con uno de margen a
+ * cada lado, y filtra por instante. Es lo robusto: un mes puede tener cinco
+ * fases principales (dos llenas, por ejemplo) o empezar justo antes de una
+ * Luna Nueva, y tomar "el lunación del día 1 y el del último" no siempre las
+ * agarraba todas.
+ */
+export function fasesPrincipalesEntre(desde: Date, hasta: Date): FasePrincipal[] {
+  const salida: FasePrincipal[] = [];
+  const t0 = desde.getTime();
+  const t1 = hasta.getTime();
+  for (let k = lunationNumber(desde) - 1; k <= lunationNumber(hasta) + 1; k += 1) {
+    for (const index of PRINCIPAL_INDEX) {
+      const date = fromJulianDay(principalJDE(k, index));
+      const t = date.getTime();
+      if (t >= t0 && t < t1) {
+        const id = PHASE_ORDER[index] as FasePrincipal['id'];
+        salida.push({ id, name: PHASE_META[id].name, date });
+      }
+    }
+  }
+  return salida.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+/** La próxima fase principal después de `desde`. Siempre hay una en 8 días. */
+export function proximaFasePrincipal(desde: Date = new Date()): FasePrincipal {
+  return fasesPrincipalesEntre(
+    new Date(desde.getTime() + 1),
+    new Date(desde.getTime() + 10 * DIA_MS),
+  )[0];
+}
+
+/** Días transcurridos desde la última Luna Nueva hasta `date`. */
+export function edadLunar(date: Date = new Date()): number {
+  const nuevas = fasesPrincipalesEntre(
+    new Date(date.getTime() - 31 * DIA_MS),
+    new Date(date.getTime() + 1),
+  ).filter((f) => f.id === 'new');
+  const ultima = nuevas[nuevas.length - 1];
+  return (date.getTime() - ultima.date.getTime()) / DIA_MS;
+}
+
+/* --------------------------------------------------------------------------
+   La Luna de un día: para el calendario y la tarjeta de hoy
    -------------------------------------------------------------------------- */
 
 export interface MoonDay {
-  /** El día, a medianoche local. */
+  /** El día, a mediodía local. */
   date: Date;
-  /** Fracción iluminada, interpolada como en el resto del módulo. */
+  /** Fracción iluminada real a mediodía local. */
   illumination: number;
-  /**
-   * Ángulo dentro del ciclo, de 0 a 2π, para DIBUJAR el disco.
-   *
-   * Va por interpolación lineal entre las fases y no por `2π·edad/lunación`.
-   * No es lo mismo: la fase de las 8:00 no es la fase de las 8:00 con la
-   * edad corrida. Encajar los extremos es lo que hace que el calendario no
-   * "salte" de la Luna Llena a la Balsema de golpe entre dos celdas.
-   */
+  /** Ángulo (elongación) a mediodía local, de 0 a 2π, para dibujar. */
   angle: number;
+  /** Fase que lleva el día, según la convención de `lunaDelDia`. */
+  id: MoonPhaseId;
+  name: string;
+  /** La fase principal cuyo instante cae ese día local, si hay. */
+  principal?: FasePrincipal;
 }
+
+export interface LunaDelDia extends MoonDay {
+  note: string;
+  descripcion: string;
+  /** Días desde la última Luna Nueva, a mediodía local. */
+  age: number;
+}
+
+/** Los días [primero, primero + n) en hora local, con la fase de cada uno. */
+function diasDesde(anio: number, mes: number, dia: number, n: number): MoonDay[] {
+  const inicio = new Date(anio, mes, dia, 0, 0, 0, 0);
+  const fin = new Date(anio, mes, dia + n, 0, 0, 0, 0);
+  const principales = fasesPrincipalesEntre(inicio, fin);
+  const porDia = new Map<string, FasePrincipal>();
+  for (const f of principales) porDia.set(claveDia(f.date), f);
+
+  const salida: MoonDay[] = [];
+  for (let i = 0; i < n; i += 1) {
+    /* Mediodía y no medianoche: es el centro del día local, y así el cambio
+       de horario de verano (que pasa de madrugada) no mueve el día. */
+    const fecha = new Date(anio, mes, dia + i, 12, 0, 0, 0);
+    const principal = porDia.get(claveDia(fecha));
+    const { illumination, angle } = iluminacionEn(fecha);
+    const id = principal?.id ?? tramoPorAngulo(angle);
+    salida.push({ date: fecha, illumination, angle, id, name: PHASE_META[id].name, principal });
+  }
+  return salida;
+}
+
+/**
+ * La Luna de un día local, con la convención de los almanaques: si el
+ * instante de una fase principal cae dentro de ese día (en la zona horaria
+ * del dispositivo), el día lleva ese nombre; si no, el del tramo.
+ */
+export function lunaDelDia(fecha: Date = new Date()): LunaDelDia {
+  const [dia] = diasDesde(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), 1);
+  return {
+    ...dia,
+    note: PHASE_META[dia.id].note,
+    descripcion: PHASE_META[dia.id].descripcion,
+    age: edadLunar(dia.date),
+  };
+}
+
+/** Nota simbólica y descripción astronómica de una fase. */
+export function infoDeFase(id: MoonPhaseId): { name: string; note: string; descripcion: string } {
+  return PHASE_META[id];
+}
+
+/** Las ocho fases en orden, con su nombre. Para selectores y leyendas. */
+export const FASES_LUNARES: { id: MoonPhaseId; name: string }[] = PHASE_ORDER.map((id) => ({
+  id,
+  name: PHASE_META[id].name,
+}));
 
 /**
  * La Luna de cada día de un mes, en orden.
  *
- * Va mes a mes y no día a día porque el calendario necesita los dos: la
- * primera semana arranca en el día que le toca, que puede ser del mes anterior.
- * `calendarMonth()` arma esa rejilla con esto.
- *
- * Se calcula el lunación una sola vez por mes, no una por día. `moonPhase()`
- * recalcula las 8 fases en cada llamada, y llamarla 31 veces para pintar un
- * calendario es tirar trigonometría a la basura.
+ * Las fases principales del rango se calculan una sola vez, no una por día.
  */
 export function moonDaysInMonth(anio: number, mes: number): MoonDay[] {
   const ultimo = new Date(anio, mes + 1, 0).getDate();
-  const dias: MoonDay[] = [];
-
-  for (let d = 1; d <= ultimo; d += 1) {
-    /* Mediodía y no medianoche a propósito: la fase que se ve de noche es la
-       de ese día, y a medianoche el disco ya es el del día siguiente. */
-    const fecha = new Date(anio, mes, d, 12, 0, 0, 0);
-    dias.push({ date: fecha, ...faseEn(fecha) });
-  }
-  return dias;
-}
-
-/**
- * Iluminación y ángulo de la Luna en una fecha cualquiera.
- *
- * Es el cálculo que ya hacía `moonPhase`, pero sin la fase siguiente, sin el
- * nombre y sin la nota: para pintar 35 celdas de un calendario, eso es 35
- * verbos que no se usan y 35 listas de fases que se tiran.
- */
-function faseEn(fecha: Date): { illumination: number; angle: number } {
-  let k = lunationNumber(fecha);
-  if (fromJulianDay(phaseJDE(k, 0)).getTime() > fecha.getTime()) k -= 1;
-
-  /* Los ocho instantes del lunación, calculados una vez. */
-  const instantes = PHASE_ORDER.map((_, i) => fromJulianDay(phaseJDE(k, i)).getTime());
-  const finLunacion = fromJulianDay(phaseJDE(k + 1, 0)).getTime();
-
-  const t = fecha.getTime();
-  let index = 0;
-  for (let i = 0; i < 8; i += 1) if (instantes[i] <= t) index = i;
-
-  const inicio = instantes[index];
-  const fin = index === 7 ? finLunacion : instantes[index + 1];
-  const f = Math.max(0, Math.min(1, (t - inicio) / (fin - inicio)));
-
-  return {
-    /* Iluminación interpolada entre anclas: da 0, 0,5 y 1 exactos en las ocho
-       fases, que es lo que hace falta. La fórmula ingenua
-       (1-cos)/2 por edad daría 0,42 en el cuarto creciente. */
-    illumination:
-      ILLUMINATION_ANCHORS[index] +
-      (ILLUMINATION_ANCHORS[(index + 1) % 8] - ILLUMINATION_ANCHORS[index]) * f,
-    /* Ángulo POR EDAD, no interpolado entre anclas.
-       Interpolar da 7π/4 → 0 en el tramo final, o sea el ángulo DECRECIENDO
-       justo en la Luna Nueva: el disco del calendario giraría al revés en el
-       día que más se mira. La edad avanza siempre, así que por edad el ángulo
-       es monótono y da la vuelta solo, que es lo que corresponde. */
-    angle: (2 * Math.PI * (toJulianDay(fecha) - JDE_REFERENCE - SYNODIC * k)) / SYNODIC,
-  };
+  return diasDesde(anio, mes, 1, ultimo);
 }
 
 export interface CalendarDay extends MoonDay {
@@ -573,8 +750,8 @@ export interface CalendarDay extends MoonDay {
   enMes: boolean;
   /** Festividad que cae ese día, si hay. */
   festividad?: { id: string; name: string; granHoguera?: boolean };
-  /** Fase principal que cae EXACTO ese día, si hay. */
-  fase?: { id: MoonPhaseId; name: string };
+  /** Fase principal que cae EXACTO ese día (sólo en los días del mes). */
+  fase?: { id: MoonPhaseId; name: string; instante: Date };
 }
 
 /**
@@ -596,58 +773,27 @@ export function calendarMonth(
   const relleno = primero.getDay();
   const celdas = Math.ceil((relleno + ultimo.getDate()) / 7) * 7;
 
-  /* Los días del mes, con su fase. Los del mes vecino salen del mes vecino. */
-  const fasesPorFecha = new Map<string, { illumination: number; angle: number }>();
-  for (const d of moonDaysInMonth(anio, mes)) {
-    fasesPorFecha.set(claveDia(d.date), d);
-  }
-
-  /* Las fases principales que caen dentro del mes, por día.
-     Un mes NO cabe en un lunación: son 29,53 días contra 28-31, así que
-     siempre toca parte de dos. `phasesOfLunation` devuelve una sola, y con
-     una sola el calendario marcaba una fase de las cuatro. De ahí se toman
-     las dos: la del 1º y la del último día. */
-  const fasesPorDia = new Map<number, { id: MoonPhaseId; name: string }>();
-  for (const fecha of [primero, ultimo]) {
-    for (const f of phasesOfLunation(fecha)) {
-      if (f.date.getFullYear() === anio && f.date.getMonth() === mes && f.exact) {
-        fasesPorDia.set(f.date.getDate(), { id: f.id, name: f.name });
-      }
-    }
-  }
-
-  const festPorDia = new Map<number, { id: string; name: string; granHoguera?: boolean }>();
+  const festPorDia = new Map<string, { id: string; name: string; granHoguera?: boolean }>();
   for (const f of festividades) {
-    if (f.date.getFullYear() === anio && f.date.getMonth() === mes) {
-      festPorDia.set(f.date.getDate(), { id: f.id, name: f.name, granHoguera: f.granHoguera });
-    }
+    festPorDia.set(claveDia(f.date), { id: f.id, name: f.name, granHoguera: f.granHoguera });
   }
 
-  const salida: CalendarDay[] = [];
-  for (let i = 0; i < celdas; i += 1) {
-    const fecha = new Date(anio, mes, 1 - relleno + i, 12, 0, 0, 0);
-    const enMes = fecha.getMonth() === mes;
-    /* La fase de los días del borde se calcula sólo si no la trajo el mes
-       vecino. En la mayoría de los meses el borde es del mes anterior, que
-       no está en el mapa, así que se calcula: 8 celdas, no 35. */
-    const fase =
-      fasesPorFecha.get(claveDia(fecha)) ??
-      fasesPorFecha.get(claveDia(new Date(anio, mes - 1, fecha.getDate(), 12))) ??
-      faseEn(fecha);
-    salida.push({
-      date: fecha,
-      weekday: fecha.getDay(),
+  return diasDesde(anio, mes, 1 - relleno, celdas).map((d) => {
+    const enMes = d.date.getMonth() === mes;
+    return {
+      ...d,
+      weekday: d.date.getDay(),
       enMes,
-      illumination: fase.illumination,
-      angle: fase.angle,
-      festividad: enMes ? festPorDia.get(fecha.getDate()) : undefined,
-      fase: enMes ? fasesPorDia.get(fecha.getDate()) : undefined,
-    });
-  }
-  return salida;
+      festividad: enMes ? festPorDia.get(claveDia(d.date)) : undefined,
+      fase:
+        enMes && d.principal
+          ? { id: d.principal.id, name: d.principal.name, instante: d.principal.date }
+          : undefined,
+    };
+  });
 }
 
-/** Clave de un día, para comparar fechas sin la hora. */
+/** Clave de un día local, para comparar fechas sin la hora. */
 function claveDia(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }

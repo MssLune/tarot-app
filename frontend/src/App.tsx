@@ -285,7 +285,9 @@ export default function App() {
 
   return (
     <>
-      <Starfield />
+      {/* En la Luna las estrellas compiten con el calendario: menos y más
+          tenues. */}
+      <Starfield density={screen === 'rituals' ? 30 : 70} tenue={screen === 'rituals'} />
       <AppShell>
         <div className="relative">
           <AnimatePresence mode="popLayout" initial={false}>

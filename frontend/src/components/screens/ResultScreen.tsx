@@ -53,6 +53,8 @@ export default function ResultScreen() {
   const cardsById = useContentStore((s) => s.cardsById);
   const combinations = useContentStore((s) => s.combinations);
 
+  /** Patrón abierto en el celular (en escritorio se ven todos). */
+  const [patronAbierto, setPatronAbierto] = useState<string | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
@@ -224,22 +226,52 @@ export default function ResultScreen() {
             <span className="hairline h-px flex-1 opacity-60" />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {patterns.map((pattern, i) => (
-              <motion.div
-                key={pattern.id}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 + i * 0.09, duration: 0.45 }}
-                className={`rounded-2xl border p-5 backdrop-blur-sm ${TONES[pattern.tone]}`}
-              >
-                <div className="mb-2 flex items-center gap-2.5">
-                  <span className={`h-1.5 w-1.5 rounded-full ${TONE_DOTS[pattern.tone]}`} />
-                  <h3 className="font-display text-xs uppercase tracking-[0.16em]">{pattern.label}</h3>
-                </div>
-                <p className="text-xs leading-relaxed text-gold-100/60">{pattern.detail}</p>
-              </motion.div>
-            ))}
+          {/* Escritorio: dos columnas, y si la cantidad es impar el último
+              ocupa todo el ancho (uno solo va entero; con tres, dos arriba y
+              uno abajo a lo ancho). Celular: una columna y cada patrón
+              cerrado, con sólo el título; se abre al tocarlo, para que la
+              lectura no se haga eterna. En escritorio siempre están abiertos. */}
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+            {patterns.map((pattern, i) => {
+              const abierto = patronAbierto === pattern.id;
+              const ultimoImpar = i === patterns.length - 1 && patterns.length % 2 === 1;
+              return (
+                <motion.div
+                  key={pattern.id}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.15 + i * 0.09, duration: 0.45 }}
+                  className={`rounded-2xl border backdrop-blur-sm ${TONES[pattern.tone]} ${
+                    ultimoImpar ? 'sm:col-span-2' : ''
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPatronAbierto(abierto ? null : pattern.id)}
+                    aria-expanded={abierto}
+                    aria-controls={`patron-${pattern.id}`}
+                    className="flex w-full items-center gap-2.5 rounded-2xl px-4 py-3.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300/70 sm:pointer-events-none sm:px-5 sm:pb-2 sm:pt-5"
+                  >
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TONE_DOTS[pattern.tone]}`} />
+                    <h3 className="min-w-0 flex-1 font-display text-xs uppercase tracking-[0.16em]">{pattern.label}</h3>
+                    <span
+                      aria-hidden="true"
+                      className={`shrink-0 text-gold-100/50 transition-transform sm:hidden ${abierto ? 'rotate-180' : ''}`}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
+                        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </button>
+                  <p
+                    id={`patron-${pattern.id}`}
+                    className={`${abierto ? 'block' : 'hidden'} px-4 pb-4 text-xs leading-relaxed text-gold-100/60 sm:block sm:px-5 sm:pb-5`}
+                  >
+                    {pattern.detail}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
       )}

@@ -206,6 +206,8 @@ interface ReadingState {
   /** Crea o actualiza un ritual. `id` de la entrada indica si es nuevo. */
   saveRitual: (ritual: Ritual) => void;
   deleteRitual: (id: string) => void;
+  /** Marca el ritual como hecho (ahora) o lo vuelve a pendiente. */
+  toggleRitualDone: (id: string) => void;
 
   /* Reinicio */
   resetSession: () => void;
@@ -274,6 +276,29 @@ function descartarLecturaApartada(): void {
   }
 }
 
+/**
+ * El ritual como lo espera la API.
+ *
+ * Los opcionales vacíos van como `null`, no se omiten: el PUT deja como está
+ * lo que no viene, así que omitir una nota borrada la dejaba guardada en el
+ * servidor y volvía a aparecer al recargar.
+ */
+function payloadRitual(r: Ritual) {
+  return {
+    title: r.title,
+    body: r.body,
+    phase: r.phase,
+    source: r.source ?? null,
+    sourceDetail: r.sourceDetail ?? null,
+    sourceVerified: r.sourceVerified,
+    date: r.date ?? null,
+    festivalId: r.festivalId ?? null,
+    notes: r.notes ?? null,
+    materials: r.materials ?? null,
+    completedAt: r.completedAt ?? null,
+  };
+}
+
 export const useReadingStore = create<ReadingState>()(
   persist(
     (set, get) => {
@@ -312,7 +337,7 @@ export const useReadingStore = create<ReadingState>()(
             await userService.createReading(op.reading);
             return;
           case 'ritual':
-            await userService.updateRitual(op.ritual.id, op.ritual);
+            await userService.updateRitual(op.ritual.id, payloadRitual(op.ritual));
             return;
           case 'deleteDeck':
             await userService.deleteDeck(op.id);
@@ -353,6 +378,12 @@ export const useReadingStore = create<ReadingState>()(
             set({
               planNotice: { message: err.message, code: err.code, key: op.key },
             });
+            /* Un ritual que el servidor no aceptó por el tope del plan NO se
+               creó (el 402 sólo sale al crear). Si quedara en la lista se
+               vería como guardado y desaparecería al recargar. */
+            if (op.kind === 'ritual' && err.status === 402) {
+              set((s) => ({ rituals: s.rituals.filter((r) => r.id !== op.ritual.id) }));
+            }
             console.warn(`[useReadingStore] ${err.code}: ${err.message}`);
           } else {
             queueOp(op);
@@ -889,6 +920,13 @@ export const useReadingStore = create<ReadingState>()(
             phase: ritual.phase ?? 'any',
             source: ritual.source?.trim() || undefined,
             sourceDetail: ritual.sourceDetail?.trim() || undefined,
+            date: ritual.date || null,
+            festivalId: ritual.festivalId || null,
+            notes: ritual.notes?.trim() || null,
+            materials: ritual.materials?.trim() || null,
+            completedAt: ritual.completedAt ?? null,
+            updatedAt: new Date().toISOString(),
+            createdAt: ritual.createdAt ?? new Date().toISOString(),
           };
           set((state) => {
             const exists = state.rituals.some((r) => r.id === normalized.id);
@@ -904,6 +942,18 @@ export const useReadingStore = create<ReadingState>()(
         deleteRitual: (id) => {
           set((state) => ({ rituals: state.rituals.filter((r) => r.id !== id) }));
           get().removeRitual(id);
+        },
+
+        toggleRitualDone: (id) => {
+          const ritual = get().rituals.find((r) => r.id === id);
+          if (!ritual) return;
+          const actualizado: Ritual = {
+            ...ritual,
+            completedAt: ritual.completedAt ? null : new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          set((state) => ({ rituals: state.rituals.map((r) => (r.id === id ? actualizado : r)) }));
+          get().syncRitual(actualizado);
         },
 
         /* ---------------- Reinicio ---------------- */

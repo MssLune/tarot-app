@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { estadoLunar, type LunarEclipse } from '../../services/api';
+import { FECHA_LARGA_ANIO, horaAprox, Marca } from './lunaUi';
 
 /* ==========================================================================
    ¿Hoy es luna de sangre?
@@ -16,7 +17,6 @@ import { estadoLunar, type LunarEclipse } from '../../services/api';
    sigue mostrando la fase igual.
    ========================================================================== */
 
-const FECHA = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /** "00:58:23" → "58 minutos", para no obligar a leer el reloj. */
 function duracionLegible(hhmm: string | null): string | null {
@@ -34,17 +34,17 @@ const ETIQUETA: Record<LunarEclipse['kind'], { nombre: string; nota: string; cla
   total: {
     nombre: 'Luna de sangre',
     nota: 'Eclipse total: la Luna entera entra en la umbra de la Tierra y se ve roja.',
-    clase: 'border-rose-400/45 bg-rose-500/[0.12] text-rose-100',
+    clase: 'border-rosa-400/45 bg-rosa-400/[0.1] text-lavanda-100',
   },
   parcial: {
     nombre: 'Eclipse parcial de Luna',
     nota: 'Una parte de la Luna entra en la umbra: se ve un sector rojo y el resto iluminado.',
-    clase: 'border-gold-400/35 bg-gold-400/[0.08] text-gold-100',
+    clase: 'border-rosa-400/30 bg-noche-800/80 text-lavanda-100',
   },
   penumbral: {
     nombre: 'Eclipse penumbral',
     nota: 'La Luna pasa por la penumbra, la sombra más suave: apenas se nota.',
-    clase: 'border-gold-400/20 bg-ink-950/40 text-gold-100/60',
+    clase: 'border-noche-600/60 bg-noche-800/80 text-lavanda-200',
   },
 };
 
@@ -74,13 +74,17 @@ export default function EclipseNotice() {
     const et = ETIQUETA[hoy.kind];
     const totality = duracionLegible(hoy.totalidad);
     return (
-      <div className={`rounded-xl border px-4 py-3 ${et.clase}`}>
-        <p className="font-display text-sm uppercase tracking-[0.16em]">{et.nombre}</p>
-        <p className="mt-1 text-xs leading-relaxed opacity-85">{et.nota}</p>
-        <p className="mt-1.5 text-[0.65rem] opacity-70">
-          Máximo a las {hoy.mayor ? hoy.mayor.slice(11, 16) : '—'} UTC
-          {totality ? ` · la totalidad dura ${totality}` : ''}
-        </p>
+      <div role="status" className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${et.clase}`}>
+        <Marca tipo="astro" className="mt-1.5" />
+        <div>
+          <p className="font-display text-base text-rosa-300">Hoy: {et.nombre}</p>
+          <p className="mt-1 text-sm leading-relaxed">{et.nota}</p>
+          <p className="mt-1.5 text-xs text-lavanda-300">
+            {/* El instante del máximo, en la hora local del usuario. */}
+            {hoy.mayor ? `Máximo a las ${horaAprox(new Date(hoy.mayor))} (hora local)` : 'Hora del máximo no disponible'}
+            {totality ? ` · la totalidad dura ${totality}` : ''}
+          </p>
+        </div>
       </div>
     );
   }
@@ -93,18 +97,21 @@ export default function EclipseNotice() {
 
   const et = ETIQUETA[prox.kind];
   const totality = duracionLegible(prox.totalidad);
+  const cuando = prox.mayor ? new Date(prox.mayor) : new Date(`${prox.fecha}T12:00:00`);
   return (
-    <div className="rounded-xl border border-gold-400/20 bg-ink-950/40 px-4 py-3">
-      <p className="font-display text-xs uppercase tracking-[0.16em] text-gold-100/70">
-        Próximo eclipse
-      </p>
-      <p className="mt-1 text-xs text-gold-100/80">
-        <span className="text-gold-100">{et.nombre}</span> · {FECHA.format(new Date(`${prox.fecha}T12:00:00`))}
-      </p>
-      <p className="mt-1 text-[0.65rem] text-gold-100/40">
-        {totality ? `La totalidad dura ${totality}. ` : ''}
-        Lo dice el IMCCE, el observatorio astronómico oficial de Francia.
-      </p>
+    <div className="flex items-start gap-3 rounded-2xl border border-noche-600/60 bg-noche-800/70 px-4 py-3">
+      <Marca tipo="astro" className="mt-1.5" />
+      <div>
+        <p className="text-xs uppercase tracking-[0.18em] text-lavanda-400">Próximo eclipse</p>
+        <p className="mt-0.5 text-sm text-lavanda-100">
+          <span className="font-display text-rosa-300">{et.nombre}</span> · {FECHA_LARGA_ANIO.format(cuando)}
+          {prox.mayor && <span className="text-lavanda-300">, máximo a las {horaAprox(cuando)}</span>}
+        </p>
+        <p className="mt-1 text-xs text-lavanda-400">
+          {totality ? `La totalidad dura ${totality}. ` : ''}
+          Datos del IMCCE (Observatorio de París). Que se vea depende de dónde estés.
+        </p>
+      </div>
     </div>
   );
 }

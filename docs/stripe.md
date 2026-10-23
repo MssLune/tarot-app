@@ -12,7 +12,7 @@ gratuito, y avisa por consola:
 [billing] Stripe sin configurar: el cobro queda deshabilitado...
 ```
 
-Eso es intentional, no un error.
+Eso es intencional, no un error.
 
 ---
 
@@ -144,7 +144,7 @@ el resto de la app no hace falta.
 vale sólo para los eventos que reenvía la CLI en tu PC; no sirve en
 producción.
 
-## 5. Poner's las tres variables
+## 5. Poner las variables
 
 En `backend/.env`:
 

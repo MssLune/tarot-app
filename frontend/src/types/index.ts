@@ -95,7 +95,26 @@ export interface Ritual {
   /** Capítulo, página o sección, si la fuente lo tiene. */
   sourceDetail?: string;
   sourceVerified: boolean;
+  /** Día local al que se ata, 'AAAA-MM-DD'. Es un día del calendario, no un instante. */
+  date?: string | null;
+  /** Festividad a la que se ata (id de tarot-core/festivals). */
+  festivalId?: string | null;
+  /** Notas personales. */
+  notes?: string | null;
+  /** Materiales que lleva. */
+  materials?: string | null;
+  /** Cuándo se marcó como hecho (ISO). null o ausente = pendiente. */
+  completedAt?: string | null;
   createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Nota personal sobre una festividad, en un año. */
+export interface FestivalNote {
+  id: string;
+  festivalId: string;
+  year: number;
+  body: string;
   updatedAt?: string;
 }
 

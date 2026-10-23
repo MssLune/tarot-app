@@ -6,7 +6,7 @@ import { calendarMonth, moonDaysInMonth } from '../src/lunar';
 
    La prueba difícil aquí es la ZONA HORARIA, y no es un detalle de test: la
    Luna Llena de octubre de 2026 cae el 26 a las 04:12 UTC. Para el usuario de
-   Roma es el día 26; para el de Nueva York, las 23:12 del día 25. Los dos
+   Roma es el día 26; para el de Los Ángeles, las 21:12 del día 25. Los dos
    tienen razón, y una app que le dijera a uno de ellos que la Luna Llena fue
    el 26 mientras la Luna estaba bajo el horizonte estaría mintiendo.
 
@@ -52,14 +52,17 @@ describe('moonDaysInMonth', () => {
     /* El calendario muestra 31 discos en fila. Si el cálculo se equivocara al
        cambiar de lunación, aparecería un salto de 0 a 1 entre dos celdas
        vecinas y la hilera se vería rota. */
-    /* El techo de 0,11 NO es un número redondo: es el máximo físico. La
-       iluminación cambia más rápido en los cuartos, a ~0,106 por día, así que
-       un umbral más estricto estaría fallando contra la Luna y no contra el
-       código. */
+    /* El techo sale de la física: la fracción iluminada cambia, como mucho,
+       medio seno por la velocidad de la elongación. Esa velocidad promedia
+       12,2° por día (0,106 por día en los cuartos) pero cerca del perigeo
+       pasa de 14°, y entonces el salto llega a ~0,125. El techo era 0,11
+       mientras la iluminación se interpolaba en línea recta; con la
+       iluminación real, octubre de 2026 da 0,114 entre el 2 y el 3, que es
+       la Luna y no un error. */
     const dias = moonDaysInMonth(2026, 9);
     for (let i = 1; i < dias.length; i += 1) {
       const salto = Math.abs(dias[i].illumination - dias[i - 1].illumination);
-      expect(salto, `entre el día ${i} y el ${i + 1}`).toBeLessThan(0.11);
+      expect(salto, `entre el día ${i} y el ${i + 1}`).toBeLessThan(0.13);
     }
   });
 
@@ -82,7 +85,7 @@ describe('moonDaysInMonth', () => {
 
   it('el ángulo recorre el ciclo en un sentido, y no al revés', () => {
     /* El bug que este archivo hunters: al interpolar el ángulo entre anclas,
-       el tramo de la Luna Balsema iba de 7π/4 a 0, o sea DECRECIENDO. En el
+       el tramo de la Luna Balsámica iba de 7π/4 a 0, o sea DECRECIENDO. En el
        calendario el disco giraba al revés justo en la Luna Nueva, el día que
        más se mira. Con la edad el ángulo es monótono y da la vuelta solo. */
     const TAU = 2 * Math.PI;

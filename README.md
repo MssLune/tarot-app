@@ -99,6 +99,23 @@ Tarot/
   datos de antes de que existieran las cuentas (sin dueño) se suben una sola
   vez a la primera cuenta que inicie sesión. Ver `prepararSesion` y
   `limpiarDatosLocales` en `frontend/src/store/useReadingStore.ts`.
+- **Pantalla Luna:** la fase se calcula en el dispositivo
+  (`packages/tarot-core/src/lunar.ts`), sin red: fases principales con la
+  serie de Meeus (cap. 49, con el término W de los cuartos, las correcciones
+  planetarias y ΔT para pasar de TT a hora universal; a menos de un minuto de
+  lo publicado) e iluminación real por elongación (Meeus cap. 47-48). El
+  nombre de un día sigue la convención de los almanaques: una fase principal
+  da nombre sólo al día local en que cae su instante (`lunaDelDia`), así que el
+  mismo instante puede ser el 25 en Los Ángeles y el 26 en Roma. Las horas se
+  muestran en la zona del dispositivo, al minuto y como aproximadas. Los
+  retrógrados (JPL) y eclipses (IMCCE) vienen del backend; si fallan, el
+  calendario lo dice y sigue con fases y festividades. Las festividades usan
+  las fechas de la tradición del hemisferio norte, y la pantalla lo aclara.
+- **Rituales:** se pueden atar a un día (`date`, `AAAA-MM-DD` local), a una
+  fase y/o a una festividad, con instrucciones, materiales, notas y estado
+  hecho/pendiente (`completedAt`). Las notas personales de cada festividad se
+  guardan por año (`user_festival_notes`). Todo va a la cuenta: sin sesión
+  se ofrece iniciar sesión, nunca se guarda en el navegador.
 - **Motor de interpretación:** sigue siendo lógica 100% de frontend
   (`frontend/src/lib/interpretation.ts`), sin estado ni necesidad de
   servidor. Antes importaba las cartas de un archivo estático; ahora las
@@ -278,7 +295,14 @@ quitarse el rol a sí mismo.
 
 Mazos (`/decks`), tiradas propias (`/spreads`), lecturas (`/readings`) y
 rituales (`/rituals`). El `PUT /:id` de mazos, tiradas y rituales es un
-*upsert*: si el id no existe, lo crea.
+*upsert*: si el id no existe, lo crea. En los rituales, un campo opcional que
+llega como `null` o vacío se borra; uno que no llega queda como estaba.
+
+| Método | Ruta | Descripción |
+| ------ | ---- | ----------- |
+| GET | `/api/user/festival-notes?anio=` | Notas del usuario sobre festividades (de un año o de todos) |
+| PUT | `/api/user/festival-notes/:festivalId/:anio` | Guarda la nota (`{ body }`); con texto vacío la borra |
+| DELETE | `/api/user/festival-notes/:festivalId/:anio` | Borra la nota |
 
 ## Planes y límites
 

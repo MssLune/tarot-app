@@ -58,6 +58,13 @@ userRouter.post(
 userRouter.put('/rituals/:id', asyncHandler(userController.updateRitual));
 userRouter.delete('/rituals/:id', asyncHandler(userController.deleteRitual));
 
+/* ---------- Notas de festividades ---------- */
+/* Una nota por festividad y por año. No cuentan para el tope del plan: son
+   texto corto atado a algo que ya existe, no un recurso nuevo. */
+userRouter.get('/festival-notes', asyncHandler(userController.listFestivalNotes));
+userRouter.put('/festival-notes/:festivalId/:anio', asyncHandler(userController.saveFestivalNote));
+userRouter.delete('/festival-notes/:festivalId/:anio', asyncHandler(userController.deleteFestivalNote));
+
 /* ---------- Exportar ---------- */
 /* El PDF es GRATIS, a propósito.
 

@@ -75,6 +75,10 @@ const REGLAS_RITUAL = {
   source: 'textoOpcional',
   sourceDetail: 'textoOpcional',
   sourceVerified: 'booleano',
+  date: 'textoOpcional',
+  festivalId: 'textoOpcional',
+  notes: 'textoOpcional',
+  materials: 'textoOpcional',
 } as const;
 
 /* ==========================================================================
@@ -400,9 +404,83 @@ export interface UserRitualInput {
   body: string;
   /** Fase lunar (uno de los ids de lib/lunar.ts) o 'any'. */
   phase?: string;
-  source?: string;
-  sourceDetail?: string;
+  source?: string | null;
+  sourceDetail?: string | null;
   sourceVerified?: boolean;
+  /** Día local 'AAAA-MM-DD' al que se ata el ritual. */
+  date?: string | null;
+  /** Id de la festividad a la que se ata. */
+  festivalId?: string | null;
+  notes?: string | null;
+  materials?: string | null;
+  /** ISO del momento en que se marcó hecho; null = pendiente. */
+  completedAt?: string | null;
+}
+
+/** Largos máximos: un ritual es texto del usuario, no un archivo. */
+const LARGO_MAX = { title: 200, body: 8000, notes: 8000, materials: 4000, source: 300, sourceDetail: 300 } as const;
+const DIA_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const FESTIVIDAD_RE = /^[a-z0-9-]{1,40}$/;
+
+/**
+ * Lo que `validar` no cubre: formatos y largos de los campos nuevos.
+ *
+ * - `date` es un DÍA del calendario del usuario, no un instante: 'AAAA-MM-DD'
+ *   y que exista (no 2026-02-30).
+ * - `completedAt` es un instante ISO o null.
+ * - Un texto opcional vacío se guarda como null, para que "borrar la nota"
+ *   la borre de verdad y no deje un "" que la interfaz muestre como nota.
+ */
+function validarRitual(input: Partial<UserRitualInput>): void {
+  const malo = (msg: string) => ApiError.badRequest('RITUAL_INVALID', msg);
+
+  for (const [campo, max] of Object.entries(LARGO_MAX)) {
+    const v = (input as Record<string, unknown>)[campo];
+    if (typeof v === 'string' && v.length > max) {
+      throw malo(`El campo "${campo}" admite hasta ${max} caracteres.`);
+    }
+  }
+  if (typeof input.date === 'string' && input.date !== '') {
+    const m = DIA_RE.exec(input.date);
+    const anio = m ? Number(m[1]) : NaN;
+    const d = m ? new Date(Date.UTC(anio, Number(m[2]) - 1, Number(m[3]))) : null;
+    const existe =
+      d !== null &&
+      d.getUTCFullYear() === anio &&
+      d.getUTCMonth() === Number(m![2]) - 1 &&
+      d.getUTCDate() === Number(m![3]);
+    if (!existe || anio < 1900 || anio > 2100) {
+      throw malo('"date" tiene que ser un día válido con la forma AAAA-MM-DD, entre 1900 y 2100.');
+    }
+  }
+  if (typeof input.festivalId === 'string' && input.festivalId !== '' && !FESTIVIDAD_RE.test(input.festivalId)) {
+    throw malo('"festivalId" no es un identificador de festividad válido.');
+  }
+  if (input.completedAt !== undefined && input.completedAt !== null) {
+    if (typeof input.completedAt !== 'string' || Number.isNaN(Date.parse(input.completedAt))) {
+      throw malo('"completedAt" tiene que ser una fecha ISO o null.');
+    }
+  }
+}
+
+/** Texto opcional para la base: vacío o null → null, ausente → undefined. */
+const opcional = (v: string | null | undefined) => (v === undefined ? undefined : v === null || v.trim() === '' ? null : v);
+
+/** Los campos del ritual que vienen en `input`, listos para Prisma. */
+function datosRitual(input: Partial<UserRitualInput>) {
+  const datos: Record<string, unknown> = {};
+  if (input.title !== undefined) datos.title = input.title;
+  if (input.body !== undefined) datos.body = input.body;
+  if (input.phase !== undefined) datos.phase = input.phase;
+  if (input.sourceVerified !== undefined) datos.sourceVerified = input.sourceVerified;
+  for (const campo of ['source', 'sourceDetail', 'date', 'festivalId', 'notes', 'materials'] as const) {
+    const v = opcional(input[campo]);
+    if (v !== undefined) datos[campo] = v;
+  }
+  if (input.completedAt !== undefined) {
+    datos.completedAt = input.completedAt === null ? null : new Date(input.completedAt);
+  }
+  return datos;
 }
 
 /** Las ocho fases que el frontend puede mandar, más 'any'. */
@@ -427,20 +505,20 @@ export async function listUserRituals(userId: string) {
 
 export async function createUserRitual(userId: string, input: UserRitualInput) {
   validar(input, REGLAS_RITUAL, 'RITUAL_INVALID');
+  validarRitual(input);
   if (input.phase !== undefined && !VALID_PHASES.has(input.phase)) {
     throw ApiError.badRequest('RITUAL_PHASE_INVALID', `"${input.phase}" no es una fase lunar válida.`);
   }
   const id = input.id ?? `rit_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   return prisma.userRitual.create({
     data: {
+      sourceVerified: false,
+      phase: 'any',
+      ...datosRitual(input),
       id,
       userId,
       title: input.title,
       body: input.body,
-      phase: input.phase ?? 'any',
-      source: input.source,
-      sourceDetail: input.sourceDetail,
-      sourceVerified: input.sourceVerified ?? false,
     },
   });
 }
@@ -448,6 +526,7 @@ export async function createUserRitual(userId: string, input: UserRitualInput) {
 /** Upsert de ritual, mismo criterio que `upsertUserDeck`. */
 export async function upsertUserRitual(userId: string, id: string, input: Partial<UserRitualInput>) {
   validar(input, REGLAS_RITUAL, 'RITUAL_INVALID', true);
+  validarRitual(input);
   if (input.phase !== undefined && !VALID_PHASES.has(input.phase)) {
     throw ApiError.badRequest('RITUAL_PHASE_INVALID', `"${input.phase}" no es una fase lunar válida.`);
   }
@@ -473,14 +552,13 @@ export async function upsertUserRitual(userId: string, id: string, input: Partia
 
     const created = await prisma.userRitual.create({
       data: {
+        sourceVerified: false,
+        phase: 'any',
+        ...datosRitual(input),
         id,
         userId,
         title: input.title,
         body: input.body,
-        phase: input.phase ?? 'any',
-        source: input.source,
-        sourceDetail: input.sourceDetail,
-        sourceVerified: input.sourceVerified ?? false,
       },
     });
     return { ritual: created, created: true };
@@ -488,14 +566,7 @@ export async function upsertUserRitual(userId: string, id: string, input: Partia
 
   const ritual = await prisma.userRitual.update({
     where: { id },
-    data: {
-      ...(input.title !== undefined ? { title: input.title } : {}),
-      ...(input.body !== undefined ? { body: input.body } : {}),
-      ...(input.phase !== undefined ? { phase: input.phase } : {}),
-      ...(input.source !== undefined ? { source: input.source } : {}),
-      ...(input.sourceDetail !== undefined ? { sourceDetail: input.sourceDetail } : {}),
-      ...(input.sourceVerified !== undefined ? { sourceVerified: input.sourceVerified } : {}),
-    },
+    data: datosRitual(input),
   });
   return { ritual, created: false };
 }
@@ -504,4 +575,57 @@ export async function deleteUserRitual(userId: string, id: string) {
   const existing = await prisma.userRitual.findFirst({ where: { id, userId } });
   if (!existing) throw ApiError.notFound('RITUAL_NOT_FOUND', 'No existe un ritual con ese id.');
   await prisma.userRitual.delete({ where: { id } });
+}
+
+/* ---------- Notas de festividades ---------- */
+
+const NOTA_MAX = 4000;
+
+function validarNota(festivalId: string, anio: number) {
+  if (!FESTIVIDAD_RE.test(festivalId)) {
+    throw ApiError.badRequest('FESTIVAL_INVALID', 'No es un identificador de festividad válido.');
+  }
+  if (!Number.isInteger(anio) || anio < 1900 || anio > 2100) {
+    throw ApiError.badRequest('ANIO_FUERA_DE_RANGO', 'El año tiene que estar entre 1900 y 2100.');
+  }
+}
+
+/** Notas del usuario, de un año o de todos. */
+export async function listFestivalNotes(userId: string, anio?: number) {
+  if (anio !== undefined && (!Number.isInteger(anio) || anio < 1900 || anio > 2100)) {
+    throw ApiError.badRequest('ANIO_FUERA_DE_RANGO', 'El año tiene que estar entre 1900 y 2100.');
+  }
+  return prisma.userFestivalNote.findMany({
+    where: { userId, ...(anio !== undefined ? { year: anio } : {}) },
+    orderBy: [{ year: 'desc' }, { festivalId: 'asc' }],
+  });
+}
+
+/**
+ * Guarda la nota de una festividad en un año. Una nota vacía la BORRA: es lo
+ * que espera quien vacía el campo y toca guardar. Devuelve null en ese caso.
+ */
+export async function saveFestivalNote(userId: string, festivalId: string, anio: number, body: unknown) {
+  validarNota(festivalId, anio);
+  if (typeof body !== 'string') {
+    throw ApiError.badRequest('FESTIVAL_NOTE_INVALID', 'El campo "body" tiene que ser un texto.');
+  }
+  if (body.length > NOTA_MAX) {
+    throw ApiError.badRequest('FESTIVAL_NOTE_INVALID', `La nota admite hasta ${NOTA_MAX} caracteres.`);
+  }
+  const clave = { userId_festivalId_year: { userId, festivalId, year: anio } };
+  if (body.trim() === '') {
+    await prisma.userFestivalNote.deleteMany({ where: { userId, festivalId, year: anio } });
+    return null;
+  }
+  return prisma.userFestivalNote.upsert({
+    where: clave,
+    create: { userId, festivalId, year: anio, body },
+    update: { body },
+  });
+}
+
+export async function deleteFestivalNote(userId: string, festivalId: string, anio: number) {
+  validarNota(festivalId, anio);
+  await prisma.userFestivalNote.deleteMany({ where: { userId, festivalId, year: anio } });
 }

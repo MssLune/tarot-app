@@ -98,6 +98,29 @@ quitarse el admin a uno mismo.
 
 **Tests:** `backend/src/__tests__/accounts.test.ts` (12 tests).
 
+### 11. El historial del navegador no tenía dueño — grave (privacidad)
+
+Encontrado al probar la app. Los datos guardados en el navegador (historial,
+mazos, tiradas, rituales) no indicaban de qué cuenta eran:
+
+- seguían visibles después de cerrar sesión (el contador del historial);
+- si otra persona iniciaba sesión en el mismo equipo, `migrateLocalData` los
+  subía **a la cuenta de esa persona**.
+
+**Solución:** el store guarda `ownerId` junto con los datos.
+`prepararSesion(userId)` corre al iniciar sesión **antes** de migrar: si los
+datos son de otra cuenta, se descartan. Al cerrar sesión (o si la sesión
+expira) `limpiarDatosLocales` los borra; el menú avisa antes si quedan cambios
+sin subir. Sin sesión, el contador del historial no se muestra. Los datos sin
+dueño (de antes de las cuentas) se adoptan una sola vez.
+
+**Tests:** `frontend/src/__tests__/privacidad.test.ts` (4 tests).
+
+Relacionado: con el **modo invitado** (la app se usa sin cuenta), un invitado
+no escribe nada en el navegador; la lectura que quiere guardar se aparta en
+`sessionStorage` de esa pestaña hasta que inicia sesión. Tests en
+`frontend/src/__tests__/modoInvitado.test.ts` (7 tests).
+
 ## Pendientes
 
 ### Importantes
@@ -114,15 +137,25 @@ quitarse el admin a uno mismo.
 
 ### Menores
 
-- [ ] `/api/moon/eclipses` y `/retrogrados` aceptan cualquier año `> 1000`
-  sin tope: permiten forzar llamadas al IMCCE/JPL y llenar `AstronomyCache`.
-- [ ] Sin validación de entrada en los `create*` de `userService`: un campo
-  faltante da 500 en vez de 400.
-- [ ] Comentario desactualizado en `plans.ts` ("con 20 lecturas"; el tope es 10).
+- [x] `/api/moon/eclipses` y `/retrogrados` aceptaban cualquier año `> 1000`.
+  Ahora sólo 1900–2100 (`ANIO_MIN`/`ANIO_MAX` en `moon.routes.ts`); fuera de
+  rango, 400 `ANIO_FUERA_DE_RANGO`. El frontend ya trataba los errores como
+  "sin datos".
+- [x] Validación de entrada en `userService` (mazos, tiradas, lecturas y
+  rituales, también en los PUT): un campo que falta o con otro tipo da 400 con
+  el nombre del campo, en vez de un 500 de Prisma.
+- [x] Comentarios rotos o desactualizados: «con 20 lecturas» en `plans.ts` (el
+  tope es 10) y palabras sueltas en otro idioma o mal escritas en `plans.ts`,
+  `billingService.ts`, `billingController.ts`, `eclipses.ts`, `pdf/carta.ts`,
+  `pdf/moon.ts`, `schema.prisma`, `webhookSignature.test.ts`, `MoonDisc.tsx`,
+  `api.ts` y `docs/stripe.md`.
 - [x] El aviso de `billing.routes.ts` nombraba `STRIPE_PRO_PRICE_ID`, que ya
   no existe.
-- [ ] La regex de caracteres de control de `cardImages.ts` tiene bytes
-  invisibles en el fuente; escribirla como `/[\x00-\x1f\x7f]/`.
-- [ ] Los PDF de ejemplo siguen en git aunque `.gitignore` los excluye
-  (`git rm --cached backend/*.pdf`).
-- [ ] `listUserReadings` devuelve como máximo 100 lecturas y no pagina.
+- [x] La regex de caracteres de control de `cardImages.ts` tenía bytes
+  invisibles en el fuente; ahora es `/[\x00-\x1f\x7f]/`.
+- [x] `listUserReadings` cortaba en 100 lecturas: un Pro dejaba de ver las
+  viejas. Ahora devuelve todas.
+- [ ] Los PDF de ejemplo siguen en git aunque `.gitignore` los excluye:
+  `git rm --cached backend/ejemplo-crucelta.pdf backend/ejemplo-tres-cartas.pdf`.
+
+**Tests:** `backend/src/__tests__/inputValidation.test.ts` (13 tests).

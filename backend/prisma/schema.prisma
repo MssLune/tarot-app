@@ -27,6 +27,7 @@ model User {
   rituals UserRitual[]
   subscription Subscription?
   usageEvents UsageEvent[]
+  festivalNotes UserFestivalNote[]
 
   @@map("users")
 }
@@ -106,12 +107,42 @@ model UserRitual {
   /// La UI lo muestra como advertencia, nunca lo oculta ni lo da por bueno.
   sourceVerified Boolean @default(false)
 
+  /// Día local al que el usuario ata el ritual, como 'AAAA-MM-DD'. Es el día
+  /// del calendario del usuario, no un instante: por eso texto y no DateTime.
+  date        String?
+  /// Festividad a la que se ata (id de tarot-core/festivals), si hay.
+  festivalId  String?
+  /// Notas personales del usuario sobre el ritual.
+  notes       String?
+  /// Materiales que lleva.
+  materials   String?
+  /// Cuándo lo marcó como hecho. null = pendiente.
+  completedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, phase])
+  @@index([userId, date])
   @@map("user_rituals")
+}
+
+/// Nota personal sobre una festividad, por año: lo que el usuario quiere
+/// recordar de Samhain 2026 no es lo mismo que de Samhain 2027.
+model UserFestivalNote {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Id de la festividad (tarot-core/festivals).
+  festivalId String
+  year       Int
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, festivalId, year])
+  @@map("user_festival_notes")
 }
 
 /// Carta del Tarot: Arcano Mayor (22) o Arcano Menor (56) — mazo completo de 78.

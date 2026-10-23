@@ -190,6 +190,21 @@ export async function estadoLunar(): Promise<{ hoy: LunarEclipse | null; proximo
   }
 }
 
+/**
+ * Eclipses lunares del año pedido y del siguiente, para el calendario.
+ *
+ * Nunca lanza, por la misma razón que `retrogradosDelAnio`: si falla devuelve
+ * `null` y el calendario sigue mostrando fases y festividades.
+ */
+export async function eclipsesDelAnio(anio: number): Promise<LunarEclipse[] | null> {
+  try {
+    const datos = await request<{ eclipses: LunarEclipse[] }>(`/moon/eclipses?anio=${anio}`);
+    return datos.eclipses ?? [];
+  } catch {
+    return null;
+  }
+}
+
 /* ==========================================================================
    Luna: retrógrados planetarios
    ========================================================================== */
@@ -210,16 +225,16 @@ export interface RetrogradePeriod {
 /**
  * Retrógrados de un año.
  *
- * Nunca lanza. Si el backend no responde o el JPL está caído, devuelve la lista
- * vacía y la pantalla de la Luna sigue mostrando fases y festividades: el
- * retrógrado es un dato lindo, no algo de lo que la pantalla dependa.
+ * Nunca lanza. Si el backend no responde o el JPL está caído, devuelve `null`
+ * (distinto de la lista vacía, que es "no hay") y la pantalla de la Luna
+ * sigue mostrando fases y festividades, que se calculan en el dispositivo.
  */
-export async function retrogradosDelAnio(anio?: number): Promise<RetrogradePeriod[]> {
+export async function retrogradosDelAnio(anio?: number): Promise<RetrogradePeriod[] | null> {
   try {
     const q = anio ? `?anio=${anio}` : '';
     const datos = await request<{ retrogrados: RetrogradePeriod[] }>(`/moon/retrogrados${q}`);
     return datos.retrogrados ?? [];
   } catch {
-    return [];
+    return null;
   }
 }

@@ -1,4 +1,4 @@
-import type { CustomDeck, Reading, Ritual, Spread } from '../types';
+import type { CustomDeck, FestivalNote, Reading, Ritual, Spread } from '../types';
 import { api } from './api';
 
 /* ==========================================================================
@@ -35,8 +35,17 @@ export const userService = {
   listRituals: (): Promise<Ritual[]> => api.get<Ritual[]>('/user/rituals'),
   createRitual: (ritual: Partial<Ritual>): Promise<Ritual> =>
     api.post<Ritual>('/user/rituals', ritual),
-  updateRitual: (id: string, ritual: Partial<Ritual>): Promise<Ritual> =>
+  /* `object` y no `Partial<Ritual>`: el store manda los opcionales vacíos
+     como null para que el servidor los borre (ver `payloadRitual`). */
+  updateRitual: (id: string, ritual: object): Promise<Ritual> =>
     api.put<Ritual>(`/user/rituals/${id}`, ritual),
   deleteRitual: (id: string): Promise<{ id: string }> =>
     api.delete<{ id: string }>(`/user/rituals/${id}`),
+
+  /* ---------- Notas de festividades ---------- */
+  listFestivalNotes: (anio: number): Promise<FestivalNote[]> =>
+    api.get<FestivalNote[]>(`/user/festival-notes?anio=${anio}`),
+  /** Guarda la nota; con texto vacío la borra y devuelve null. */
+  saveFestivalNote: (festivalId: string, anio: number, body: string): Promise<FestivalNote | null> =>
+    api.put<FestivalNote | null>(`/user/festival-notes/${encodeURIComponent(festivalId)}/${anio}`, { body }),
 };

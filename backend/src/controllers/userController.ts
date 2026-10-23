@@ -135,3 +135,32 @@ export const deleteRitual = async (req: Request, res: Response): Promise<void> =
   await userService.deleteUserRitual(userId, req.params.id);
   sendSuccess(res, { id: req.params.id });
 };
+
+/* ---------- Notas de festividades ---------- */
+
+/** Año de la URL o del query; `undefined` si no vino. */
+const anioDe = (v: unknown): number | undefined =>
+  v === undefined || v === '' ? undefined : Number(v);
+
+export const listFestivalNotes = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).dbUserId as string;
+  const notas = await userService.listFestivalNotes(userId, anioDe(req.query.anio));
+  sendSuccess(res, notas);
+};
+
+export const saveFestivalNote = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).dbUserId as string;
+  const nota = await userService.saveFestivalNote(
+    userId,
+    req.params.festivalId,
+    Number(req.params.anio),
+    req.body?.body,
+  );
+  sendSuccess(res, nota);
+};
+
+export const deleteFestivalNote = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).dbUserId as string;
+  await userService.deleteFestivalNote(userId, req.params.festivalId, Number(req.params.anio));
+  sendSuccess(res, { festivalId: req.params.festivalId, anio: Number(req.params.anio) });
+};

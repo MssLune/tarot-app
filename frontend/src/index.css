@@ -67,6 +67,7 @@
   /* Campos de formulario: base compartida */
   input[type='text'],
   input[type='number'],
+  input[type='date'],
   textarea,
   select {
     @apply w-full rounded-xl border border-gold-400/20 bg-ink-900/70 px-4 py-3 text-sm text-gold-100
@@ -74,10 +75,18 @@
   }
   input[type='text']:focus,
   input[type='number']:focus,
+  input[type='date']:focus,
   textarea:focus,
   select:focus {
     @apply border-gold-400/60 bg-ink-800/80;
     box-shadow: 0 0 0 3px rgba(214, 178, 95, 0.12);
+  }
+
+  /* El ícono del selector de fecha es negro por defecto: sobre el fondo
+     nocturno no se ve. */
+  input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) sepia(0.3);
+    cursor: pointer;
   }
 
   select option {
@@ -149,6 +158,20 @@
   .card-face {
     background-image: radial-gradient(90% 70% at 50% 0%, rgba(139, 92, 246, 0.22) 0%, transparent 60%),
       linear-gradient(170deg, #1b1436 0%, #120d24 55%, #0a0716 100%);
+  }
+
+  /* Superficie de la pantalla Luna: oscura, con filo púrpura sutil. */
+  .superficie {
+    @apply relative rounded-2xl border border-noche-600/60 bg-noche-800/80;
+    box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.9);
+  }
+  .superficie-2 {
+    @apply rounded-xl border border-noche-600/45 bg-noche-900/80;
+  }
+
+  /* Foco visible y consistente para los controles propios. */
+  .foco {
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-luna-300/80;
   }
 
   /* Línea divisoria ornamentada */

@@ -64,6 +64,14 @@ interface Props {
    * ruido.
    */
   animate?: boolean;
+  /**
+   * Se escribe como `data-disco-lunar` en el elemento. Sirve para contar los
+   * discos de una zona (el calendario) sin confundirlos con otros `<svg>`
+   * de la misma pantalla, como los íconos.
+   */
+  marca?: string;
+  /** Oculta el disco a los lectores de pantalla cuando el contexto ya lo nombra. */
+  decorativo?: boolean;
 }
 
 /** Contador para dar un id único a cada conjunto de defs. */
@@ -76,6 +84,8 @@ export default function MoonDisc({
   variant = 'engraved',
   glow = false,
   animate = true,
+  marca,
+  decorativo = false,
 }: Props) {
   const [uid] = useState(() => `luna${(uidSeq += 1)}`);
 
@@ -109,8 +119,8 @@ export default function MoonDisc({
       animate={animate ? { opacity: 1 } : undefined}
       transition={{ duration: 0.4, ease: 'easeOut' }}
       style={{ width: size, height: size, color: PALETA.oroCentro }}
-      role="img"
-      aria-label={etiqueta}
+      data-disco-lunar={marca}
+      {...(decorativo ? { 'aria-hidden': true } : { role: 'img', 'aria-label': etiqueta })}
     >
       <span className="block h-full w-full [&>svg]:block [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
     </motion.span>

@@ -24,7 +24,7 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-export default function Starfield({ density = 70 }: { density?: number }) {
+export default function Starfield({ density = 70, tenue = false }: { density?: number; tenue?: boolean }) {
   const stars = useMemo<Star[]>(() => {
     const rand = seededRandom(20240517);
     return Array.from({ length: density }, () => ({
@@ -38,7 +38,10 @@ export default function Starfield({ density = 70 }: { density?: number }) {
   }, [density]);
 
   return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+    <div
+      className={`pointer-events-none fixed inset-0 overflow-hidden transition-opacity duration-700 ${tenue ? 'opacity-45' : ''}`}
+      aria-hidden="true"
+    >
       {/* Nebulosas suaves */}
       <div className="absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-mystic-600/20 blur-[120px] animate-pulse-glow" />
       <div className="absolute -right-32 top-1/3 h-[28rem] w-[28rem] rounded-full bg-gold-600/10 blur-[130px] animate-pulse-glow" />
