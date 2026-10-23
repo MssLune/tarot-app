@@ -191,7 +191,7 @@ describe('el servicio nunca tira', () => {
   });
 
   it('no cuelga si la petición no termina nunca', async () => {
-    /* Con un timeout corto y reloj real. Los timers falsos no sirven acá:
+    /* Con un timeout corto y reloj real. Los timers falsos no sirven aquí:
        antes del `fetch` hay una consulta a la base, que es I/O real, y al
        avanzar el reloj el temporizador todavía ni está creado. */
     vi.stubGlobal(

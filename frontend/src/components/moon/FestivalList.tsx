@@ -36,7 +36,7 @@ import {
    el equipo después).
    ========================================================================== */
 
-const MES_CORTO = new Intl.DateTimeFormat('es-AR', { month: 'short' });
+const MES_CORTO = new Intl.DateTimeFormat('es-PE', { month: 'short' });
 
 interface Props {
   rituales?: Ritual[];
@@ -100,11 +100,11 @@ export default function FestivalList({ rituales = [], onCrearRitual, onAbrirRitu
     <section aria-labelledby="festividades-titulo">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-lavanda-400">La rueda del año</p>
-          <h2 id="festividades-titulo" className="mt-1 font-display text-2xl text-luna-300">
+          <p className="overline">La rueda del año</p>
+          <h2 id="festividades-titulo" className="mt-1 font-display text-xl text-gold-gradient">
             Festividades
           </h2>
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-lavanda-300">
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-gold-100/55">
             Las cuatro Hogueras, las cuatro estaciones y las dos vísperas que la tradición guarda aparte.
           </p>
         </div>
@@ -113,18 +113,18 @@ export default function FestivalList({ rituales = [], onCrearRitual, onAbrirRitu
             type="button"
             onClick={() => setAnio((a) => Math.max(1900, a - 1))}
             aria-label="Año anterior"
-            className="foco flex h-10 w-10 items-center justify-center rounded-full border border-noche-600 text-lavanda-200 hover:border-luna-400/50 hover:text-luna-300"
+            className="foco flex h-10 w-10 items-center justify-center rounded-full border border-noche-600 text-gold-100/75 hover:border-luna-400/50 hover:text-gold-200"
           >
             <Icono nombre="izquierda" />
           </button>
-          <span className="w-14 text-center font-display text-lg text-lavanda-100" aria-live="polite">
+          <span className="w-14 text-center font-display text-base text-gold-100" aria-live="polite">
             {anio}
           </span>
           <button
             type="button"
             onClick={() => setAnio((a) => Math.min(2100, a + 1))}
             aria-label="Año siguiente"
-            className="foco flex h-10 w-10 items-center justify-center rounded-full border border-noche-600 text-lavanda-200 hover:border-luna-400/50 hover:text-luna-300"
+            className="foco flex h-10 w-10 items-center justify-center rounded-full border border-noche-600 text-gold-100/75 hover:border-luna-400/50 hover:text-gold-200"
           >
             <Icono nombre="derecha" />
           </button>
@@ -132,9 +132,9 @@ export default function FestivalList({ rituales = [], onCrearRitual, onAbrirRitu
       </header>
 
       {notas.estado === 'error' && (
-        <p role="alert" className="mb-3 rounded-xl border border-rosa-400/30 bg-rosa-400/10 px-3.5 py-2 text-sm text-lavanda-100">
+        <p role="alert" className="mb-3 rounded-xl border border-rosa-400/30 bg-rosa-400/10 px-3.5 py-2 text-sm text-gold-100">
           No se pudieron cargar tus notas de festividades.{' '}
-          <button type="button" onClick={() => setIntento((n) => n + 1)} className="foco rounded text-luna-300 underline underline-offset-4">
+          <button type="button" onClick={() => setIntento((n) => n + 1)} className="foco rounded text-gold-200 underline underline-offset-4">
             Reintentar
           </button>
         </p>
@@ -161,7 +161,7 @@ export default function FestivalList({ rituales = [], onCrearRitual, onAbrirRitu
         ))}
       </ul>
 
-      <div className="mt-4 space-y-1.5 text-xs leading-relaxed text-lavanda-400">
+      <div className="mt-4 space-y-1.5 text-xs leading-relaxed text-gold-100/40">
         <p>
           Fechas de la tradición del hemisferio norte. En el hemisferio sur mucha gente celebra la rueda corrida seis
           meses (Samhain cerca del 1 de mayo, Beltane cerca del 1 de noviembre), y las costumbres cambian según la
@@ -224,27 +224,27 @@ function Tarjeta({
         className="foco flex w-full items-start gap-3.5 rounded-2xl px-4 py-3.5 text-left"
       >
         <span className="flex w-11 shrink-0 flex-col items-center rounded-xl border border-noche-600/60 bg-noche-900/80 py-1.5">
-          <span className="font-display text-lg leading-none text-luna-300">{f.date.getDate()}</span>
-          <span className="mt-0.5 text-[0.65rem] uppercase tracking-[0.1em] text-lavanda-300">
+          <span className="font-display text-lg leading-none text-gold-200">{f.date.getDate()}</span>
+          <span className="mt-0.5 font-display text-[0.6rem] uppercase tracking-[0.12em] text-gold-100/55">
             {MES_CORTO.format(f.date).replace('.', '')}
           </span>
         </span>
 
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-display text-base text-lavanda-100">{f.name}</span>
-            <span className="rounded-full border border-noche-600 px-2 py-px text-[0.65rem] uppercase tracking-[0.12em] text-lavanda-300">
+            <span className="font-display text-sm text-gold-100">{f.name}</span>
+            <span className="rounded-full border border-gold-400/25 px-2 py-px text-[0.6rem] uppercase tracking-[0.14em] text-gold-200/75">
               {categoriaDe(f)}
             </span>
           </span>
-          <span className="mt-1 block text-sm leading-relaxed text-lavanda-300">{f.resumen}</span>
-          <span className="mt-1.5 block text-xs text-lavanda-400">
+          <span className="mt-1 block text-sm leading-relaxed text-gold-100/55">{f.resumen}</span>
+          <span className="mt-1.5 block text-xs text-gold-100/40">
             {esHoy ? (
-              <span className="uppercase tracking-[0.16em] text-luna-300">Es hoy</span>
+              <span className="uppercase tracking-[0.16em] text-gold-200">Es hoy</span>
             ) : (
               <>
                 {primeraMayuscula(relativo(dias))}
-                {proxima && dias > 0 && <span className="text-luna-300"> · la próxima</span>}
+                {proxima && dias > 0 && <span className="text-gold-200"> · la próxima</span>}
               </>
             )}
             {rituales.length > 0 && ` · ${rituales.length} ${rituales.length === 1 ? 'ritual tuyo' : 'rituales tuyos'}`}
@@ -253,7 +253,7 @@ function Tarjeta({
 
         <span
           aria-hidden="true"
-          className={`mt-1 shrink-0 text-lavanda-400 transition-transform ${abierta ? 'rotate-180' : ''}`}
+          className={`mt-1 shrink-0 text-gold-100/40 transition-transform ${abierta ? 'rotate-180' : ''}`}
         >
           <Icono nombre="abajo" />
         </span>
@@ -272,22 +272,22 @@ function Tarjeta({
             className="overflow-hidden"
           >
             <div className="space-y-4 px-4 pb-4 sm:pl-[4.6rem]">
-              <p className="max-w-prose text-sm leading-relaxed text-lavanda-200">{f.detalle}</p>
+              <p className="max-w-prose text-sm leading-relaxed text-gold-100/75">{f.detalle}</p>
 
-              <dl className="grid gap-x-6 gap-y-1.5 text-xs text-lavanda-300 sm:grid-cols-2">
+              <dl className="grid gap-x-6 gap-y-1.5 text-xs text-gold-100/55 sm:grid-cols-2">
                 <div>
-                  <dt className="inline text-lavanda-400">Fecha {anio}: </dt>
+                  <dt className="inline text-gold-100/40">Fecha {anio}: </dt>
                   <dd className="inline">{primeraMayuscula(FECHA_LARGA_ANIO.format(f.date))}</dd>
                 </div>
                 <div>
-                  <dt className="inline text-lavanda-400">Cómo se fija: </dt>
+                  <dt className="inline text-gold-100/40">Cómo se fija: </dt>
                   <dd className="inline">
                     {f.fixed ? 'fecha tradicional del calendario' : 'calculada por la posición del Sol para este año'}
                   </dd>
                 </div>
                 {f.altNames && f.altNames.length > 0 && (
                   <div className="sm:col-span-2">
-                    <dt className="inline text-lavanda-400">También: </dt>
+                    <dt className="inline text-gold-100/40">También: </dt>
                     <dd className="inline">{f.altNames.join(', ')}</dd>
                   </div>
                 )}
@@ -296,16 +296,16 @@ function Tarjeta({
               {/* ---------------- Rituales atados ---------------- */}
               {rituales.length > 0 && (
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-lavanda-400">Tus rituales para {f.name}</p>
+                  <p className="overline">Tus rituales para {f.name}</p>
                   <ul className="mt-1.5 flex flex-wrap gap-1.5">
                     {rituales.map((r) => (
                       <li key={r.id}>
                         <button
                           type="button"
                           onClick={() => onAbrirRitual?.(r.id)}
-                          className="foco inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full border border-noche-600 px-3 text-sm text-lavanda-100 hover:border-lavanda-300/40"
+                          className="foco inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full border border-noche-600 px-3 text-sm text-gold-100 hover:border-lavanda-300/40"
                         >
-                          {r.completedAt && <Icono nombre="check" className="h-3.5 w-3.5 text-luna-300" />}
+                          {r.completedAt && <Icono nombre="check" className="h-3.5 w-3.5 text-gold-200" />}
                           {r.title}
                           <span className="sr-only">{r.completedAt ? ', hecho' : ', pendiente'}</span>
                         </button>
@@ -321,7 +321,7 @@ function Tarjeta({
                 <button
                   type="button"
                   onClick={onCrearRitual}
-                  className="foco inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-luna-400/40 px-4 text-xs uppercase tracking-[0.14em] text-luna-300 transition-colors hover:bg-luna-400/10"
+                  className="foco inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-luna-400/40 px-4 font-display text-[0.68rem] uppercase tracking-[0.18em] text-gold-200 transition-colors hover:bg-luna-400/10"
                 >
                   <Icono nombre="mas" className="h-3.5 w-3.5" />
                   Añadir ritual para esta festividad
@@ -368,20 +368,20 @@ function NotaPersonal({
 
   if (notas.estado === 'sin-cuenta') {
     return (
-      <p className="text-sm text-lavanda-300">
+      <p className="text-sm text-gold-100/55">
         <button
           type="button"
-          onClick={() => pedirCuenta('Iniciá sesión para guardar tus notas de cada festividad.')}
-          className="foco rounded text-luna-300 underline decoration-luna-400/40 underline-offset-4"
+          onClick={() => pedirCuenta('Inicia sesión para guardar tus notas de cada festividad.')}
+          className="foco rounded text-gold-200 underline decoration-luna-400/40 underline-offset-4"
         >
-          Iniciá sesión
+          Inicia sesión
         </button>{' '}
         para guardar una nota personal de {festival.name} {anio}.
       </p>
     );
   }
   if (notas.estado === 'cargando') {
-    return <p className="text-sm text-lavanda-400">Cargando tu nota…</p>;
+    return <p className="text-sm text-gold-100/40">Cargando tu nota…</p>;
   }
   if (notas.estado === 'error') return null;
 
@@ -400,7 +400,7 @@ function NotaPersonal({
 
   return (
     <div>
-      <label htmlFor={id} className="text-xs uppercase tracking-[0.16em] text-lavanda-400">
+      <label htmlFor={id} className="overline">
         Tu nota de {festival.name} {anio}
       </label>
       <textarea
@@ -412,7 +412,7 @@ function NotaPersonal({
           setTexto(e.target.value);
           setEstado('quieto');
         }}
-        placeholder="Qué querés recordar de esta fecha: intenciones, lo que hiciste, lo que salió."
+        placeholder="Qué quieres recordar de esta fecha: intenciones, lo que hiciste, lo que salió."
         className="mt-1.5 !border-noche-600 !bg-noche-900/80 !py-2 text-sm"
       />
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -425,8 +425,8 @@ function NotaPersonal({
           {estado === 'guardando' ? 'Guardando…' : texto.trim() === '' && guardada ? 'Borrar nota' : 'Guardar nota'}
         </button>
         <span role="status" className="text-xs">
-          {estado === 'guardado' && <span className="text-luna-300">Nota guardada.</span>}
-          {estado === 'error' && <span className="text-rosa-300">No se pudo guardar. Probá de nuevo.</span>}
+          {estado === 'guardado' && <span className="text-gold-200">Nota guardada.</span>}
+          {estado === 'error' && <span className="text-rosa-300">No se pudo guardar. Prueba de nuevo.</span>}
         </span>
       </div>
     </div>

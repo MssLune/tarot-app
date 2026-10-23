@@ -56,7 +56,7 @@ const claveDe = (anio: number) => `eclipses-lunares:${anio}`;
  * Traduce `type` del IMCCE a los tres casos que la app distingue.
  *
  * El nombre en inglés se queda como está en el tipo, no como string suelto: es
- * parte del contrato del servicio y escribirlo acá evita que un typo en el
+ * parte del contrato del servicio y escribirlo aquí evita que un typo en el
  * mapeo se descubra recién en producción.
  */
 function kindDe(type: string): EclipseKind {

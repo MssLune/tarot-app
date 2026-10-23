@@ -115,8 +115,8 @@ export default function SpreadScreen() {
 
         <SectionHeading
           overline={isDeck ? 'Paso 3 de 5' : 'Paso 2 de 4'}
-          title="Elegí la tirada"
-          subtitle="Usá una tirada clásica, reutilizá una que hayas creado, o diseñá una nueva desde cero con tus propias posiciones."
+          title="Elige la tirada"
+          subtitle="Usa una tirada clásica, reutiliza una que hayas creado, o diseña una nueva desde cero con tus propias posiciones."
         />
       </div>
 

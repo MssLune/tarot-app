@@ -15,7 +15,7 @@ import SectionHeading from '../ui/SectionHeading';
    Todo se persiste en localStorage a través del store.
    ========================================================================== */
 
-const DATE_FORMAT = new Intl.DateTimeFormat('es-AR', {
+const DATE_FORMAT = new Intl.DateTimeFormat('es-PE', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
@@ -70,8 +70,8 @@ export default function HistoryScreen() {
       <div className="space-y-8">
         <SectionHeading overline="Historial" title="Tu archivo" />
         <InvitacionCuenta
-          titulo="Guardá tus lecturas"
-          texto="Con una cuenta, las lecturas, tiradas y mazos que guardes quedan en tu historial y los ves desde cualquier dispositivo. Sin cuenta podés seguir leyendo: sólo no se guardan."
+          titulo="Guarda tus lecturas"
+          texto="Con una cuenta, las lecturas, tiradas y mazos que guardes quedan en tu historial y los ves desde cualquier dispositivo. Sin cuenta puedes seguir leyendo: sólo no se guardan."
           glifo="✦"
         />
       </div>
@@ -133,7 +133,7 @@ export default function HistoryScreen() {
               <EmptyState
                 glyph="☾"
                 title="Todavía no guardaste lecturas"
-                text="Cuando termines una tirada, tocá «Guardar lectura» y va a quedar acá para volver a consultarla."
+                text="Cuando termines una tirada, toca «Guardar lectura» y va a quedar aquí para volver a consultarla."
                 action={<Button onClick={restart}>Hacer una lectura</Button>}
               />
             ) : (
@@ -259,8 +259,8 @@ export default function HistoryScreen() {
             {customSpreads.length === 0 ? (
               <EmptyState
                 glyph="✛"
-                title="No tenés tiradas propias todavía"
-                text="Podés diseñar una tirada con tus propias posiciones y el layout que quieras. Queda guardada para reutilizarla siempre."
+                title="No tienes tiradas propias todavía"
+                text="Puedes diseñar una tirada con tus propias posiciones y el layout que quieras. Queda guardada para reutilizarla siempre."
                 action={<Button onClick={startNewSpread}>Crear tirada</Button>}
               />
             ) : (
@@ -284,7 +284,7 @@ export default function HistoryScreen() {
                           {spread.positions.length}{' '}
                           {spread.positions.length === 1 ? 'posición' : 'posiciones'}
                           {spread.createdAt
-                            ? ` · ${new Date(spread.createdAt).toLocaleDateString('es-AR')}`
+                            ? ` · ${new Date(spread.createdAt).toLocaleDateString('es-PE')}`
                             : ''}
                         </p>
                         <p className="mt-2 line-clamp-2 flex-1 text-[0.7rem] text-gold-100/40">
@@ -334,7 +334,7 @@ export default function HistoryScreen() {
               <EmptyState
                 glyph="✧"
                 title="Todavía no creaste un mazo"
-                text="Podés cargar tus propias cartas con su significado al derecho y al revés, y usarlas en cualquier tirada. Sirve tanto para un tarot propio como para un oráculo."
+                text="Puedes cargar tus propias cartas con su significado al derecho y al revés, y usarlas en cualquier tirada. Sirve tanto para un tarot propio como para un oráculo."
                 action={<Button onClick={() => startNewDeck()}>Crear mazo</Button>}
               />
             ) : (

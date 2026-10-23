@@ -167,7 +167,7 @@ describe('nada se dibuja fuera de la hoja', () => {
 /* ==========================================================================
    La geometría de las dos columnas.
 
-   Hubo acá un test que medía solapamientos estimando el ancho de cada línea
+   Hubo aquí un test que medía solapamientos estimando el ancho de cada línea
    con `caracteres x tamaño de letra`. Se sacó.
 
    No era confiable: el ancho de una línea justificada o centrada no sale de
@@ -177,7 +177,7 @@ describe('nada se dibuja fuera de la hoja', () => {
 
    Lo que sí se puede verificar de verdad es la ARITMÉTICA de la maqueta, que
    son números que el código declara y no estima. Eso es lo que se comprueba
-   acá: que la columna de texto empieza a la derecha de la carta y con margen,
+   aquí: que la columna de texto empieza a la derecha de la carta y con margen,
    y que ninguna de las dos se sale de la hoja.
    ========================================================================== */
 describe('la geometría de la maqueta', () => {

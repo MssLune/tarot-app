@@ -166,8 +166,8 @@ export default function SpreadBuilder() {
     <div className="space-y-9">
       <SectionHeading
         overline={editingSpread ? 'Editar tirada' : 'Nueva tirada'}
-        title={editingSpread ? 'Ajustá tu tirada' : 'Diseñá tu tirada'}
-        subtitle="Definí cuántas cartas usás, qué representa cada posición y cómo se ubican en el paño. Se guarda en tu dispositivo para reutilizarla cuando quieras."
+        title={editingSpread ? 'Ajusta tu tirada' : 'Diseña tu tirada'}
+        subtitle="Define cuántas cartas usas, qué representa cada posición y cómo se ubican en el paño. Se guarda en tu dispositivo para reutilizarla cuando quieras."
       />
 
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -201,7 +201,7 @@ export default function SpreadBuilder() {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Para qué la usás"
+                placeholder="Para qué la usas"
               />
             </div>
 
@@ -284,7 +284,7 @@ export default function SpreadBuilder() {
                     type="text"
                     value={pos.prompt ?? ''}
                     onChange={(e) => updatePosition(index, { prompt: e.target.value })}
-                    placeholder="¿Qué pregunta responde? Ej: lo que no querés mirar"
+                    placeholder="¿Qué pregunta responde? Ej: lo que no quieres mirar"
                     className="mt-2 !py-2 !text-xs"
                   />
                 </motion.div>
@@ -318,8 +318,8 @@ export default function SpreadBuilder() {
             </div>
             <p className="mt-3 text-[0.68rem] leading-relaxed text-gold-100/35">
               {preset === 'free'
-                ? 'Modo libre: arrastrá cada carta al lugar que quieras.'
-                : 'Elegí un layout base y, si querés, arrastrá cualquier carta para ajustarla a mano.'}
+                ? 'Modo libre: arrastra cada carta al lugar que quieras.'
+                : 'Elige un layout base y, si quieres, arrastra cualquier carta para ajustarla a mano.'}
             </p>
           </div>
 
@@ -330,7 +330,7 @@ export default function SpreadBuilder() {
                 Paño
               </h3>
               <span className="text-[0.6rem] uppercase tracking-[0.16em] text-gold-100/30">
-                arrastrá para ubicar
+                arrastra para ubicar
               </span>
             </div>
 

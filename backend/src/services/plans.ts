@@ -13,7 +13,7 @@ import { configuredTiers } from '../config/env';
    qué puede llevar consigo. Un usuario free no puede leer menos cartas que
    uno pago; sólo guarda menos cosas y no se las lleva en otro formato.
 
-   Todos los números viven acá. Si se cambia un límite, se cambia en un solo
+   Todos los números viven aquí. Si se cambia un límite, se cambia en un solo
    lugar y no hay que buscarlos en las pantallas.
    ========================================================================== */
 
@@ -115,7 +115,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   },
 };
 
-/** Recursos con tope. Los que no aparecen acá no tienen límite. */
+/** Recursos con tope. Los que no aparecen aquí no tienen límite. */
 export type LimitedResource = 'readings' | 'decks' | 'spreads' | 'rituals';
 
 const RESOURCE_LABEL: Record<LimitedResource, string> = {
@@ -167,7 +167,7 @@ export function effectiveTier(
 }
 
 /** Fecha en formato corto, para los mensajes: "martes 28 de octubre". */
-const FECHA = new Intl.DateTimeFormat('es-AR', {
+const FECHA = new Intl.DateTimeFormat('es-PE', {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
@@ -194,14 +194,14 @@ export function assertWithinLimit(
 ): void {
   const limit = limitsFor(plan, status)[resource];
   if (current < limit) return;
-  const cuando = proximo ? ` Podés guardar otra el ${FECHA.format(proximo)},` : '';
+  const cuando = proximo ? ` Puedes guardar otra el ${FECHA.format(proximo)},` : '';
   throw new ApiError(
     402,
     'PLAN_LIMIT_REACHED',
     resource === 'readings'
       ? `Ya guardaste ${current} lecturas esta semana, el máximo del plan gratuito.${cuando || ''}${
-          cuando ? ' o pasá' : ' Pasá'
+          cuando ? ' o pasa' : ' Pasa'
         } al Pro para guardar sin límite.`
-      : `Llegaste al límite de ${current} ${RESOURCE_LABEL[resource]} del plan gratuito. Pasá al Pro para crear sin tope.`,
+      : `Llegaste al límite de ${current} ${RESOURCE_LABEL[resource]} del plan gratuito. Pasa al Pro para crear sin tope.`,
   );
 }

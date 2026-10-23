@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Show } from '@clerk/react';
 import { useReadingStore } from '../../store/useReadingStore';
 import type { Screen } from '../../types';
+import AvisoPro from '../plans/AvisoPro';
 import LimitBanner from '../plans/LimitBanner';
 import UserMenu from './UserMenu';
 
@@ -32,7 +33,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const deck = useReadingStore((s) => s.deck);
   const pedirCuenta = useReadingStore((s) => s.pedirCuenta);
   const authView = useReadingStore((s) => s.authView);
-  /* El acceso a administración vive en el menú de cuenta (UserMenu), no acá. */
+  /* El acceso a administración vive en el menú de cuenta (UserMenu), no aquí. */
 
   /* Con mazo propio el flujo tiene un paso más: elegir/crear el mazo. */
   const STEPS =
@@ -211,6 +212,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           el usuario llegó a un tope, y se puede cerrar. */}
       <Show when="signed-in">
         <LimitBanner />
+        {/* La ventana de "Pasa al Pro" cuando el plan no deja guardar algo. */}
+        <AvisoPro />
       </Show>
 
       {/* ---------------- Contenido ---------------- */}

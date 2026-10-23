@@ -51,7 +51,7 @@ export interface ReadingPdf {
 /**
  * Arma el PDF de una lectura y devuelve los bytes con el nombre de archivo.
  *
- * La comprobación de pertenencia va acá y no en el controller: es la última
+ * La comprobación de pertenencia va aquí y no en el controller: es la última
  * línea antes de devolver el archivo, y un controller que se olvidara de ella
  * dejaría leer cualquier lectura de otro usuario. El `where` incluye el
  * `userId`, así que la consulta no encuentra la fila y no hay nada que
@@ -94,7 +94,7 @@ export async function renderReadingPdf(userId: string, readingId: string): Promi
 
   const luna = moonPhase(new Date(reading.createdAt));
 
-  /* Qué cara se dibuja en cada posición. Se resuelve acá porque el servicio es
+  /* Qué cara se dibuja en cada posición. Se resuelve aquí porque el servicio es
      el único que tiene las cartas: el motor trabaja con ids, no con dibujos. */
   const cartasDe = await prisma.card.findMany({
     where: { id: { in: reading.cards.map((c) => c.arcanaId ?? '').filter(Boolean) } },

@@ -26,7 +26,7 @@ app.use(cors({ origin: env.frontendUrl }));
    problema de seguridad —es un archivo nuestro— pero es una URL que no
    debería existir.
 
-   Se responde el 404 acá mismo y no con `next('router')`, que sólo funciona
+   Se responde el 404 aquí mismo y no con `next('router')`, que sólo funciona
    dentro de un router y no en la app. */
 app.use(CARDS_ROUTE, (req, res, next) => {
   if (/\.(jpe?g|png|webp)$/i.test(req.path)) {

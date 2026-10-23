@@ -38,7 +38,7 @@ const OPTIONS: SystemOption[] = [
     name: 'Oráculo',
     tagline: 'Mazo libre, una sola vez',
     description:
-      'Para cualquier mazo de oráculo. Cargás el nombre de cada carta y, si querés, su significado, sin tener que definir el mazo antes.',
+      'Para cualquier mazo de oráculo. Cargas el nombre de cada carta y, si quieres, su significado, sin tener que definir el mazo antes.',
     features: [
       'Compatible con cualquier mazo',
       'Significados propios por carta',
@@ -51,7 +51,7 @@ const OPTIONS: SystemOption[] = [
     name: 'Mazo propio',
     tagline: 'Tarot u oráculo personalizado',
     description:
-      'Creá tu mazo una vez —cartas, símbolos y significados al derecho y al revés— y reutilizalo en todas tus lecturas. Podés partir de los 22 Arcanos y ampliarlos.',
+      'Crea tu mazo una vez —cartas, símbolos y significados al derecho y al revés— y reutilízalo en todas tus lecturas. Puedes partir de los 22 Arcanos y ampliarlos.',
     features: [
       'Tus cartas con derecho e invertida',
       'Plantillas: 22, 56 o 78 cartas',
@@ -79,11 +79,11 @@ export default function SystemScreen() {
         <h1 className="text-gold-gradient text-4xl leading-[1.1] sm:text-6xl">
           El mazo ya habló.
           <br />
-          <span className="text-gold-100/80">Acá se ordena el mensaje.</span>
+          <span className="text-gold-100/80">Aquí se ordena el mensaje.</span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-gold-100/55 sm:text-base">
-          Elegí el sistema, armá la tirada —predefinida o creada por vos—, cargá las cartas que
-          salieron y recibí una interpretación posición por posición, con los patrones del conjunto y
+          Elige el sistema, arma la tirada —predefinida o creada por ti—, carga las cartas que
+          salieron y recibe una interpretación posición por posición, con los patrones del conjunto y
           una conclusión integradora.
         </p>
         <OrnateDivider className="mt-8" symbol="✧" />

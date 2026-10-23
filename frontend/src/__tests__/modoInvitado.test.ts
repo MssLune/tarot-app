@@ -22,7 +22,7 @@ vi.stubGlobal('sessionStorage', {
   length: 0,
 } as Storage);
 
-/* Las llamadas a la API no importan acá: respuesta vacía siempre. */
+/* Las llamadas a la API no importan aquí: respuesta vacía siempre. */
 vi.stubGlobal(
   'fetch',
   vi.fn(async () => new Response(JSON.stringify({ success: true, data: [] }), { status: 200 })),

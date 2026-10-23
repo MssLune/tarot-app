@@ -72,7 +72,7 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="text-center">
-        <p className="text-rose-200">No tenés permiso para acceder a esta página.</p>
+        <p className="text-rose-200">No tienes permiso para acceder a esta página.</p>
       </div>
     );
   }

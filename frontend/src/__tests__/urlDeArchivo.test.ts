@@ -46,7 +46,7 @@ describe('convertir una ruta del backend en URL', () => {
   });
 
   it('undefined cuando no hay imagen, que es un caso válido', () => {
-    /* Una carta sin imagen NO es un error: el valor null significa "seguí con
+    /* Una carta sin imagen NO es un error: el valor null significa "sigue con
        el símbolo". Convertirlo en una URL vacía haría que el navegador pidiera
        la página misma como imagen. */
     expect(urlDeArchivo(null)).toBeUndefined();

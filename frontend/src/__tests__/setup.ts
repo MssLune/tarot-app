@@ -38,7 +38,7 @@ vi.stubGlobal('localStorage', localStorageFalso);
    renderizan pantallas con `framer-motion`— ya hay un `window` real, y
    reemplazarlo por `{ localStorage }` le saca `addEventListener` y compañía:
    el fallo sale como "target.addEventListener is not a function" en un test que
-   no tiene nada que ver con el DOM. Así que acá sólo se COMPLETA el window que
+   no tiene nada que ver con el DOM. Así que aquí sólo se COMPLETA el window que
    ya exista, y se lo pisa entero únicamente en `node`, donde no hay ninguno. */
 if (typeof globalThis.window === 'undefined') {
   vi.stubGlobal('window', { localStorage: localStorageFalso });
@@ -84,8 +84,8 @@ if (!globalThis.fetch) {
     'fetch',
     vi.fn(async () => {
       throw new Error(
-        'fetch no interceptado en el test. Si querés probar una llamada a la API, ' +
-          'reemplazá globalThis.fetch por una versión que devuelva la respuesta.',
+        'fetch no interceptado en el test. Si quieres probar una llamada a la API, ' +
+          'reemplaza globalThis.fetch por una versión que devuelva la respuesta.',
       );
     }),
   );

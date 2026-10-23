@@ -7,7 +7,7 @@ import type { ArcanaCard, CustomCard, CustomDeck, Element } from '../types';
    Arcanos Menores con los nombres listos para completar significados.
    ========================================================================== */
 
-/** Id corto local (el store tiene su propio uid, acá evitamos el import cruzado). */
+/** Id corto local (el store tiene su propio uid, aquí evitamos el import cruzado). */
 const rid = (prefix: string): string =>
   `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -112,7 +112,7 @@ export function getDeckTemplates(majorArcana: ArcanaCard[]): DeckTemplate[] {
       label: 'Mazo en blanco',
       glyph: '✧',
       description:
-        'Arrancá de cero: agregá una carta por vez con su nombre, su significado al derecho y al revés.',
+        'Arranca de cero: agrega una carta por vez con su nombre, su significado al derecho y al revés.',
       build: blankDeck,
     },
     {
@@ -120,7 +120,7 @@ export function getDeckTemplates(majorArcana: ArcanaCard[]): DeckTemplate[] {
       label: 'Partir de los 22 Arcanos Mayores',
       glyph: '☉',
       description:
-        'Copia editable de los 22 Arcanos Mayores. Cambiá los textos a tu manera y sumá las cartas que quieras.',
+        'Copia editable de los 22 Arcanos Mayores. Cambia los textos a tu manera y suma las cartas que quieras.',
       build: () => ({
         ...blankDeck(),
         name: 'Mi Tarot',

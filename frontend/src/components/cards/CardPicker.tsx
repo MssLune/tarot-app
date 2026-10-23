@@ -14,7 +14,7 @@ import Glyph from '../ui/Glyph';
    Por qué sólo aparece al enfocar: en reposo el campo es un control compacto;
    la lista aparece recién al hacer clic, que es cuando la estás buscando.
 
-   La búsqueda por texto ayuda si te acordás del nombre. Los filtros por
+   La búsqueda por texto ayuda si te acuerdas del nombre. Los filtros por
    categoría ayudan cuando no: "era una carta de/arcanos mayores", "era una
    sota de bastos". Para eso están los ejes de `facets`, que define quien usa
    el componente: AcuérdateLa estructura:
@@ -566,7 +566,7 @@ export default function CardPicker({
           </span>
         </button>
       ) : (
-        /* Sin carta elegida, el disparador se lee como "elegí algo", NO como un
+        /* Sin carta elegida, el disparador se lee como "elige algo", NO como un
            campo de texto. Antes imitando un input, y como el panel abre con un
            input real de búsqueda con el mismo placeholder, parecía el mismo
            control en dos lugares. Ahora son dos cosas distintas: este pide una
@@ -583,7 +583,7 @@ export default function CardPicker({
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gold-400/25 text-[0.7rem] text-gold-300/60">
             <Glyph>✦</Glyph>
           </span>
-          <span className="min-w-0 flex-1">Elegí la carta</span>
+          <span className="min-w-0 flex-1">Elige la carta</span>
           <span className="shrink-0 text-[0.6rem] text-gold-100/35" aria-hidden="true">
             ▾
           </span>

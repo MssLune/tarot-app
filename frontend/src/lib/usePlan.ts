@@ -10,7 +10,7 @@ import type { LimitedResource, Plan, PlanTier } from '../types';
    El backend es la fuente de verdad del límite. Este hook sólo muestra lo que
    el backend dice: si el contador dice "3 de 20" y al crear la cuarta el
    backend responde 402, el contador estaba mal. Nunca se calcula el límite
-   acá para decidir si se puede o no, porque esa decisión la toma el servidor.
+   aquí para decidir si se puede o no, porque esa decisión la toma el servidor.
    ========================================================================== */
 
 /** Rótulos de cada recurso, para las barras de uso. */

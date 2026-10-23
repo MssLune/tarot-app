@@ -20,7 +20,7 @@ import { moonDiscSvg, caminoIluminado, PALETA } from '../components/cards/moonDi
    4. El velo se dibujaba antes que los cráteres, y los tapaba: la parte en
       sombra quedaba lisa.
 
-   CÓMO SE MIDE ACÁ
+   CÓMO SE MIDE AQUÍ
    ----------------
    El ÁREA del path se calcula con la fórmula del polígono (zancos) sobre los
    MISMOS puntos que el SVG usa: el terminador de ida, el limbo de vuelta, y el
@@ -33,7 +33,7 @@ import { moonDiscSvg, caminoIluminado, PALETA } from '../components/cards/moonDi
    el área sale mal y el test falla.
 
    La comprobación de que el SVG RENDERIZADO tiene esa área, contando píxeles
-   con sharp, vive en `herramientas/verificarLuna.ts`. Acá no hay rasterizador.
+   con sharp, vive en `herramientas/verificarLuna.ts`. Aquí no hay rasterizador.
    ========================================================================== */
 
 const CENTRO = 200;

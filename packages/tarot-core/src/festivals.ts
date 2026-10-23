@@ -98,7 +98,7 @@ export function festivalsOf(anio: number): Festival[] {
       granHoguera: true,
       resumen: 'Pasaje a la luz larga: la primera de las dos Hogueras de verano.',
       detalle:
-        'La mitad entre el equinoccio de primavera y el solsticio de verano, y el momento en que el sol ya tiene la fuerza suficiente para que la tierra crezca de verdad. Las hogueras se hacían en las alturas y el ganado se pasaba por el humo, como quien pide que no se male un año malo. La fiesta era también el momento de las parejas, y en las highlands escocesas todavía se eligen ese día los que cantan las canciones nupciales. Desde acá hasta Lughnasadh el sol está en su mejor momento: los días largos y el calor útil para la cosecha.',
+        'La mitad entre el equinoccio de primavera y el solsticio de verano, y el momento en que el sol ya tiene la fuerza suficiente para que la tierra crezca de verdad. Las hogueras se hacían en las alturas y el ganado se pasaba por el humo, como quien pide que no se male un año malo. La fiesta era también el momento de las parejas, y en las highlands escocesas todavía se eligen ese día los que cantan las canciones nupciales. Desde aquí hasta Lughnasadh el sol está en su mejor momento: los días largos y el calor útil para la cosecha.',
     },
     {
       id: 'san-juan',
@@ -143,7 +143,7 @@ export function festivalsOf(anio: number): Festival[] {
       fixed: false,
       resumen: 'Tan largo el día como la noche. La tierra se equilibra.',
       detalle:
-        'El sol cruza el ecuador y en teoría el día y la noche duran lo mismo. En la práctica no: la atmósfera refracta la luz y el disco del sol tiene tamaño, así que el día dura siempre un poco más que la noche, aunque después de registrar el crepúsculo de amanecer y ocaso. A partir de acá los días se alargan hasta el solsticio. También es el momento del equinoccio de otoño en el hemisferio sur, donde es al revés, y por eso en Argentina y en Chile el año empieza a oscurecerse en vez de alargarse.',
+        'El sol cruza el ecuador y en teoría el día y la noche duran lo mismo. En la práctica no: la atmósfera refracta la luz y el disco del sol tiene tamaño, así que el día dura siempre un poco más que la noche, aunque después de registrar el crepúsculo de amanecer y ocaso. A partir de aquí los días se alargan hasta el solsticio. También es el momento del equinoccio de otoño en el hemisferio sur, donde es al revés, y por eso en Argentina y en Chile el año empieza a oscurecerse en vez de alargarse.',
     },
     {
       id: 'solsticio-verano',
@@ -161,7 +161,7 @@ export function festivalsOf(anio: number): Festival[] {
       altNames: ['Mabón', 'Otoño'],
       date: de('september-equinox'),
       fixed: false,
-      resumen: 'El equilibrio otra vez. Y desde acá, la luz baja.',
+      resumen: 'El equilibrio otra vez. Y desde aquí, la luz baja.',
       detalle:
         'La segunda vez que el día y la noche se emparejan, y la que sí es el principio del descenso: desde este día hasta el solsticio de invierno se pierden casi dos minutos de luz por día, que es la razón por la que la sombra del mediodía crece tan rápido en esta estación. Es también la fiesta de la cosecha en casi todas las tradiciones de las que tenemos registro escrito, con el mismo nombre o con otros: Mabón, Mabon, y en la India la Purnima del mes de ashwin. Lo que se celebra no es que termine el ciclo, sino que lo que se sembró esté a punto de recogerse.',
     },
@@ -171,7 +171,7 @@ export function festivalsOf(anio: number): Festival[] {
       altNames: ['Yule', 'Navidad del Sol'],
       date: de('december-solstice'),
       fixed: false,
-      resumen: 'La noche más larga. Y desde acá, la luz crece.',
+      resumen: 'La noche más larga. Y desde aquí, la luz crece.',
       detalle:
         'La noche más corta del año y el punto más bajo del sol. Es el momento bisagra del calendario solar: después de esta fecha, todos los días tienen un poco más de luz que el anterior, hasta el verano siguiente. El nombre Yule viene del nórdico «jol», que se usaba en la expresión «jólablang», la noche de Yule, y que aparece en inglés antiguo como «yule» —y de ahí saltó a la Navidad, que es la misma fiesta con otro nombre. Encender fuego en la noche más larga era la forma de fingir que la luz ya estaba.',
     },

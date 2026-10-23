@@ -152,7 +152,7 @@ export default function UserMenu() {
         <div
           role="menu"
           /* Opaco a propósito: .panel es cristal y sobre el campo estelar el
-             texto dorado se vuelve ilegible. Acá va un fondo sólido. */
+             texto dorado se vuelve ilegible. Aquí va un fondo sólido. */
           className="gilded absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-3xl border border-gold-400/20 bg-ink-900 p-0"
           style={{ boxShadow: '0 28px 70px -24px rgba(0, 0, 0, 0.98)' }}
         >
@@ -230,7 +230,7 @@ export default function UserMenu() {
               <div className="text-[0.65rem] leading-relaxed text-gold-100/70">
                 <p>Este dispositivo</p>
                 <p className="text-gold-100/55">
-                  Ingresó {new Date(session.createdAt).toLocaleString('es-AR')}
+                  Ingresó {new Date(session.createdAt).toLocaleString('es-PE')}
                 </p>
               </div>
             ) : (

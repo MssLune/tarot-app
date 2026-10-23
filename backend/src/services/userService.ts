@@ -169,7 +169,7 @@ export async function upsertUserDeck(userId: string, id: string, input: Partial<
       throw new ApiError(
         409,
         'DECK_ID_TAKEN',
-        `El identificador "${id}" ya está en uso por otra cuenta. Volvé a exportar e importar el mazo, o crealo de nuevo.`,
+        `El identificador "${id}" ya está en uso por otra cuenta. Vuelve a exportar e importar el mazo, o créalo de nuevo.`,
       );
     }
 
@@ -275,7 +275,7 @@ export async function upsertUserSpread(
       throw new ApiError(
         409,
         'SPREAD_ID_TAKEN',
-        `El identificador "${id}" ya está en uso por otra cuenta. Volvé a exportar e importar la tirada, o creala de nuevo.`,
+        `El identificador "${id}" ya está en uso por otra cuenta. Vuelve a exportar e importar la tirada, o créala de nuevo.`,
       );
     }
 
@@ -538,7 +538,7 @@ export async function upsertUserRitual(userId: string, id: string, input: Partia
       throw new ApiError(
         409,
         'RITUAL_ID_TAKEN',
-        `El identificador "${id}" ya está en uso por otra cuenta. Volvé a exportar e importar el ritual, o crealo de nuevo.`,
+        `El identificador "${id}" ya está en uso por otra cuenta. Vuelve a exportar e importar el ritual, o créalo de nuevo.`,
       );
     }
     if (input.title === undefined || input.body === undefined) {

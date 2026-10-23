@@ -32,7 +32,7 @@ describe('al iniciar sesión', () => {
 
     expect(useReadingStore.getState().history).toEqual([]);
     expect(useReadingStore.getState().ownerId).toBe('user_beto');
-    /* Y en el navegador tampoco: `migrateLocalData` lee de acá. */
+    /* Y en el navegador tampoco: `migrateLocalData` lee de aquí. */
     expect(enElNavegador().history).toEqual([]);
   });
 

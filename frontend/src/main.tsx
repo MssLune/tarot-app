@@ -12,7 +12,7 @@ if (!publishableKey) {
 }
 
 /* Apariencia de los componentes de Clerk (inicio de sesión, registro,
-   cuenta), con la paleta de la app (ver tailwind.config.js). Va acá, en el
+   cuenta), con la paleta de la app (ver tailwind.config.js). Va aquí, en el
    provider, para que valga para todos a la vez. */
 const clerkAppearance = {
   variables: {
@@ -35,7 +35,7 @@ const clerkAppearance = {
        panel), no algo a ocultar con CSS. */
     footer: { background: 'transparent' },
     /* "Don't have an account? Sign up": la app ya muestra su propio enlace
-       debajo ("¿No tenés cuenta? Registrate"), y el de Clerk navegaría a una
+       debajo ("¿No tienes cuenta? Regístrate"), y el de Clerk navegaría a una
        ruta que esta app sin router no tiene. */
     footerAction: { display: 'none' },
   },

@@ -2,11 +2,11 @@
    Tipos de la aplicación.
 
    Lo que es del DOMINIO —cartas, tiradas, lecturas, interpretación— vive en el
-   paquete compartido `@arcana/tarot-core` y se re-exporta desde acá, para que
+   paquete compartido `@arcana/tarot-core` y se re-exporta desde aquí, para que
    los archivos que ya lo importaban de este archivo sigan funcionando sin
    cambiar una línea.
 
-   Lo que queda acá es lo que sólo existe en el navegador: qué pantalla se está
+   Lo que queda aquí es lo que sólo existe en el navegador: qué pantalla se está
    mostrando, el plan del usuario y la sesión.
    ========================================================================== */
 

@@ -5,7 +5,7 @@ import { cancelSubscriptionForDeletedUser } from './billingService';
 /* ==========================================================================
    Cuentas: alta, actualización y baja de usuarios a partir de Clerk.
 
-   Hay DOS caminos que traen datos de Clerk y los dos pasan por acá:
+   Hay DOS caminos que traen datos de Clerk y los dos pasan por aquí:
 
    - `requireAuth`, la primera vez que un usuario hace un request (pide el
      usuario a la API de Clerk, que lo da en camelCase).

@@ -124,7 +124,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     if (user.role !== 'admin') {
       res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'No tenés permiso para acceder a este recurso.' },
+        error: { code: 'FORBIDDEN', message: 'No tienes permiso para acceder a este recurso.' },
       });
       return;
     }

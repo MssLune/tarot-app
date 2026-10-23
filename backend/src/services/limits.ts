@@ -14,7 +14,7 @@ import { assertWithinLimit, VENTANA_MS, type LimitedResource } from './plans';
 
    Antes sólo la usaba el middleware, y como el PUT crea sin pasar por él, un
    usuario gratuito podía tener mazos, tiradas y rituales ilimitados mandando
-   ids nuevos por PUT. Con la regla acá, el tope no depende de por qué ruta
+   ids nuevos por PUT. Con la regla aquí, el tope no depende de por qué ruta
    entre el pedido.
 
    Las LECTURAS tienen tope por semana (ver `VENTANA_MS` en plans.ts): se

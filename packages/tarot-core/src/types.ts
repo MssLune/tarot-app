@@ -1,7 +1,7 @@
 /* ==========================================================================
    Tipos del dominio: sistemas, cartas, tiradas, lecturas e interpretación.
 
-   acá vive lo que ES una lectura, y no depende de nada de la interfaz. Vive
+   aquí vive lo que ES una lectura, y no depende de nada de la interfaz. Vive
    en un paquete compartido y no en el frontend por una razón concreta: el
    motor de interpretación se usa en dos lugares —la pantalla y el PDF que
    arma el backend— y si cada uno tuviera su copia, el PDF podría terminar

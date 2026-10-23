@@ -43,7 +43,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             Algo salió mal
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-gold-100/50">
-            La aplicación encontró un error inesperado. Copiá el mensaje de abajo si le vas a
+            La aplicación encontró un error inesperado. Copia el mensaje de abajo si le vas a
             avisar a quien la mantiene — tu mazo y tu historial guardados no se pierden.
           </p>
         </div>

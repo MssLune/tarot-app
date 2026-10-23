@@ -12,7 +12,7 @@ userRouter.use(requireAuth);
 
 /* ---------- Perfil ---------- */
 userRouter.get('/me', asyncHandler(userController.getMe));
-/* Plan y uso. Va acá y no sólo en /api/billing porque los topes del plan
+/* Plan y uso. Va aquí y no sólo en /api/billing porque los topes del plan
    gratuito se aplican aunque Stripe no esté configurado. */
 userRouter.get('/usage', asyncHandler(userController.getUsage));
 

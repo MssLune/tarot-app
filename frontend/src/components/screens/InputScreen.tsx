@@ -41,12 +41,12 @@ export default function InputScreen() {
   const [ficha, setFicha] = useState<{ id: string; reversed: boolean } | null>(null);
 
   /**
-   * Ejes de filtro del tarot. Se viven acá y no en el CardPicker porque el
+   * Ejes de filtro del tarot. Se viven aquí y no en el CardPicker porque el
    * componente también se usa para el mazo propio, que no tiene estas
    * categorías.
    *
-   * La idea es que la búsqueda por texto sirve si te acordás del nombre
-   * ("La Emperatriz"), y estos filtros sirven cuando no te acordás: "era una
+   * La idea es que la búsqueda por texto sirve si te acuerdas del nombre
+   * ("La Emperatriz"), y estos filtros sirven cuando no te acuerdas: "era una
    * carta de arcanos mayores", "era una sota de bastos".
    */
   const TAROT_FACETS: PickerFacet[] = [
@@ -200,16 +200,16 @@ export default function InputScreen() {
   });
 
   const subtitle = isTarot
-    ? 'Elegí el arcano de cada posición y marcá si salió invertida. Podés agregar una nota propia si querés.'
+    ? 'Elige el arcano de cada posición y marca si salió invertida. Puedes agregar una nota propia si quieres.'
     : isDeck
-      ? `Elegí en cada posición qué carta de «${deck?.name ?? 'tu mazo'}» salió. La interpretación va a usar los significados que escribiste.`
-      : 'Escribí el nombre de cada carta de tu mazo y, si tenés su significado a mano, sumalo: la interpretación lo va a usar.';
+      ? `Elige en cada posición qué carta de «${deck?.name ?? 'tu mazo'}» salió. La interpretación va a usar los significados que escribiste.`
+      : 'Escribe el nombre de cada carta de tu mazo y, si tienes su significado a mano, súmalo: la interpretación lo va a usar.';
 
   return (
     <div className="space-y-9">
       <SectionHeading
         overline={`Paso ${isDeck ? '4 de 5' : '3 de 4'} · ${spread.name}`}
-        title="Cargá las cartas que salieron"
+        title="Carga las cartas que salieron"
         subtitle={subtitle}
       />
 
@@ -230,7 +230,7 @@ export default function InputScreen() {
           placeholder="¿Qué necesito ver sobre…?"
         />
         <p className="mt-2 text-[0.68rem] text-gold-100/30">
-          Si la escribís, la conclusión final va a responder directamente sobre eso.
+          Si la escribes, la conclusión final va a responder directamente sobre eso.
         </p>
 
         {/* --- Categoría: enfoca la lectura de cada carta a un tema puntual --- */}
@@ -376,7 +376,7 @@ export default function InputScreen() {
                           )}
                           <p className="line-clamp-3 text-[0.7rem] leading-relaxed text-gold-100/45">
                             {chosenText ||
-                              'Esta carta todavía no tiene significado escrito. Podés completarlo desde «Mazo» y volver.'}
+                              'Esta carta todavía no tiene significado escrito. Puedes completarlo desde «Mazo» y volver.'}
                           </p>
                         </div>
                       )}
@@ -405,7 +405,7 @@ export default function InputScreen() {
                       hint={
                         card.reversed
                           ? 'Se lee el mensaje en falta, en exceso o hacia adentro'
-                          : 'Activá si salió al revés'
+                          : 'Activa si salió al revés'
                       }
                     />
                   )}

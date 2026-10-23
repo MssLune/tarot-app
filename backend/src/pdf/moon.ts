@@ -109,7 +109,7 @@ function discoOscuro(doc: any, cx: number, cy: number, r: number): void {
 /**
  * Área iluminada que DEBERÍA tener un disco de fase `k`.
  *
- * Vive acá y no en los tests porque es la definición, y los tests la comparan
+ * Vive aquí y no en los tests porque es la definición, y los tests la comparan
  * contra el dibujo. Si las dos estuvieran en el mismo archivo, un cambio
  * incorrecto quedaría igual en los dos y el test seguiría pasando.
  */

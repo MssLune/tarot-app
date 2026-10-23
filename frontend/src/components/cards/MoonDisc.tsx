@@ -6,7 +6,7 @@ import { moonDiscSvg, PALETA } from './moonDiscSvg';
    Disco lunar.
 
    ENVUELVE, NO DIBUJA. Toda la geometría y el markup viven en `moonDiscSvg`,
-   que es una función pura y devuelve un string. Acá no se calcula nada.
+   que es una función pura y devuelve un string. Aquí no se calcula nada.
 
    Por qué un string y no elementos de React: hay una herramienta que
    rasteriza ese mismo string a PNG para poder mirarlo
@@ -15,7 +15,7 @@ import { moonDiscSvg, PALETA } from './moonDiscSvg';
    cosa y la pantalla otra, sin que nada se quejara. Con un solo origen no hay
    forma de que diverjan.
 
-   `dangerouslySetInnerHTML` suena peor de lo que es acá: el string lo genera
+   `dangerouslySetInnerHTML` suena peor de lo que es aquí: el string lo genera
    este mismo módulo, sin nada que venga del usuario. No hay entrada externa
    que pueda inyectar.
 

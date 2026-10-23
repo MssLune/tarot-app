@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { calendarMonth, festivalsOf, type CalendarDay, type Festival } from '@arcana/tarot-core';
 import MoonDisc from '../cards/MoonDisc';
@@ -234,7 +234,10 @@ export default function MoonCalendar({
 
   /* El foco se mueve cuando el botón del día ya está en la grilla: al cruzar
      de mes, primero cambia la selección y en el render siguiente el mes. */
-  useEffect(() => {
+  /* `useLayoutEffect`: el foco se pone antes de pintar. Con `useEffect`
+     quedaba un instante sin foco al cambiar de mes y una segunda flecha
+     apretada rápido se perdía. */
+  useLayoutEffect(() => {
     if (!focoPendiente.current) return;
     const boton = grilla.current?.querySelector<HTMLButtonElement>(`[data-dia="${sel}"]`);
     if (boton) {
@@ -308,16 +311,16 @@ export default function MoonCalendar({
               onClick={() => mover(-1)}
               disabled={!puedeAnterior}
               aria-label="Mes anterior"
-              className="foco flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-noche-600 text-lavanda-200 transition-colors hover:border-luna-400/50 hover:text-luna-300 disabled:opacity-30"
+              className="foco flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-noche-600 text-gold-100/75 transition-colors hover:border-luna-400/50 hover:text-gold-200 disabled:opacity-30"
             >
               <Icono nombre="izquierda" />
             </button>
 
             <p
               aria-live="polite"
-              className="min-w-0 flex-1 text-center font-display text-lg text-lavanda-100 sm:text-xl"
+              className="min-w-0 flex-1 text-center font-display text-base text-gold-gradient sm:text-lg"
             >
-              {MESES[cursor.mes]} <span className="text-lavanda-300">{cursor.anio}</span>
+              {MESES[cursor.mes]} <span className="text-gold-100/55">{cursor.anio}</span>
             </p>
 
             <button
@@ -325,7 +328,7 @@ export default function MoonCalendar({
               onClick={() => mover(1)}
               disabled={!puedeSiguiente}
               aria-label="Mes siguiente"
-              className="foco flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-noche-600 text-lavanda-200 transition-colors hover:border-luna-400/50 hover:text-luna-300 disabled:opacity-30"
+              className="foco flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-noche-600 text-gold-100/75 transition-colors hover:border-luna-400/50 hover:text-gold-200 disabled:opacity-30"
             >
               <Icono nombre="derecha" />
             </button>
@@ -337,7 +340,7 @@ export default function MoonCalendar({
                 else irAMes(ahora.getFullYear(), ahora.getMonth());
               }}
               disabled={esMesDeHoy && sel === hoyIso}
-              className="foco h-10 shrink-0 rounded-full border border-noche-600 px-3.5 text-xs uppercase tracking-[0.14em] text-lavanda-200 transition-colors hover:border-luna-400/50 hover:text-luna-300 disabled:opacity-35"
+              className="foco h-10 shrink-0 rounded-full border border-noche-600 px-3.5 font-display text-[0.68rem] uppercase tracking-[0.18em] text-gold-200 transition-colors hover:border-luna-400/50 hover:text-gold-200 disabled:opacity-35"
             >
               Hoy
             </button>
@@ -346,7 +349,7 @@ export default function MoonCalendar({
           {/* ---------------- Días de la semana ---------------- */}
           <div className="mb-1 grid grid-cols-7 gap-1 sm:gap-1.5" aria-hidden="true">
             {DIAS_SEMANA.map(([corto, largo]) => (
-              <div key={largo} title={largo} className="text-center text-[0.7rem] uppercase tracking-[0.12em] text-lavanda-400">
+              <div key={largo} title={largo} className="text-center font-display text-[0.65rem] tracking-[0.12em] text-gold-100/45">
                 {corto}
               </div>
             ))}
@@ -356,7 +359,7 @@ export default function MoonCalendar({
           <div
             ref={grilla}
             role="group"
-            aria-label={`Días de ${MESES[cursor.mes]} de ${cursor.anio}. Usá las flechas para moverte.`}
+            aria-label={`Días de ${MESES[cursor.mes]} de ${cursor.anio}. Usa las flechas para moverte.`}
             onKeyDown={alTeclear}
             className="grid grid-cols-7 gap-1 sm:gap-1.5"
           >
@@ -379,7 +382,7 @@ export default function MoonCalendar({
           </div>
 
           {/* ---------------- Leyenda ---------------- */}
-          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-lavanda-300">
+          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-gold-100/55">
             {LEYENDA.map((l) => (
               <li key={l.tipo} className="flex items-center gap-1.5">
                 <Marca tipo={l.tipo} />
@@ -387,10 +390,10 @@ export default function MoonCalendar({
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs leading-relaxed text-lavanda-400">
+          <p className="mt-2 text-xs leading-relaxed text-gold-100/40">
             La Luna de cada día es la del mediodía, en tu zona horaria.
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-lavanda-400" role="status">
+          <p className="mt-1 text-xs leading-relaxed text-gold-100/40" role="status">
             {cargandoRemoto
               ? 'Cargando retrógrados y eclipses…'
               : errorRemoto
@@ -400,7 +403,7 @@ export default function MoonCalendar({
               <button
                 type="button"
                 onClick={() => setIntento((n) => n + 1)}
-                className="foco ml-1.5 rounded text-luna-300 underline decoration-luna-400/40 underline-offset-4 hover:text-luna-300"
+                className="foco ml-1.5 rounded text-gold-200 underline decoration-luna-400/40 underline-offset-4 hover:text-gold-200"
               >
                 Reintentar
               </button>
@@ -467,7 +470,7 @@ function Celda({
   if (!dia.enMes) {
     return (
       <div aria-hidden="true" className="flex min-h-[3.4rem] items-start px-1 pt-1 sm:min-h-[4.6rem]">
-        <span className="text-[0.7rem] text-lavanda-400/40">{dia.date.getDate()}</span>
+        <span className="text-[0.7rem] text-gold-100/20">{dia.date.getDate()}</span>
       </div>
     );
   }
@@ -508,8 +511,8 @@ function Celda({
           esHoy
             ? 'rounded-full bg-luna-400 px-1.5 py-0.5 font-semibold text-noche-950'
             : elegida
-              ? 'text-luna-300'
-              : 'text-lavanda-200'
+              ? 'text-gold-200'
+              : 'text-gold-100/75'
         }`}
       >
         {dia.date.getDate()}
@@ -572,8 +575,8 @@ function PanelDia({
 
   return (
     <article className="superficie-2 h-full p-4" aria-label={`Detalle del ${FECHA_LARGA_ANIO.format(fecha)}`}>
-      <p className="text-xs uppercase tracking-[0.18em] text-lavanda-400">{primeraMayuscula(relativo(dias))}</p>
-      <h3 className="mt-0.5 font-display text-lg leading-snug text-lavanda-100">
+      <p className="overline">{primeraMayuscula(relativo(dias))}</p>
+      <h3 className="mt-0.5 font-display text-base leading-snug text-gold-100">
         {primeraMayuscula(FECHA_LARGA_ANIO.format(fecha))}
       </h3>
 
@@ -586,17 +589,17 @@ function PanelDia({
           marca="detalle"
         />
         <div className="min-w-0">
-          <p className="font-display text-base text-luna-300">{dia.name}</p>
-          <p className="text-sm text-lavanda-300">{Math.round(dia.illumination * 100)} % iluminada al mediodía</p>
+          <p className="font-display text-sm text-gold-200">{dia.name}</p>
+          <p className="text-sm text-gold-100/55">{Math.round(dia.illumination * 100)} % iluminada al mediodía</p>
         </div>
       </div>
 
       {dia.fase && (
-        <p className="mt-3 flex items-center gap-2 rounded-lg border border-luna-400/25 bg-luna-400/[0.06] px-3 py-2 text-sm text-lavanda-100">
+        <p className="mt-3 flex items-center gap-2 rounded-lg border border-luna-400/25 bg-luna-400/[0.06] px-3 py-2 text-sm text-gold-100">
           <Marca tipo="fase" />
           <span>
-            {dia.fase.name} exacta a las <strong className="font-semibold text-luna-300">{horaAprox(dia.fase.instante)}</strong>{' '}
-            <span className="text-lavanda-400">(hora local, aprox.)</span>
+            {dia.fase.name} exacta a las <strong className="font-semibold text-gold-200">{horaAprox(dia.fase.instante)}</strong>{' '}
+            <span className="text-gold-100/40">(hora local, aprox.)</span>
           </span>
         </p>
       )}
@@ -604,11 +607,11 @@ function PanelDia({
       {hayEventos && (
         <ul className="mt-3 space-y-2 text-sm">
           {festividad && (
-            <li className="flex items-start gap-2 text-lavanda-100">
+            <li className="flex items-start gap-2 text-gold-100">
               <Marca tipo="fiesta" className="mt-1.5" />
               <span>
-                {festividad.name} <span className="text-xs text-lavanda-400">· {categoriaDe(festividad)}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-lavanda-300">{festividad.resumen}</span>
+                {festividad.name} <span className="text-xs text-gold-100/40">· {categoriaDe(festividad)}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-gold-100/55">{festividad.resumen}</span>
               </span>
             </li>
           )}
@@ -618,21 +621,21 @@ function PanelDia({
               <span>
                 {NOMBRE_ECLIPSE[eclipse.kind]}
                 {eclipse.mayor && (
-                  <span className="text-lavanda-300"> · máximo a las {horaAprox(new Date(eclipse.mayor))}</span>
+                  <span className="text-gold-100/55"> · máximo a las {horaAprox(new Date(eclipse.mayor))}</span>
                 )}
               </span>
             </li>
           )}
           {empiezan.map((p) => (
-            <li key={`e-${p.planeta}`} className="flex items-start gap-2 text-lavanda-100">
+            <li key={`e-${p.planeta}`} className="flex items-start gap-2 text-gold-100">
               <Marca tipo="astro" className="mt-1.5" />
               <span>
-                Empieza {p.nombre} retrógrado <span className="text-lavanda-400">· hasta el {fin(p)}</span>
+                Empieza {p.nombre} retrógrado <span className="text-gold-100/40">· hasta el {fin(p)}</span>
               </span>
             </li>
           ))}
           {enCurso.map((p) => (
-            <li key={`c-${p.planeta}`} className="flex items-start gap-2 text-lavanda-300">
+            <li key={`c-${p.planeta}`} className="flex items-start gap-2 text-gold-100/55">
               <Marca tipo="astro" className="mt-1.5 opacity-60" />
               <span>
                 {p.nombre} retrógrado desde el {inicio(p)}, hasta el {fin(p)}
@@ -644,9 +647,9 @@ function PanelDia({
 
       {/* ---------------- Rituales del día ---------------- */}
       <div className="mt-4 border-t border-noche-600/50 pt-3">
-        <p className="text-xs uppercase tracking-[0.16em] text-lavanda-400">Tus rituales de este día</p>
+        <p className="overline">Tus rituales de este día</p>
         {rituales.length === 0 ? (
-          <p className="mt-1.5 text-sm text-lavanda-300">Nada anotado para este día.</p>
+          <p className="mt-1.5 text-sm text-gold-100/55">Nada anotado para este día.</p>
         ) : (
           <ul className="mt-1.5 space-y-1">
             {rituales.map((r) => (
@@ -654,7 +657,7 @@ function PanelDia({
                 <button
                   type="button"
                   onClick={() => onAbrirRitual?.(r.id)}
-                  className="foco flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-lavanda-100 hover:bg-noche-700/60"
+                  className="foco flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-gold-100 hover:bg-noche-700/60"
                 >
                   <span
                     aria-hidden="true"
@@ -675,7 +678,7 @@ function PanelDia({
           <button
             type="button"
             onClick={onCrear}
-            className="foco mt-3 inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-luna-400/40 px-4 text-xs uppercase tracking-[0.14em] text-luna-300 transition-colors hover:bg-luna-400/10"
+            className="foco mt-3 inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-luna-400/40 px-4 font-display text-[0.68rem] uppercase tracking-[0.18em] text-gold-200 transition-colors hover:bg-luna-400/10"
           >
             <Icono nombre="mas" className="h-3.5 w-3.5" />
             Crear ritual para este día

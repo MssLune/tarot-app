@@ -22,7 +22,7 @@ import { useReadingStore } from '../../store/useReadingStore';
    hacen se guarda. Los Pro tampoco.
    ========================================================================== */
 
-const FECHA = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+const FECHA = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
 
 export default function LimitBanner() {
   const { isPro, cargado, limits, usage, proximaLectura, notice, dismissNotice } = usePlan();
@@ -42,7 +42,7 @@ export default function LimitBanner() {
     texto = aviso;
   } else if (lleno) {
     texto = proximaLectura
-      ? `Ya guardaste tus ${max} lecturas de esta semana. Podés guardar otra el ${FECHA.format(proximaLectura)}.`
+      ? `Ya guardaste tus ${max} lecturas de esta semana. Puedes guardar otra el ${FECHA.format(proximaLectura)}.`
       : `Ya guardaste tus ${max} lecturas de esta semana.`;
   } else {
     texto = `Lecturas guardadas esta semana: ${usadas} de ${max}.`;

@@ -33,7 +33,7 @@ function oficial(anio: number, mes: number, dia: number, hhmm: string): Date {
 }
 
 describe('estaciones del año', () => {
-  /* Contra el USNO. Es el test que importa: si la serie se rompe, acá se
+  /* Contra el USNO. Es el test que importa: si la serie se rompe, aquí se
      entera el mismo día. */
   const REFERENCIAS = [
     { anio: 2026, id: 'march-equinox', ref: oficial(2026, 3, 20, '14:46') },

@@ -49,7 +49,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
   /* Quitarse el admin a uno mismo puede dejar la app sin ningún admin, y
      entonces no hay desde dónde devolverlo sin tocar la base a mano. */
   if (req.params.id === (req as any).dbUserId && role !== 'admin') {
-    throw ApiError.badRequest('CANNOT_DEMOTE_SELF', 'No podés quitarte el rol de admin a vos mismo.');
+    throw ApiError.badRequest('CANNOT_DEMOTE_SELF', 'No puedes quitarte el rol de admin a ti mismo.');
   }
 
   const user = await prisma.user.update({
@@ -73,7 +73,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
   if (!user) throw ApiError.notFound('USER_NOT_FOUND', 'No existe un usuario con ese id.');
 
   if (req.params.id === (req as any).dbUserId) {
-    throw ApiError.badRequest('CANNOT_DELETE_SELF', 'No podés borrar tu propia cuenta desde el panel.');
+    throw ApiError.badRequest('CANNOT_DELETE_SELF', 'No puedes borrar tu propia cuenta desde el panel.');
   }
 
   /* Borrado completo: cancela la suscripción en Stripe, borra la cuenta en

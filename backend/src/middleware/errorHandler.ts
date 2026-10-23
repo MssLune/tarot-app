@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { sendError } from '../utils/response';
 
-/** Middleware central de errores: toda respuesta de error pasa por acá con formato consistente. */
+/** Middleware central de errores: toda respuesta de error pasa por aquí con formato consistente. */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ApiError) {

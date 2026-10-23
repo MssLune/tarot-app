@@ -14,7 +14,7 @@ export const LAYOUT_PRESETS: { id: LayoutPreset; label: string; hint: string }[]
   { id: 'circle', label: 'Círculo', hint: 'Ciclo cerrado' },
   { id: 'grid', label: 'Grilla', hint: 'Filas y columnas ordenadas' },
   { id: 'pyramid', label: 'Pirámide', hint: 'Base amplia hacia una cima' },
-  { id: 'free', label: 'Libre', hint: 'Ubicás cada carta a mano' },
+  { id: 'free', label: 'Libre', hint: 'Ubicas cada carta a mano' },
 ];
 
 /**

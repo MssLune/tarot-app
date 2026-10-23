@@ -7,7 +7,7 @@ import Button from '../ui/Button';
 import SectionHeading from '../ui/SectionHeading';
 
 /* ==========================================================================
-   MI PLAN: qué tenés, cuánto usaste y cómo cambiar de plan.
+   MI PLAN: qué tienes, cuánto usaste y cómo cambiar de plan.
 
    Lo que decide la pantalla: qué es gratis y qué es Pro. Y no es "las lecturas
    de más". Todo lo que hace que una lectura sirva es gratis para siempre —las
@@ -18,15 +18,15 @@ import SectionHeading from '../ui/SectionHeading';
    lleva. Un usuario free no lee menos cartas que uno Pro; sólo guarda menos
    cosas y no las exporta a PDF.
 
-   Los tres planes dan lo mismo. No es una pantalla de "elegí el tuyo": es una
-   pantalla de cuánto querés pagar por lo mismo. Por eso el anual y el de por
+   Los tres planes dan lo mismo. No es una pantalla de "elige el tuyo": es una
+   pantalla de cuánto quieres pagar por lo mismo. Por eso el anual y el de por
    vida tienen la misma lista de beneficios y sólo cambia el precio y el
    compromiso.
    ========================================================================== */
 
 const RECURSOS: LimitedResource[] = ['readings', 'decks', 'spreads', 'rituals'];
 
-const FECHA = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+const FECHA = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /**
  * Lo que trae el Pro. Los tres planes dan todo esto.
@@ -38,7 +38,7 @@ const FECHA = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric'
  * que detrás de la decisión no hay costo, sólo una decisión de producto.
  */
 const BENEFICIOS = [
-  { titulo: 'Lecturas sin tope', detalle: 'El plan gratuito guarda 10.' },
+  { titulo: 'Lecturas sin tope', detalle: 'Gratis: 2 lecturas guardadas por semana.' },
   { titulo: 'Mazos y tiradas sin tope', detalle: 'Gratis: 1 mazo y 2 tiradas.' },
   { titulo: 'Rituales sin tope', detalle: 'Gratis: 3 rituales.' },
   { titulo: 'Todo en la nube', detalle: 'Tus lecturas en todos tus dispositivos.' },
@@ -49,7 +49,7 @@ const BENEFICIOS = [
 const PLANES: Record<PlanTier, { nombre: string; nota: string }> = {
   monthly: {
     nombre: 'Mensual',
-    nota: 'Se renueva cada mes. Podés cancelar cuando quieras.',
+    nota: 'Se renueva cada mes. Puedes cancelar cuando quieras.',
   },
   annual: {
     nombre: 'Anual',
@@ -71,7 +71,7 @@ interface Oferta {
   disponible: boolean;
 }
 
-const FECHAS = new Intl.DateTimeFormat('es-AR', {
+const FECHAS = new Intl.DateTimeFormat('es-PE', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
@@ -91,7 +91,7 @@ function formatearPrecio(oferta: Oferta): { texto: string; unavailable: boolean 
   const valor = oferta.amount / 100;
   try {
     return {
-      texto: new Intl.NumberFormat('es-AR', {
+      texto: new Intl.NumberFormat('es-PE', {
         style: 'currency',
         currency: oferta.currency.toUpperCase(),
         maximumFractionDigits: valor % 1 === 0 ? 0 : 2,
@@ -150,12 +150,12 @@ export default function PlanScreen() {
     setMensaje(null);
     const r = await subscribe(elegido);
     if (r === 'de-por-vida') {
-      setMensaje('Ya tenés el Pro de por vida. No hay nada más que pagar.');
+      setMensaje('Ya tienes el Pro de por vida. No hay nada más que pagar.');
     } else if (r === 'ya-pro') {
-      setMensaje('Ya sos Pro. Te llevamos a la gestión de la suscripción.');
+      setMensaje('Ya eres Pro. Te llevamos a la gestión de la suscripción.');
       await manage();
     } else if (r === 'error') {
-      setMensaje('No pudimos abrir el pago. Probá de nuevo en un momento.');
+      setMensaje('No pudimos abrir el pago. Prueba de nuevo en un momento.');
     }
     setOcupado(null);
   };
@@ -204,7 +204,7 @@ export default function PlanScreen() {
                   {lleno && (
                     <p className="mt-1 text-[0.62rem] text-rose-200/70">
                       {recurso === 'readings' && proximaLectura
-                        ? `Ya guardaste las de esta semana. Podés guardar otra el ${FECHA.format(proximaLectura)}.`
+                        ? `Ya guardaste las de esta semana. Puedes guardar otra el ${FECHA.format(proximaLectura)}.`
                         : `Llegaste al límite de ${RESOURCE_UNIT[recurso]} del plan gratuito.`}
                     </p>
                   )}
@@ -249,7 +249,7 @@ export default function PlanScreen() {
       <SectionHeading
         overline="Cuenta"
         title="Tu plan"
-        subtitle="Qué tenés guardado y hasta dónde llegás. Tus mazos, tiradas y lecturas se sincronizan entre todos tus dispositivos."
+        subtitle="Qué tienes guardado y hasta dónde llegas. Tus mazos, tiradas y lecturas se sincronizan entre todos tus dispositivos."
       />
 
       {/* ---------------- Plan actual ---------------- */}
@@ -284,7 +284,7 @@ export default function PlanScreen() {
 
             {isLifetime && (
               <p className="mt-2 text-xs leading-relaxed text-gold-100/55">
-                Pagaste una vez. No se renueva nunca y no hay nada que cancelar: conservás
+                Pagaste una vez. No se renueva nunca y no hay nada que cancelar: conservas
                 todo lo que guardaste, para siempre.
               </p>
             )}
@@ -292,13 +292,13 @@ export default function PlanScreen() {
               <p className="mt-2 text-xs leading-relaxed text-gold-100/55">
                 {cancelAtPeriodEnd ? (
                   <>
-                    Tenés Pro hasta el {FECHAS.format(new Date(currentPeriodEnd))}. Después
-                    vuelve al plan gratuito y conservás todo lo que guardaste.
+                    Tienes Pro hasta el {FECHAS.format(new Date(currentPeriodEnd))}. Después
+                    vuelve al plan gratuito y conservas todo lo que guardaste.
                   </>
                 ) : status === 'trialing' ? (
                   <>
                     Tu prueba termina el {FECHAS.format(new Date(currentPeriodEnd))}. Después
-                    se cobra el plan {tier ? PLANES[tier].nombre.toLowerCase() : ''} y seguís
+                    se cobra el plan {tier ? PLANES[tier].nombre.toLowerCase() : ''} y sigues
                     con Pro.
                   </>
                 ) : (
@@ -347,7 +347,7 @@ export default function PlanScreen() {
           {disponibles.length === 0 && ofertas !== null ? (
             <div className="panel gilded p-5 text-center">
               <p className="text-xs text-gold-100/60">
-                No pudimos leer los precios desde el servidor. Probá de nuevo en un momento.
+                No pudimos leer los precios desde el servidor. Prueba de nuevo en un momento.
               </p>
             </div>
           ) : (
@@ -356,7 +356,7 @@ export default function PlanScreen() {
                 const { texto, unavailable } = formatearPrecio(oferta);
                 const porMes =
                   oferta.interval === 'year' && oferta.amount !== null
-                    ? ` ~ ${new Intl.NumberFormat('es-AR', {
+                    ? ` ~ ${new Intl.NumberFormat('es-PE', {
                         style: 'currency',
                         currency: (oferta.currency ?? 'USD').toUpperCase(),
                         maximumFractionDigits: 0,
@@ -398,9 +398,9 @@ export default function PlanScreen() {
           )}
 
           <p className="px-1 text-[0.65rem] leading-relaxed text-gold-100/35">
-            Los tres planes dan exactamente lo mismo. Cambia cuánto pagás y cada cuánto: el
-            de por vida no se renueva nunca. Cancelás cuando quieras desde la gestión, y al
-            bajar a gratuito conservás todo lo que guardaste: sólo dejás de crear cosas nuevas.
+            Los tres planes dan exactamente lo mismo. Cambia cuánto pagas y cada cuánto: el
+            de por vida no se renueva nunca. Cancelas cuando quieras desde la gestión, y al
+            bajar a gratuito conservas todo lo que guardaste: sólo dejas de crear cosas nuevas.
           </p>
         </section>
       )}

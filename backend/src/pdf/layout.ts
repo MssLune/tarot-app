@@ -11,7 +11,7 @@ import { CATEGORY_PHRASE } from '@arcana/tarot-core';
       modo oscuro de cualquier visor y gasta una montaña de tinta.
 
    2. ORO OSCURO, no el oro de la app. El dorado de la interfaz está elegido
-      para verse sobre casi negro; sobre blanco es prácticamente invisible. Acá
+      para verse sobre casi negro; sobre blanco es prácticamente invisible. Aquí
       se usa una versión oscura del mismo tono, que sí se lee en papel.
 
    3. SIN GLIFOS DE CARTA. Los 26 símbolos astrológicos y alquímicos que llevan
@@ -138,7 +138,7 @@ export function sanear(texto: string): string {
  * Nombre de archivo seguro, con la extensión puesta.
  *
  * Devuelve el nombre completo y no la base: se llama `toFilename` y quien lo
- * use no tiene por qué saber que el PDF se arma acá. Extenderlo en el servicio
+ * use no tiene por qué saber que el PDF se arma aquí. Extenderlo en el servicio
  * repartiría el conocimiento del formato en dos archivos.
  */
 export function toFilename(reading: Reading): string {
@@ -187,13 +187,13 @@ export function categoryPhrase(reading: Reading): string {
    Formato.
    -------------------------------------------------------------------------- */
 
-const FECHA_LARGA = new Intl.DateTimeFormat('es-AR', {
+const FECHA_LARGA = new Intl.DateTimeFormat('es-PE', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 });
 
-const FECHA_HORA = new Intl.DateTimeFormat('es-AR', {
+const FECHA_HORA = new Intl.DateTimeFormat('es-PE', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',

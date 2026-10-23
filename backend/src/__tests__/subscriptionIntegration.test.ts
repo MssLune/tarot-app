@@ -18,14 +18,14 @@ const PRECIO_PRO = vi.hoisted(() => {
 
 /* Import estático a propósito: el `vi.hoisted` de arriba ya se ejecutó, así que
    `config/env` lee las variables ya escritas. Un `await import()` dinámico
-   sería equivalente pero no se puede usar acá: el backend compila a CommonJS
+   sería equivalente pero no se puede usar aquí: el backend compila a CommonJS
    y no admite `await` en el nivel superior. */
 import { syncSubscription, markCanceled, getSubscription } from '../services/billingService';
 
 /* ==========================================================================
    Integración de suscripciones contra la base real de desarrollo.
 
-   Lo que se prueba acá es la parte que NO es lógica pura: que el webhook
+   Lo que se prueba aquí es la parte que NO es lógica pura: que el webhook
    escriba los valores correctos en la tabla `subscriptions`, que la
    deduplicación funcione, y que un usuario no vea la suscripción de otro.
 
@@ -182,6 +182,6 @@ describe('cancelación', () => {
   });
 });
 
-/* El escenario "sin Stripe configurado" NO se puede probar acá: este archivo
+/* El escenario "sin Stripe configurado" NO se puede probar aquí: este archivo
    fija las variables con vi.hoisted para que el plan se resuelva como Pro. Vive
    en billingUnconfigured.test.ts, que corre con el entorno intacto. */

@@ -33,7 +33,7 @@ export function enforceLimit(resource: LimitedResource): RequestHandler {
   return asyncHandler(async (req, _res, next) => {
     const userId = (req as any).dbUserId as string;
     if (!userId) {
-      throw new ApiError(401, 'UNAUTHENTICATED', 'Iniciá sesión para usar esta función.');
+      throw new ApiError(401, 'UNAUTHENTICATED', 'Inicia sesión para usar esta función.');
     }
     await assertCanCreate(userId, resource);
     next();
@@ -50,7 +50,7 @@ export function requirePro(): RequestHandler {
   return asyncHandler(async (req, _res, next) => {
     const userId = (req as any).dbUserId as string;
     if (!userId) {
-      throw new ApiError(401, 'UNAUTHENTICATED', 'Iniciá sesión para usar esta función.');
+      throw new ApiError(401, 'UNAUTHENTICATED', 'Inicia sesión para usar esta función.');
     }
     const sub = await billingService.getSubscription(userId);
     if (sub.plan !== 'pro') {

@@ -41,7 +41,7 @@ webhookRouter.post(
 
     /* El evento se lee DESPUÉS de verificar, y lo leemos nosotros: las
        versiones nuevas de `svix` sólo comprueban la firma y `verify()` devuelve
-       `undefined` (las viejas devolvían el JSON ya parseado). Leerlo acá
+       `undefined` (las viejas devolvían el JSON ya parseado). Leerlo aquí
        funciona con las dos. */
     const event = JSON.parse(req.body.toString('utf8')) as {
       type: string;

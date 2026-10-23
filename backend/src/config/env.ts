@@ -15,10 +15,10 @@ export const env = {
   /* Los TRES price ids del Pro. Son `price_...`, NO `prod_...`: el product id
      identifica el producto y el price id identifica el precio. El backend
      compara el precio de cada item contra estos, así que poner un `prod_`
-     acá no da error: la comparación simplemente nunca coincide, el usuario
+     aquí no da error: la comparación simplemente nunca coincide, el usuario
      paga y queda en gratuito, y no hay ningún aviso.
 
-     Verificá que empiecen con `price_`. Es el error más caro de esta sección
+     Verifica que empiecen con `price_`. Es el error más caro de esta sección
      porque es invisible. */
   stripeMonthlyPriceId: process.env.STRIPE_MONTHLY_PRICE_ID ?? '',
   stripeAnnualPriceId: process.env.STRIPE_ANNUAL_PRICE_ID ?? '',

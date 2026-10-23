@@ -111,7 +111,7 @@ export default function ImportPanel({ onClose, onDone }: Props) {
       ) : (
         <div className="space-y-3">
           <p className="text-xs leading-relaxed text-gold-100/60">
-            Elegí un archivo <code className="text-gold-200/80">.json</code> exportado desde Arcana.
+            Elige un archivo <code className="text-gold-200/80">.json</code> exportado desde Arcana.
           </p>
           <div className="flex gap-2">
             <Button size="sm" className="flex-1" onClick={() => inputRef.current?.click()}>

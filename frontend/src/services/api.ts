@@ -179,7 +179,7 @@ export interface LunarEclipse {
  * Nunca lanza. La luna de sangre es un dato lindo, no una función que la app
  * necesita para funcionar: si el backend no responde o el observatorio está
  * caído, la pantalla tiene que mostrar la fase igual. Por eso el `catch`
- * devuelve el estado vacío en vez de dejar propagar el error — un throw acá
+ * devuelve el estado vacío en vez de dejar propagar el error — un throw aquí
  * dejaría la pantalla de la luna en blanco.
  */
 export async function estadoLunar(): Promise<{ hoy: LunarEclipse | null; proximo: LunarEclipse | null }> {

@@ -12,7 +12,7 @@ import { FASES_LUNARES, type Festival, type MoonPhaseId } from '@arcana/tarot-co
    y en América movería la noche al día siguiente.
    ========================================================================== */
 
-export const LOCALE = 'es-AR';
+export const LOCALE = 'es-PE';
 
 export const FECHA_LARGA = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
 export const FECHA_LARGA_ANIO = new Intl.DateTimeFormat(LOCALE, {
@@ -184,7 +184,7 @@ export function Marca({ tipo, className = '' }: { tipo: TipoMarca; className?: s
     case 'fiesta':
       /* Estrella de cuatro puntas: festividades. */
       return (
-        <svg viewBox="0 0 10 10" aria-hidden="true" className={`${base} h-2.5 w-2.5 text-luna-400`}>
+        <svg viewBox="0 0 10 10" aria-hidden="true" className={`${base} h-2.5 w-2.5 text-gold-300`}>
           <path d="M5 0l1.2 3.8L10 5 6.2 6.2 5 10 3.8 6.2 0 5l3.8-1.2z" fill="currentColor" />
         </svg>
       );

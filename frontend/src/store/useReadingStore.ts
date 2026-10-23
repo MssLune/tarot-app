@@ -7,6 +7,7 @@ import { ApiRequestError } from '../services/api';
 import type {
   CustomDeck,
   DrawnCard,
+  LimitedResource,
   QuestionCategory,
   Reading,
   Ritual,
@@ -145,7 +146,7 @@ interface ReadingState {
   loadUserData: () => Promise<void>;
   syncDeck: (deck: CustomDeck) => Promise<void>;
   syncSpread: (spread: Spread) => Promise<void>;
-  syncReading: (reading: Reading) => Promise<void>;
+  syncReading: (reading: Reading, opciones?: { silencioso?: boolean }) => Promise<ResultadoSync>;
   removeDeck: (id: string) => Promise<void>;
   removeSpread: (id: string) => Promise<void>;
   removeReading: (id: string) => Promise<void>;
@@ -169,6 +170,14 @@ interface ReadingState {
    */
   planNotice: { message: string; code: string; key: string } | null;
   dismissPlanNotice: () => void;
+  /**
+   * Ventana de "Pasa al Pro": se abre cuando el plan no deja guardar algo,
+   * con el mensaje del servidor (o el que arma la pantalla si ya sabía que
+   * estaba en el tope).
+   */
+  avisoPro: { message: string; recurso: LimitedResource | null } | null;
+  abrirAvisoPro: (message: string, recurso: LimitedResource | null) => void;
+  cerrarAvisoPro: () => void;
 
   /* -------- Acciones -------- */
   goTo: (screen: Screen) => void;
@@ -197,7 +206,12 @@ interface ReadingState {
   duplicateCustomDeck: (id: string) => void;
 
   /* Historial */
-  saveReading: (title?: string) => void;
+  /**
+   * Guarda la lectura en curso. Devuelve qué pasó: 'guardada', 'limite' (el
+   * plan no deja guardar más; la lectura NO queda en el historial),
+   * 'pendiente' (sin conexión: queda en cola) o 'invitado' (sin sesión).
+   */
+  saveReading: (title?: string) => Promise<ResultadoGuardado>;
   deleteReading: (id: string) => void;
   openReading: (id: string) => void;
   clearHistory: () => void;
@@ -275,6 +289,17 @@ function descartarLecturaApartada(): void {
     /* sin sessionStorage */
   }
 }
+
+export type ResultadoSync = 'ok' | 'limite' | 'rechazo' | 'en-cola' | 'sin-sesion';
+export type ResultadoGuardado = 'guardada' | 'limite' | 'pendiente' | 'invitado';
+
+/** Qué recurso del plan toca cada operación que crea algo. */
+const RECURSO_DE: Partial<Record<PendingOp['kind'], LimitedResource>> = {
+  reading: 'readings',
+  deck: 'decks',
+  spread: 'spreads',
+  ritual: 'rituals',
+};
 
 /**
  * El ritual como lo espera la API.
@@ -367,28 +392,40 @@ export const useReadingStore = create<ReadingState>()(
        * Lo mismo con un 409 de id tomado por otra cuenta: reintentar con el
        * mismo id va a seguir chocando.
        */
-      const runOp = async (op: PendingOp): Promise<void> => {
-        if (!get().isAuthenticated) return;
+      const runOp = async (op: PendingOp, opciones: { silencioso?: boolean } = {}): Promise<ResultadoSync> => {
+        if (!get().isAuthenticated) return 'sin-sesion';
         set((s) => ({ syncInFlight: s.syncInFlight + 1 }));
         try {
           await executeOp(op);
           dequeue(op.key);
+          return 'ok';
         } catch (err) {
           if (err instanceof ApiRequestError && (err.status === 402 || err.status === 409)) {
             set({
               planNotice: { message: err.message, code: err.code, key: op.key },
             });
-            /* Un ritual que el servidor no aceptó por el tope del plan NO se
-               creó (el 402 sólo sale al crear). Si quedara en la lista se
-               vería como guardado y desaparecería al recargar. */
-            if (op.kind === 'ritual' && err.status === 402) {
-              set((s) => ({ rituals: s.rituals.filter((r) => r.id !== op.ritual.id) }));
+            if (err.status === 402) {
+              /* Una lectura o un ritual que el servidor no aceptó por el tope
+                 NO se creó (el 402 sólo sale al crear). Si quedara en la
+                 lista se vería como guardado, y como el merge de
+                 `loadUserData` conserva lo que sólo está en el navegador,
+                 quedaba ahí para siempre: el tope parecía no existir. */
+              if (op.kind === 'reading') {
+                set((s) => ({ history: s.history.filter((r) => r.id !== op.reading.id) }));
+              }
+              if (op.kind === 'ritual') {
+                set((s) => ({ rituals: s.rituals.filter((r) => r.id !== op.ritual.id) }));
+              }
+              if (!opciones.silencioso) {
+                set({ avisoPro: { message: err.message, recurso: RECURSO_DE[op.kind] ?? null } });
+              }
             }
             console.warn(`[useReadingStore] ${err.code}: ${err.message}`);
-          } else {
-            queueOp(op);
-            console.error(`[useReadingStore] No se pudo sincronizar ${op.key}:`, err);
+            return err.status === 402 ? 'limite' : 'rechazo';
           }
+          queueOp(op);
+          console.error(`[useReadingStore] No se pudo sincronizar ${op.key}:`, err);
+          return 'en-cola';
         } finally {
           set((s) => ({ syncInFlight: Math.max(0, s.syncInFlight - 1) }));
         }
@@ -419,6 +456,9 @@ export const useReadingStore = create<ReadingState>()(
         pendingOps: [],
         planNotice: null,
         dismissPlanNotice: () => set({ planNotice: null }),
+        avisoPro: null,
+        abrirAvisoPro: (message, recurso) => set({ avisoPro: { message, recurso } }),
+        cerrarAvisoPro: () => set({ avisoPro: null }),
         /* ---------------- Autenticación ---------------- */
         setIsAuthenticated: (value) => set({ isAuthenticated: value }),
 
@@ -600,6 +640,16 @@ export const useReadingStore = create<ReadingState>()(
                  justo la pérdida de datos que el merge de arriba evita. */
               ...(rituals ? { rituals: merge(rituals, state.rituals) } : {}),
             });
+            /* Las lecturas que sólo están en el navegador se vuelven a mandar.
+               Si se guardaron sin conexión, ahora suben; si el servidor las
+               había rechazado por el tope (las que quedaron de antes de este
+               arreglo), vuelve a rechazarlas y salen del historial. Sin la
+               ventana de "Pasa al Pro": esto pasa al abrir la app, no porque
+               el usuario haya tocado Guardar. */
+            const enServidor = new Set(readings.map((r) => r.id));
+            state.history
+              .filter((r) => !enServidor.has(r.id))
+              .forEach((r) => void get().syncReading(r, { silencioso: true }));
           } catch (err) {
             console.error('[useReadingStore] Error cargando datos del usuario:', err);
           }
@@ -617,13 +667,8 @@ export const useReadingStore = create<ReadingState>()(
           await runOp({ key: `spread:${spread.id}`, kind: 'spread', spread });
         },
 
-        syncReading: async (reading) => {
-          await runOp({
-            key: `reading:${reading.id}`,
-            kind: 'reading',
-            reading,
-          });
-        },
+        syncReading: async (reading, opciones) =>
+          runOp({ key: `reading:${reading.id}`, kind: 'reading', reading }, opciones),
 
         removeDeck: async (id) => {
           await runOp({ key: `deck:${id}`, kind: 'deleteDeck', id });
@@ -665,7 +710,7 @@ export const useReadingStore = create<ReadingState>()(
 
         chooseSystem: (system) => {
           if (system === 'custom-deck' && !get().isAuthenticated) {
-            get().pedirCuenta('Iniciá sesión para crear y usar tus propios mazos.');
+            get().pedirCuenta('Inicia sesión para crear y usar tus propios mazos.');
             return;
           }
           set({
@@ -736,7 +781,7 @@ export const useReadingStore = create<ReadingState>()(
         /* ---------------- Creador de tiradas ---------------- */
         startNewSpread: () => {
           if (!get().isAuthenticated) {
-            get().pedirCuenta('Iniciá sesión para crear y guardar tus propias tiradas.');
+            get().pedirCuenta('Inicia sesión para crear y guardar tus propias tiradas.');
             return;
           }
           set({ editingSpread: null, screen: 'builder' });
@@ -786,7 +831,7 @@ export const useReadingStore = create<ReadingState>()(
          *  como plantilla (ya viene con ids nuevos). */
         startNewDeck: (base) => {
           if (!get().isAuthenticated) {
-            get().pedirCuenta('Iniciá sesión para crear y usar tus propios mazos.');
+            get().pedirCuenta('Inicia sesión para crear y usar tus propios mazos.');
             return;
           }
           set({ editingDeck: base ?? blankDeck(), screen: 'decks' });
@@ -849,22 +894,23 @@ export const useReadingStore = create<ReadingState>()(
         },
 
         /* ---------------- Historial ---------------- */
-        saveReading: (title) => {
+        saveReading: async (title) => {
           /* Invitado: no se guarda nada en el navegador (lo vería quien use el
              equipo después). Se aparta la lectura y se pide la cuenta; al
              entrar, `completarGuardadoPendiente` la guarda. */
           if (!get().isAuthenticated) {
-            get().pedirCuenta('Iniciá sesión para guardar esta lectura en tu historial.', {
+            get().pedirCuenta('Inicia sesión para guardar esta lectura en tu historial.', {
               guardarLectura: { title },
             });
-            return;
+            return 'invitado';
           }
           const reading = armarLectura(get(), title);
-          if (!reading) return;
+          if (!reading) return 'invitado';
           set((state) => ({
             history: [reading, ...state.history].slice(0, 100),
           }));
-          get().syncReading(reading);
+          const r = await get().syncReading(reading);
+          return r === 'limite' || r === 'rechazo' ? 'limite' : r === 'en-cola' ? 'pendiente' : 'guardada';
         },
 
         deleteReading: (id) => {
@@ -907,7 +953,7 @@ export const useReadingStore = create<ReadingState>()(
         /* ---------------- Rituales ---------------- */
         saveRitual: (ritual) => {
           if (!get().isAuthenticated) {
-            get().pedirCuenta('Iniciá sesión para anotar y guardar tus rituales.');
+            get().pedirCuenta('Inicia sesión para anotar y guardar tus rituales.');
             return;
           }
           /* `sourceVerified` no se fuerza: es una afirmación del usuario sobre

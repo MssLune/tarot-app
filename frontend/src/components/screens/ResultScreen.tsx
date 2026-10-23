@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ELEMENT_LABELS, YES_NO_LABELS } from '@arcana/tarot-core';
 import { interpret, cardImageUrl } from '@arcana/tarot-core';
 import { SYSTEM_LABELS } from '../../lib/systems';
+import { usePlan } from '../../lib/usePlan';
 import { urlDeArchivo } from '../../services/api';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
@@ -33,6 +34,8 @@ const TONE_DOTS: Record<Pattern['tone'], string> = {
   rose: 'bg-rose-400',
 };
 
+const FECHA_AVISO = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+
 const YES_NO_BADGE: Record<string, string> = {
   si: 'border-gold-400/40 bg-gold-400/[0.1] text-gold-100',
   no: 'border-rose-400/40 bg-rose-500/[0.1] text-rose-100',
@@ -59,9 +62,12 @@ export default function ResultScreen() {
   const [title, setTitle] = useState('');
   const isAuthenticated = useReadingStore((s) => s.isAuthenticated);
   /* Arranca en "guardada" si se acaba de guardar al iniciar sesión (el
-     invitado tocó Guardar, inició sesión y volvió acá). */
+     invitado tocó Guardar, inició sesión y volvió aquí). */
   const [saved, setSaved] = useState(() => useReadingStore.getState().lecturaRecienGuardada);
   const [copied, setCopied] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const plan = usePlan();
+  const abrirAvisoPro = useReadingStore((s) => s.abrirAvisoPro);
   const [ficha, setFicha] = useState<{ id: string; reversed: boolean } | null>(null);
 
   /* La interpretación se recalcula sólo si cambian las cartas o la tirada. */
@@ -127,11 +133,27 @@ export default function ResultScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    /* Si ya se sabe que está en el tope, ni se intenta: se explica y se
+       ofrece el Pro. El servidor igual es el que decide (ver abajo). */
+    if (isAuthenticated && plan.cargado && !plan.isPro && plan.atLimit('readings')) {
+      const max = plan.limits?.readings ?? 2;
+      abrirAvisoPro(
+        plan.proximaLectura
+          ? `Ya guardaste tus ${max} lecturas de esta semana. Puedes guardar otra el ${FECHA_AVISO.format(plan.proximaLectura)}.`
+          : `Ya guardaste tus ${max} lecturas de esta semana.`,
+        'readings',
+      );
+      return;
+    }
     /* Sin cuenta, `saveReading` no guarda: aparta la lectura y abre el inicio
-       de sesión. Marcarla como guardada acá sería mentir. */
-    saveReading(title);
-    if (isAuthenticated) setSaved(true);
+       de sesión. Y "guardada" se muestra sólo si el servidor la aceptó (o si
+       quedó en cola por falta de conexión): con el tope, la lectura no entra
+       al historial y se abre el aviso del Pro. */
+    setGuardando(true);
+    const resultado = await saveReading(title);
+    setGuardando(false);
+    if (resultado === 'guardada' || resultado === 'pendiente') setSaved(true);
   };
 
   return (
@@ -174,7 +196,7 @@ export default function ResultScreen() {
           }}
         />
         <p className="mt-6 text-center text-[0.68rem] uppercase tracking-[0.2em] text-gold-100/25">
-          {system === 'rider-waite' ? 'Tocá una carta para ver su ficha completa' : 'Tocá una carta para enfocarla'}
+          {system === 'rider-waite' ? 'Toca una carta para ver su ficha completa' : 'Toca una carta para enfocarla'}
         </p>
       </section>
 
@@ -501,8 +523,8 @@ export default function ResultScreen() {
                     placeholder="Título para guardar esta lectura (opcional)"
                     className="flex-1"
                   />
-                  <Button onClick={handleSave} className="shrink-0">
-                    Guardar lectura
+                  <Button onClick={() => void handleSave()} disabled={guardando} className="shrink-0">
+                    {guardando ? 'Guardando…' : 'Guardar lectura'}
                   </Button>
                 </motion.div>
               )}

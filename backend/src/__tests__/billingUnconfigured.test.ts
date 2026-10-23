@@ -12,7 +12,7 @@ import type { Server } from 'node:http';
    entorno intacto, que es justamente lo que hay que probar. Por eso vive
    separado de subscriptionIntegration.test.ts, que sí las fija.
 
-   La diferencia que importa y se comprueba acá: sin Stripe, un GET a
+   La diferencia que importa y se comprueba aquí: sin Stripe, un GET a
    /api/billing/usage responde 404, no 401. Con Stripe configurado respondería
    401 sin sesión. 404 es lo correcto: la ruta no existe, no es que falte
    autenticación. El frontend lo usa para distinguir "el cobro no está

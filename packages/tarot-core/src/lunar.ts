@@ -75,7 +75,7 @@ const PHASE_META: Record<MoonPhaseId, { name: string; note: string; descripcion:
     name: 'Luna Nueva',
     note: 'Intención y comienzos. Buen momento para decidir qué se pregunta.',
     descripcion:
-      'La Luna pasa entre la Tierra y el Sol. La cara que mira hacia acá no recibe luz y sale y se pone casi junto con el Sol, así que no se ve.',
+      'La Luna pasa entre la Tierra y el Sol. La cara que mira hacia aquí no recibe luz y sale y se pone casi junto con el Sol, así que no se ve.',
   },
   'waxing-crescent': {
     name: 'Luna Creciente',

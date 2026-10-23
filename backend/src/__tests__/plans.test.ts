@@ -143,7 +143,7 @@ describe('Pro con la tarjeta caída conserva lo pagado', () => {
   });
 
   it('no le aparece el banner de promoción', () => {
-    /* Mostrarle "pasá al Pro" a alguien que ya es Pro por una caída de la
+    /* Mostrarle "pasa al Pro" a alguien que ya es Pro por una caída de la
        tarjeta sería absurdo. */
     expect(limitsFor('pro', 'past_due').showBanner).toBe(false);
   });
@@ -152,7 +152,7 @@ describe('Pro con la tarjeta caída conserva lo pagado', () => {
 /* ==========================================================================
    Los tres planes.
 
-   Lo que importa acá es una sola regla: el PRECIO decide. Nunca un flag
+   Lo que importa aquí es una sola regla: el PRECIO decide. Nunca un flag
    escrito a mano. Con un `prod_` en vez de un `price_`, o con un precio que
    no es ninguno de los tres, el usuario tiene que caer en gratuito —regalar
    Pro por error es peor que cobrar de menos, porque no se puede deshacer.

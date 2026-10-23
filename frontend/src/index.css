@@ -214,3 +214,10 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* `overline` es también una utilidad de Tailwind (text-decoration: overline)
+   y le ganaba a la clase propia: todas las etiquetas en versalitas salían con
+   una raya encima. La etiqueta no lleva decoración. */
+.overline {
+  text-decoration-line: none !important;
+}

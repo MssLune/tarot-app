@@ -26,7 +26,7 @@ export async function abrirPdf(readingId: string): Promise<ResultadoPdf> {
     return {
       ok: false,
       motivo: 'sin-red',
-      mensaje: 'No pudimos conectarnos con el servidor. Revisá tu conexión.',
+      mensaje: 'No pudimos conectarnos con el servidor. Revisa tu conexión.',
     };
   }
 
@@ -55,7 +55,7 @@ export async function abrirPdf(readingId: string): Promise<ResultadoPdf> {
       return {
         ok: false,
         motivo: 'sin-sesion',
-        mensaje: 'Tu sesión no está activa. Volvé a entrar y probá de nuevo.',
+        mensaje: 'Tu sesión no está activa. Vuelve a entrar y prueba de nuevo.',
       };
     }
     if (respuesta.status === 404) {
@@ -68,7 +68,7 @@ export async function abrirPdf(readingId: string): Promise<ResultadoPdf> {
     return {
       ok: false,
       motivo: codigo.includes('NOT_CONFIGURED') ? 'no-pro' : 'error',
-      mensaje: mensaje || 'No pudimos generar el PDF. Probá de nuevo en un momento.',
+      mensaje: mensaje || 'No pudimos generar el PDF. Prueba de nuevo en un momento.',
     };
   }
 

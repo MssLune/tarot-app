@@ -140,7 +140,7 @@ export function parseArchive(raw: string): ImportPreview {
   if (candidate.version > ARCHIVE_VERSION) {
     throw new ArchiveError(
       `El archivo es de una versión más nueva (v${candidate.version}) que la app soporta ` +
-        `(v${ARCHIVE_VERSION}). Actualizá Arcana para poder importarlo.`,
+        `(v${ARCHIVE_VERSION}). Actualiza Arcana para poder importarlo.`,
     );
   }
 

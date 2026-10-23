@@ -147,7 +147,7 @@ stripeWebhookRouter.post(
         case 'invoice.payment_failed': {
           /* La tarjeta falló. El estado real (past_due) llega con el
              `customer.subscription.updated` que Stripe emite enseguida, así
-             que acá sólo se registra para poder investigar. */
+             que aquí sólo se registra para poder investigar. */
           console.warn('[billing] Falló el pago de una factura.', {
             customer: (event.data.object as { customer?: string }).customer,
           });

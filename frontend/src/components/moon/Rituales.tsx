@@ -122,8 +122,8 @@ export function SeccionRituales({
     <section aria-labelledby="rituales-titulo">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-lavanda-400">Tu práctica</p>
-          <h2 id="rituales-titulo" className="mt-1 font-display text-2xl text-luna-300">
+          <p className="overline">Tu práctica</p>
+          <h2 id="rituales-titulo" className="mt-1 font-display text-xl text-gold-gradient">
             Rituales
           </h2>
         </div>
@@ -138,18 +138,18 @@ export function SeccionRituales({
 
       {/* ---------------- Estado de la sincronización ---------------- */}
       <div role="status" aria-live="polite" className="empty:hidden mb-3 space-y-2 text-sm">
-        {sincronizando && <p className="text-lavanda-300">Guardando en tu cuenta…</p>}
+        {sincronizando && <p className="text-gold-100/55">Guardando en tu cuenta…</p>}
         {!sincronizando && sinSubir > 0 && (
-          <p className="flex flex-wrap items-center gap-2 rounded-xl border border-rosa-400/30 bg-rosa-400/10 px-3.5 py-2 text-lavanda-100">
+          <p className="flex flex-wrap items-center gap-2 rounded-xl border border-rosa-400/30 bg-rosa-400/10 px-3.5 py-2 text-gold-100">
             <Icono nombre="aviso" className="h-4 w-4 text-rosa-300" />
             {sinSubir === 1 ? 'Un cambio no se pudo subir todavía.' : `${sinSubir} cambios no se pudieron subir todavía.`}
-            <button type="button" onClick={onReintentar} className="foco rounded text-luna-300 underline underline-offset-4">
+            <button type="button" onClick={onReintentar} className="foco rounded text-gold-200 underline underline-offset-4">
               Reintentar
             </button>
           </p>
         )}
         {aviso && (
-          <p className="flex items-start gap-2 rounded-xl border border-rosa-400/30 bg-rosa-400/10 px-3.5 py-2 text-lavanda-100">
+          <p className="flex items-start gap-2 rounded-xl border border-rosa-400/30 bg-rosa-400/10 px-3.5 py-2 text-gold-100">
             <Icono nombre="aviso" className="mt-0.5 h-4 w-4 shrink-0 text-rosa-300" />
             <span>El último ritual no se guardó: {aviso}</span>
           </p>
@@ -169,12 +169,12 @@ export function SeccionRituales({
               onClick={() => setFiltro(f.id)}
               className={`foco shrink-0 rounded-full border px-3.5 py-2 text-xs tracking-[0.06em] transition-colors ${
                 activo
-                  ? 'border-luna-400/60 bg-luna-400/[0.12] text-luna-300'
-                  : 'border-noche-600 text-lavanda-300 hover:border-lavanda-300/40 hover:text-lavanda-100'
+                  ? 'border-luna-400/60 bg-luna-400/[0.12] text-gold-200'
+                  : 'border-noche-600 text-gold-100/55 hover:border-lavanda-300/40 hover:text-gold-100'
               }`}
             >
               {f.id === 'dia' ? `Para el ${etiquetaDia}` : f.texto}
-              {n !== null && <span className="ml-1.5 text-lavanda-400">{n}</span>}
+              {n !== null && <span className="ml-1.5 text-gold-100/40">{n}</span>}
             </button>
           );
         })}
@@ -225,10 +225,10 @@ function Vacio({
 }) {
   if (filtro === 'hechos' || filtro === 'pendientes') {
     return (
-      <p className="superficie-2 px-5 py-6 text-center text-sm text-lavanda-300">
+      <p className="superficie-2 px-5 py-6 text-center text-sm text-gold-100/55">
         {filtro === 'hechos'
-          ? 'Todavía no marcaste ningún ritual como hecho. Cuando lo hagas, queda acá como historial.'
-          : 'No tenés rituales pendientes.'}
+          ? 'Todavía no marcaste ningún ritual como hecho. Cuando lo hagas, queda aquí como historial.'
+          : 'No tienes rituales pendientes.'}
       </p>
     );
   }
@@ -238,17 +238,17 @@ function Vacio({
     <div className="superficie-2 flex flex-col items-center gap-4 px-5 py-8 text-center sm:flex-row sm:items-center sm:text-left">
       <MoonDisc phase={{ ...lookDeFase(fase.id) }} size={64} variant="icon" animate={false} decorativo />
       <div className="min-w-0 flex-1">
-        <p className="font-display text-lg text-lavanda-100">
+        <p className="font-display text-base text-gold-100">
           {hayRituales ? `Nada anotado para el ${etiquetaDia}` : 'Tu cuaderno de rituales está en blanco'}
         </p>
-        <p className="mt-1 max-w-prose text-sm leading-relaxed text-lavanda-300">
-          Anotá tus propias prácticas: qué hacés, con qué materiales y cómo te fue. Podés atarlas a un día, a una fase
+        <p className="mt-1 max-w-prose text-sm leading-relaxed text-gold-100/55">
+          Anota tus propias prácticas: qué haces, con qué materiales y cómo te fue. Puedes atarlas a un día, a una fase
           o a una festividad.
         </p>
         {/* La sugerencia sale de la nota simbólica de la fase, que la app ya
             tiene; no es un ritual inventado: sólo un punto de partida. */}
-        <p className="mt-3 max-w-prose text-sm text-lavanda-200">
-          <span className="text-xs uppercase tracking-[0.16em] text-luna-400">Idea para {fase.name.toLowerCase()} · </span>
+        <p className="mt-3 max-w-prose text-sm text-gold-100/75">
+          <span className="overline">Idea para {fase.name.toLowerCase()} · </span>
           {idea}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -315,37 +315,37 @@ function TarjetaRitual({
           className={`foco mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors ${
             hecho
               ? 'border-luna-300 bg-luna-400 text-noche-950'
-              : 'border-lavanda-300/50 text-transparent hover:border-luna-300 hover:text-luna-300/60'
+              : 'border-lavanda-300/50 text-transparent hover:border-luna-300 hover:text-gold-200/60'
           }`}
         >
           <Icono nombre="check" className="h-4 w-4" />
         </button>
 
         <div className="min-w-0 flex-1">
-          <h3 className={`font-display text-base ${hecho ? 'text-lavanda-300' : 'text-lavanda-100'}`}>{ritual.title}</h3>
+          <h3 className={`font-display text-base ${hecho ? 'text-gold-100/55' : 'text-gold-100'}`}>{ritual.title}</h3>
           <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Vínculos">
             {ritual.phase !== 'any' && (
-              <li className="inline-flex items-center gap-1 rounded-full border border-noche-600 px-2 py-0.5 text-xs text-lavanda-300">
+              <li className="inline-flex items-center gap-1 rounded-full border border-noche-600 px-2 py-0.5 text-xs text-gold-100/55">
                 <MoonDisc phase={lookDeFase(ritual.phase)} size={12} variant="icon" animate={false} decorativo />
                 {NOMBRE_FASE[ritual.phase]}
               </li>
             )}
             {fecha && (
-              <li className="inline-flex items-center gap-1 rounded-full border border-noche-600 px-2 py-0.5 text-xs text-lavanda-300">
+              <li className="inline-flex items-center gap-1 rounded-full border border-noche-600 px-2 py-0.5 text-xs text-gold-100/55">
                 <Icono nombre="calendario" className="h-3 w-3" />
                 {FECHA_CORTA.format(fecha).replace('.', '')} {fecha.getFullYear()}
               </li>
             )}
             {ritual.festivalId && (
-              <li className="inline-flex items-center gap-1 rounded-full border border-noche-600 px-2 py-0.5 text-xs text-lavanda-300">
+              <li className="inline-flex items-center gap-1 rounded-full border border-noche-600 px-2 py-0.5 text-xs text-gold-100/55">
                 {nombreFestividad(ritual.festivalId, anioFestividad)}
               </li>
             )}
             {ritual.phase === 'any' && !fecha && !ritual.festivalId && (
-              <li className="rounded-full border border-noche-600 px-2 py-0.5 text-xs text-lavanda-400">Cualquier momento</li>
+              <li className="rounded-full border border-noche-600 px-2 py-0.5 text-xs text-gold-100/40">Cualquier momento</li>
             )}
           </ul>
-          <p className="mt-1.5 text-xs text-lavanda-400" aria-live="polite">
+          <p className="mt-1.5 text-xs text-gold-100/40" aria-live="polite">
             {hecho
               ? `Hecho el ${FECHA_LARGA_ANIO.format(new Date(ritual.completedAt as string))}`
               : 'Pendiente'}
@@ -357,7 +357,7 @@ function TarjetaRitual({
           onClick={onAlternar}
           aria-expanded={abierta}
           aria-controls={idDetalle}
-          className="foco flex h-9 shrink-0 items-center gap-1 rounded-full border border-noche-600 px-3 text-xs text-lavanda-200 hover:border-lavanda-300/40"
+          className="foco flex h-9 shrink-0 items-center gap-1 rounded-full border border-noche-600 px-3 text-xs text-gold-100/75 hover:border-lavanda-300/40"
         >
           {abierta ? 'Cerrar' : 'Ver'}
           <Icono nombre="abajo" className={`h-3.5 w-3.5 transition-transform ${abierta ? 'rotate-180' : ''}`} />
@@ -381,12 +381,12 @@ function TarjetaRitual({
 
               <div className="text-xs leading-relaxed">
                 {ritual.source ? (
-                  <p className="text-lavanda-300">
-                    Fuente: <span className="text-lavanda-100">{ritual.source}</span>
+                  <p className="text-gold-100/55">
+                    Fuente: <span className="text-gold-100">{ritual.source}</span>
                     {ritual.sourceDetail && <span> · {ritual.sourceDetail}</span>}
                   </p>
                 ) : (
-                  <p className="italic text-lavanda-400">Sin fuente anotada.</p>
+                  <p className="italic text-gold-100/40">Sin fuente anotada.</p>
                 )}
                 {ritual.source && !ritual.sourceVerified && (
                   <p className="mt-1 flex items-start gap-1.5 text-amber-200/85">
@@ -405,7 +405,7 @@ function TarjetaRitual({
                 <button
                   type="button"
                   onClick={onEditar}
-                  className="foco inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-noche-600 px-4 text-xs uppercase tracking-[0.12em] text-lavanda-100 hover:border-lavanda-300/40"
+                  className="foco inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-noche-600 px-4 font-display text-[0.68rem] uppercase tracking-[0.18em] text-gold-200 hover:border-lavanda-300/40"
                 >
                   <Icono nombre="lapiz" className="h-3.5 w-3.5" /> Editar
                 </button>
@@ -428,8 +428,8 @@ function TarjetaRitual({
 function Bloque({ titulo, texto }: { titulo: string; texto: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.16em] text-lavanda-400">{titulo}</p>
-      <p className="mt-1 whitespace-pre-wrap leading-relaxed text-lavanda-200">{texto}</p>
+      <p className="overline">{titulo}</p>
+      <p className="mt-1 whitespace-pre-wrap leading-relaxed text-gold-100/75">{texto}</p>
     </div>
   );
 }
@@ -506,14 +506,14 @@ function Dialogo({
         className={`w-full ${ancho} max-h-[92vh] overflow-y-auto rounded-t-3xl border border-noche-600 bg-noche-800 p-5 shadow-card sm:rounded-3xl sm:p-6`}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
-          <h2 id={idTitulo} className="font-display text-lg text-luna-300">
+          <h2 id={idTitulo} className="font-display text-sm uppercase tracking-[0.18em] text-gold-100">
             {titulo}
           </h2>
           <button
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="foco -mr-1 -mt-1 flex h-9 w-9 items-center justify-center rounded-full text-lavanda-300 hover:bg-noche-700 hover:text-lavanda-100"
+            className="foco -mr-1 -mt-1 flex h-9 w-9 items-center justify-center rounded-full text-gold-100/55 hover:bg-noche-700 hover:text-gold-100"
           >
             <Icono nombre="cerrar" />
           </button>
@@ -547,15 +547,15 @@ export function EditorRitual({
 
   const guardar = (e: FormEvent) => {
     e.preventDefault();
-    if (!b.title.trim()) return setError('Poné un título para encontrarlo después.');
-    if (!b.body.trim()) return setError('Anotá las instrucciones: qué se hace y en qué orden.');
+    if (!b.title.trim()) return setError('Pon un título para encontrarlo después.');
+    if (!b.body.trim()) return setError('Anota las instrucciones: qué se hace y en qué orden.');
     if (b.date && !desdeIsoDia(b.date)) return setError('La fecha no es válida.');
     setError(null);
     onGuardar(b);
   };
 
   const campo = 'mt-1.5 !border-noche-600 !bg-noche-900/80 !py-2.5 text-sm';
-  const etiqueta = 'text-xs uppercase tracking-[0.14em] text-lavanda-300';
+  const etiqueta = 'overline';
 
   return (
     <Dialogo titulo={esNuevo ? 'Nuevo ritual' : 'Editar ritual'} onCerrar={onCancelar}>
@@ -626,10 +626,10 @@ export function EditorRitual({
 
         {/* ---------------- Vínculos ---------------- */}
         <fieldset className="rounded-2xl border border-noche-600/70 p-3.5">
-          <legend className="px-1 text-xs uppercase tracking-[0.14em] text-lavanda-300">Cuándo</legend>
+          <legend className="px-1 overline">Cuándo</legend>
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="text-xs text-lavanda-300" htmlFor="rit-date">
+              <label className="text-xs text-gold-100/55" htmlFor="rit-date">
                 Día
               </label>
               <input
@@ -643,7 +643,7 @@ export function EditorRitual({
               />
             </div>
             <div>
-              <label className="text-xs text-lavanda-300" htmlFor="rit-phase">
+              <label className="text-xs text-gold-100/55" htmlFor="rit-phase">
                 Fase
               </label>
               <select
@@ -660,7 +660,7 @@ export function EditorRitual({
               </select>
             </div>
             <div>
-              <label className="text-xs text-lavanda-300" htmlFor="rit-festival">
+              <label className="text-xs text-gold-100/55" htmlFor="rit-festival">
                 Festividad
               </label>
               <select
@@ -678,17 +678,17 @@ export function EditorRitual({
               </select>
             </div>
           </div>
-          <p className="mt-2 text-xs text-lavanda-400">
+          <p className="mt-2 text-xs text-gold-100/40">
             Todo es opcional. Sin día, el ritual vale para cada vez que llegue la fase o la festividad.
           </p>
         </fieldset>
 
         {/* ---------------- Fuente ---------------- */}
         <fieldset className="rounded-2xl border border-noche-600/70 p-3.5">
-          <legend className="px-1 text-xs uppercase tracking-[0.14em] text-lavanda-300">Fuente</legend>
+          <legend className="px-1 overline">Fuente</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs text-lavanda-300" htmlFor="rit-source">
+              <label className="text-xs text-gold-100/55" htmlFor="rit-source">
                 De dónde lo sacaste
               </label>
               <input
@@ -702,7 +702,7 @@ export function EditorRitual({
               />
             </div>
             <div>
-              <label className="text-xs text-lavanda-300" htmlFor="rit-source-detail">
+              <label className="text-xs text-gold-100/55" htmlFor="rit-source-detail">
                 Capítulo o página
               </label>
               <input
@@ -723,9 +723,9 @@ export function EditorRitual({
                 onChange={(e) => set('sourceVerified', e.target.checked)}
                 className="mt-0.5 h-4 w-4 shrink-0 accent-luna-400"
               />
-              <span className="text-sm leading-relaxed text-lavanda-200">
+              <span className="text-sm leading-relaxed text-gold-100/75">
                 Verifiqué que este ritual aparece en esa fuente.
-                <span className="mt-0.5 block text-xs text-lavanda-400">
+                <span className="mt-0.5 block text-xs text-gold-100/40">
                   La app no puede comprobarlo: queda como tu confirmación, no como un dato comprobado.
                 </span>
               </span>
@@ -734,7 +734,7 @@ export function EditorRitual({
         </fieldset>
 
         {error && (
-          <p role="alert" className="rounded-xl border border-rosa-400/40 bg-rosa-400/10 px-3.5 py-2 text-sm text-lavanda-100">
+          <p role="alert" className="rounded-xl border border-rosa-400/40 bg-rosa-400/10 px-3.5 py-2 text-sm text-gold-100">
             {error}
           </p>
         )}
@@ -765,7 +765,7 @@ export function ConfirmarBorrado({
 }) {
   return (
     <Dialogo titulo="¿Borrar el ritual?" onCerrar={onCancelar} ancho="max-w-sm">
-      <p className="text-sm leading-relaxed text-lavanda-200">
+      <p className="text-sm leading-relaxed text-gold-100/75">
         «{ritual.title}» se borra de tu cuenta, con sus notas. No se puede deshacer.
       </p>
       <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

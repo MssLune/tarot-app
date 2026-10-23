@@ -47,7 +47,7 @@ function stripe(): Stripe {
   }
   /* No se fija `apiVersion` a mano: cada versión de la librería viene pineada
      a la versión de la API que realmente soporta. Poner un string viejo
-     acá hace que TypeScript rechace la llamada, y copiar el número del error
+     aquí hace que TypeScript rechace la llamada, y copiar el número del error
      es frágil. Si algún día hay que fijarlo, se copia de
      `node_modules/stripe/cjs/apiVersion.d.ts`. */
   /* El cliente HTTP es el de `fetch` y no el de `node:https` que usa la
@@ -74,7 +74,7 @@ export async function getSubscription(userId: string): Promise<SubscriptionView>
   const sub = await prisma.subscription.findUnique({ where: { userId } });
   if (!sub) {
     /* Sin fila todavía: es un usuario que nunca intentó pagar. No se crea
-       acá a propósito — una fila "free" por cada visitante infla la tabla sin
+       aquí a propósito — una fila "free" por cada visitante infla la tabla sin
        aportarle nada. */
     return {
       plan: 'free',
@@ -191,7 +191,7 @@ export async function createCheckoutSession(
           subscription_data: {
             metadata: { clerkUserId: userId },
             /* La prueba va en la suscripción, no en la sesión. Sin esto, el
-               primer cobro ocurre el día que te suscribís y no hay forma de
+               primer cobro ocurre el día que te suscribes y no hay forma de
                dar los 7 días. */
             ...(env.stripeTrialDays >= 1 ? { trial_period_days: env.stripeTrialDays } : {}),
           },
@@ -224,7 +224,7 @@ export async function grantLifetime(sessionId: string): Promise<string | null> {
      diferidos (SEPA, transferencia, etc.) la sesión se completa con
      `payment_status: 'unpaid'` y el dinero llega días después, o nunca. Se
      concede sólo con el pago confirmado; si queda pendiente, el evento
-     `checkout.session.async_payment_succeeded` vuelve a llamar acá cuando
+     `checkout.session.async_payment_succeeded` vuelve a llamar aquí cuando
      llega el cobro. `no_payment_required` es un cupón del 100 %: no hay nada
      que esperar. */
   if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
@@ -428,7 +428,7 @@ export async function createPortalSession(userId: string): Promise<{ url: string
     throw new ApiError(
       400,
       'NO_CUSTOMER',
-      'Todavía no tenés una cuenta de cobro. Suscribite al Pro primero.',
+      'Todavía no tienes una cuenta de cobro. Suscríbete al Pro primero.',
     );
   }
   const session = await stripe().billingPortal.sessions.create({

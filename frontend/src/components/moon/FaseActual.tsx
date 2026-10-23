@@ -77,50 +77,50 @@ export default function FaseActual({ onAnotar, onVerCalendario }: Props) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.22em] text-lavanda-300">
+          <p className="overline">
             Hoy · {primeraMayuscula(FECHA_LARGA.format(instante))}
           </p>
-          <h2 id="fase-hoy-titulo" className="mt-1.5 font-display text-3xl text-luna-300 sm:text-4xl">
+          <h2 id="fase-hoy-titulo" className="mt-1.5 text-gold-gradient text-2xl sm:text-3xl">
             {dia.name}
           </h2>
 
           <dl className="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">
             <div className="superficie-2 px-3.5 py-2.5">
-              <dt className="text-[0.7rem] uppercase tracking-[0.16em] text-lavanda-400">Iluminación</dt>
-              <dd className="mt-0.5 font-display text-xl text-lavanda-100">
+              <dt className="overline">Iluminación</dt>
+              <dd className="mt-0.5 font-display text-xl text-gold-100">
                 {porcentaje}
-                <span className="ml-0.5 text-sm text-lavanda-300">%</span>
+                <span className="ml-0.5 text-sm text-gold-100/55">%</span>
               </dd>
             </div>
             <div className="superficie-2 px-3.5 py-2.5">
-              <dt className="text-[0.7rem] uppercase tracking-[0.16em] text-lavanda-400">Edad lunar</dt>
-              <dd className="mt-0.5 font-display text-xl text-lavanda-100">
-                {edad.toLocaleString('es-AR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}
-                <span className="ml-1 text-sm text-lavanda-300">días</span>
+              <dt className="overline">Edad lunar</dt>
+              <dd className="mt-0.5 font-display text-xl text-gold-100">
+                {edad.toLocaleString('es-PE', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}
+                <span className="ml-1 text-sm text-gold-100/55">días</span>
               </dd>
             </div>
           </dl>
 
-          <p className="mt-4 max-w-prose text-sm leading-relaxed text-lavanda-200">{dia.descripcion}</p>
+          <p className="mt-4 max-w-prose text-sm leading-relaxed text-gold-100/75">{dia.descripcion}</p>
 
           {/* La lectura simbólica, separada de los datos. */}
           <figure className="mt-4 max-w-prose border-l-2 border-luna-400/40 pl-3.5">
-            <figcaption className="text-[0.7rem] uppercase tracking-[0.18em] text-luna-400/90">
+            <figcaption className="overline">
               Lectura simbólica
             </figcaption>
-            <p className="mt-1 text-[0.95rem] italic leading-relaxed text-lavanda-100/90">{dia.note}</p>
+            <p className="mt-1 text-[0.95rem] italic leading-relaxed text-gold-100/90">{dia.note}</p>
           </figure>
 
-          <p className="mt-4 flex flex-wrap items-baseline gap-x-1.5 text-sm text-lavanda-300">
-            <Icono nombre="reloj" className="h-4 w-4 self-center text-lavanda-400" />
+          <p className="mt-4 flex flex-wrap items-baseline gap-x-1.5 text-sm text-gold-100/55">
+            <Icono nombre="reloj" className="h-4 w-4 self-center text-gold-100/40" />
             <span>Próxima fase principal:</span>
-            <span className="text-lavanda-100">{prox.name}</span>
+            <span className="text-gold-100">{prox.name}</span>
             <span>
               · {FECHA_LARGA.format(prox.date)}, {horaAprox(prox.date)}
             </span>
-            <span className="text-lavanda-400">({relativo(faltan)})</span>
+            <span className="text-gold-100/40">({relativo(faltan)})</span>
           </p>
-          <p className="mt-1 text-xs text-lavanda-400">
+          <p className="mt-1 text-xs text-gold-100/40">
             Hora local aproximada al minuto ({zona}).
           </p>
 

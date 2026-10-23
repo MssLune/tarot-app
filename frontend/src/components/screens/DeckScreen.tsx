@@ -76,8 +76,8 @@ function DeckList() {
 
         <SectionHeading
           overline="Tarot u oráculo personalizado"
-          title="Elegí tu mazo"
-          subtitle="Cargá tus cartas una vez, con su significado al derecho y al revés, y usalas en cualquier tirada. Quedan guardadas en tu dispositivo."
+          title="Elige tu mazo"
+          subtitle="Carga tus cartas una vez, con su significado al derecho y al revés, y úsalas en cualquier tirada. Quedan guardadas en tu dispositivo."
         />
       </div>
 
@@ -172,7 +172,7 @@ function DeckList() {
                             size="sm"
                             className="flex-1"
                             disabled={!ready}
-                            title={ready ? undefined : 'Agregá al menos una carta'}
+                            title={ready ? undefined : 'Agrega al menos una carta'}
                             onClick={() => chooseDeck(deck)}
                           >
                             Usar
@@ -211,7 +211,7 @@ function DeckList() {
       <section className="space-y-5">
         <div className="flex items-center gap-4">
           <h3 className="shrink-0 font-display text-xs uppercase tracking-[0.28em] text-gold-200/80">
-            {customDecks.length > 0 ? 'Crear otro mazo' : 'Creá tu primer mazo'}
+            {customDecks.length > 0 ? 'Crear otro mazo' : 'Crea tu primer mazo'}
           </h3>
           <span className="hairline h-px flex-1 opacity-60" />
         </div>
@@ -250,8 +250,8 @@ function DeckList() {
             Respaldo
           </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-gold-100/45">
-            Descargá tus mazos, tiradas, lecturas y rituales en un archivo JSON. Es la
-            única copia que sobrevive si limpiás los datos del navegador.
+            Descarga tus mazos, tiradas, lecturas y rituales en un archivo JSON. Es la
+            única copia que sobrevive si limpias los datos del navegador.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -416,7 +416,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
       return false;
     }
     if (!cards.some((c) => c.name.trim())) {
-      setError('Agregá al menos una carta con nombre.');
+      setError('Agrega al menos una carta con nombre.');
       return false;
     }
     setError(null);
@@ -439,7 +439,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
       <SectionHeading
         overline={isSaved ? 'Editar mazo' : 'Nuevo mazo'}
         title="Tu mazo, tus significados"
-        subtitle="Nombrá cada carta y escribí qué dice al derecho y qué dice invertida. Lo que dejes vacío se resuelve solo en la lectura, así que podés empezar por lo esencial y completar de a poco."
+        subtitle="Nombra cada carta y escribe qué dice al derecho y qué dice invertida. Lo que dejes vacío se resuelve solo en la lectura, así que puedes empezar por lo esencial y completar de a poco."
       />
 
       {/* ---------------- Identidad del mazo ---------------- */}
@@ -702,7 +702,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
                     rows={3}
                     value={selected.reversed ?? ''}
                     onChange={(e) => updateCard(selected.id, { reversed: e.target.value })}
-                    placeholder="Qué dice cuando sale del revés. Si lo dejás vacío, la lectura usa el sentido derecho leído en falta o en exceso."
+                    placeholder="Qué dice cuando sale del revés. Si lo dejas vacío, la lectura usa el sentido derecho leído en falta o en exceso."
                     className="resize-y"
                   />
                 </div>
@@ -819,7 +819,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
               </span>
               <h3 className="text-lg text-gold-100">Tu mazo está vacío</h3>
               <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-gold-100/45">
-                Agregá la primera carta y escribí qué significa para vos al derecho y al revés.
+                Agrega la primera carta y escribe qué significa para ti al derecho y al revés.
               </p>
               <div className="mt-7 flex justify-center">
                 <Button onClick={addCard}>+ Agregar carta</Button>

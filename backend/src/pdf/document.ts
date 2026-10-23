@@ -36,7 +36,7 @@ export interface DocumentInput {
    * La cara a dibujar en cada posición, indexada por id de posición.
    *
    * Se calcula en el servicio, que es el único que tiene las cartas. Armarlo
-   * acá obligaría a volver a pedirlas, y a que el motor y el PDF puedan
+   * aquí obligaría a volver a pedirlas, y a que el motor y el PDF puedan
    * resolver el mismo nombre de carta de dos maneras distintas.
    */
   caras: Map<string, CaraDeCarta>;

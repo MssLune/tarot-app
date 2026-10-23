@@ -10,9 +10,9 @@ import { describe, expect, it } from 'vitest';
    Express 4 no captura rechazos. Los dos bugs habrían aparecido recién en
    producción, cuando un usuario pagara.
 
-   Acá no hay mocks: se usa la MISMA criptografía de la librería de Stripe
+   Aquí no hay mocks: se usa la MISMA criptografía de la librería de Stripe
    para generar la firma que después verifica nuestro código. Si la
-   implementación estuviera mal, el test falla acá y no en la cuenta de un
+   implementación estuviera mal, el test falla aquí y no en la cuenta de un
    cliente.
 
    El secreto es inventado, pero eso no importa: la verificación es un HMAC y
@@ -100,7 +100,7 @@ describe('firma del webhook de Stripe', () => {
    La trampa donde caí: `current_period_end` se movió del objeto suscripción
    al item. Leerlo del lugar viejo devuelve `undefined` en silencio, y la fecha
    de renovación nunca se guarda. Estos tests fijan la forma del dato para que
-   un cambio de la librería se note acá.
+   un cambio de la librería se note aquí.
    ========================================================================== */
 
 const itemConPrecio = (precio: string, finPeriodo: number) => ({

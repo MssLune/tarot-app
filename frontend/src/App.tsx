@@ -173,10 +173,10 @@ export default function App() {
             <div className="text-center">
               <p className="overline mb-3">Tu cuenta en Arcana</p>
               <h1 className="text-gold-gradient text-3xl sm:text-4xl">
-                {authView === 'sign-in' ? 'Iniciá sesión' : 'Creá tu cuenta'}
+                {authView === 'sign-in' ? 'Inicia sesión' : 'Crea tu cuenta'}
               </h1>
               <p className="mt-3 text-sm text-gold-100/50">
-                {authMotivo ?? 'Guardá tus mazos, tiradas y lecturas en todos tus dispositivos.'}
+                {authMotivo ?? 'Guarda tus mazos, tiradas y lecturas en todos tus dispositivos.'}
               </p>
             </div>
             {/* Alternamos en estado: la app no tiene router, así que un <a href>
@@ -187,24 +187,24 @@ export default function App() {
             <div className="space-y-3 text-center">
               {authView === 'sign-in' ? (
                 <p className="text-sm text-gold-100/50">
-                  ¿No tenés cuenta?{' '}
+                  ¿No tienes cuenta?{' '}
                   <button
                     type="button"
                     onClick={() => setAuthView('sign-up')}
                     className="text-gold-300 transition-colors hover:text-gold-200"
                   >
-                    Registrate
+                    Regístrate
                   </button>
                 </p>
               ) : (
                 <p className="text-sm text-gold-100/50">
-                  ¿Ya tenés cuenta?{' '}
+                  ¿Ya tienes cuenta?{' '}
                   <button
                     type="button"
                     onClick={() => setAuthView('sign-in')}
                     className="text-gold-300 transition-colors hover:text-gold-200"
                   >
-                    Iniciá sesión
+                    Inicia sesión
                   </button>
                 </p>
               )}

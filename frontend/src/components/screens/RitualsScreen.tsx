@@ -10,6 +10,7 @@ import MoonCalendar from '../moon/MoonCalendar';
 import { ConfirmarBorrado, EditorRitual, SeccionRituales } from '../moon/Rituales';
 import { desdeIsoDia, isoDia } from '../moon/lunaUi';
 import InvitacionCuenta from '../ui/InvitacionCuenta';
+import SectionHeading from '../ui/SectionHeading';
 
 /* ==========================================================================
    Luna: la fase de hoy, el calendario, tus rituales y las festividades.
@@ -81,7 +82,7 @@ export default function RitualsScreen() {
   const abrirEditor = useCallback(
     (prefill?: Partial<Ritual>) => {
       if (!isAuthenticated) {
-        pedirCuenta('Iniciá sesión para anotar tus rituales y verlos en cualquier dispositivo.');
+        pedirCuenta('Inicia sesión para anotar tus rituales y verlos en cualquier dispositivo.');
         return;
       }
       setEditando({ ritual: nuevoRitual(prefill), esNuevo: true });
@@ -106,16 +107,12 @@ export default function RitualsScreen() {
   return (
     <div className="space-y-10 sm:space-y-12">
       {/* ---------------- Encabezado ---------------- */}
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-lavanda-400">Ciclos y práctica</p>
-          <h1 className="mt-1 font-display text-3xl text-luna-300 sm:text-4xl">Luna</h1>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-lavanda-300 sm:text-right">
-          La fase se calcula en tu dispositivo, en tu zona horaria. Los rituales son tuyos: anotá qué practicás y de
-          dónde lo sacaste.
-        </p>
-      </header>
+      {/* El mismo encabezado que el resto de las pantallas. */}
+      <SectionHeading
+        overline="Calendario"
+        title="Fase lunar y rituales"
+        subtitle="La fase se calcula en tu dispositivo, en tu zona horaria. Los rituales son tuyos: anota qué practicas y de dónde lo sacaste."
+      />
 
       {/* ---------------- 1. La Luna de hoy ---------------- */}
       <div className="space-y-3">
@@ -166,7 +163,7 @@ export default function RitualsScreen() {
         <InvitacionCuenta
           compacta
           titulo="Tus rituales"
-          texto="Con una cuenta podés anotar tus rituales por día, fase o festividad, marcarlos como hechos y verlos en cualquier dispositivo."
+          texto="Con una cuenta puedes anotar tus rituales por día, fase o festividad, marcarlos como hechos y verlos en cualquier dispositivo."
         />
       )}
 
@@ -182,7 +179,7 @@ export default function RitualsScreen() {
       {/* ---------------- Aviso de éxito ---------------- */}
       <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-[95] flex justify-center px-4">
         {mensaje && (
-          <p className="rounded-full border border-luna-400/40 bg-noche-800/95 px-4 py-2 text-sm text-lavanda-100 shadow-card">
+          <p className="rounded-full border border-luna-400/40 bg-noche-800/95 px-4 py-2 text-sm text-gold-100 shadow-card">
             {mensaje}
           </p>
         )}

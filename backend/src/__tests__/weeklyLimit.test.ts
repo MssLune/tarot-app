@@ -65,7 +65,7 @@ describe('2 lecturas guardadas por semana', () => {
     await expect(assertCanCreate(usuario.id, 'readings')).rejects.toMatchObject({
       statusCode: 402,
       code: 'PLAN_LIMIT_REACHED',
-      message: expect.stringMatching(/esta semana.*Podés guardar otra el/),
+      message: expect.stringMatching(/esta semana.*Puedes guardar otra el/),
     });
     const uso = await usoDelPlan(usuario.id);
     expect(uso.proximo.readings).not.toBeNull();

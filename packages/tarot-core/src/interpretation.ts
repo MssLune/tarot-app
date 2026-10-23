@@ -48,7 +48,7 @@ const CONNECTORS = [
   'el mensaje aterriza en',
   'la carta habla puntualmente de',
   'esa fuerza se aplica a',
-  'lo que se ilumina acá es',
+  'lo que se ilumina aquí es',
   'el foco se posa sobre',
 ];
 
@@ -57,7 +57,7 @@ const STOPWORDS = new Set([
   'de','la','el','los','las','un','una','unos','unas','y','o','que','en','a','al','del','con','por',
   'para','se','su','sus','lo','le','mi','tu','es','ser','estar','como','más','mas','pero','si','no',
   'me','te','nos','muy','ya','sin','sobre','entre','cuando','donde','desde','hasta','este','esta',
-  'ese','esa','todo','toda','todos','todas','hay','ha','han','vos','yo','él','ella',
+  'ese','esa','todo','toda','todos','todas','hay','ha','han','vos','tú','ti','yo','él','ella',
   // Verbos y conectores frecuentes: no aportan como palabra clave.
   'está','esta','están','puede','pueden','tiene','tienen','hace','hacer','según','también',
   'porque','aunque','mientras','cada','otro','otra','otros','otras','algo','nada','algún','alguna',
@@ -233,7 +233,7 @@ function readOraclePosition(
 
   const base = meaning
     ? `${capitalize(meaning)}${meaning.endsWith('.') ? '' : '.'}`
-    : `«${name}» llega sin un significado cargado, así que se lee por su imagen y por la primera sensación que despierta. Anotá qué te evoca: en los mazos de oráculo, esa respuesta inmediata es la interpretación.`;
+    : `«${name}» llega sin un significado cargado, así que se lee por su imagen y por la primera sensación que despierta. Anota qué te evoca: en los mazos de oráculo, esa respuesta inmediata es la interpretación.`;
 
   const bridge = ` En «${positionName}» este mensaje se aplica a ${prompt}.`;
 
@@ -294,7 +294,7 @@ function readCustomDeckPosition(
       base = `${capitalize(reversedText)}${reversedText.endsWith('.') ? '' : '.'}`;
     } else if (upright) {
       base = `${capitalize(upright)}${upright.endsWith('.') ? '' : '.'}`;
-      note = ` Como no cargaste un sentido invertido para «${name}», esa misma energía se lee acá en falta o en exceso: está pidiendo espacio, o se manifiesta desbordada.`;
+      note = ` Como no cargaste un sentido invertido para «${name}», esa misma energía se lee aquí en falta o en exceso: está pidiendo espacio, o se manifiesta desbordada.`;
     } else {
       base = `«${name}» sale invertida y todavía no tiene significado escrito en tu mazo: se lee por su imagen y por lo que despierta al verla del revés.`;
       hasOwnText = false;
@@ -303,9 +303,9 @@ function readCustomDeckPosition(
     if (upright) {
       base = `${capitalize(upright)}${upright.endsWith('.') ? '' : '.'}`;
     } else if (reversedText) {
-      base = `Todavía no escribiste el sentido derecho de «${name}». Como referencia, invertida significa: ${reversedText.replace(/\.$/, '')}. Al derecho, leelo como esa misma fuerza ya integrada.`;
+      base = `Todavía no escribiste el sentido derecho de «${name}». Como referencia, invertida significa: ${reversedText.replace(/\.$/, '')}. Al derecho, léelo como esa misma fuerza ya integrada.`;
     } else {
-      base = `«${name}» aún no tiene significado escrito en tu mazo: se lee por su imagen y por la primera sensación que despierta. Lo que anotes ahora podés guardarlo después en la carta.`;
+      base = `«${name}» aún no tiene significado escrito en tu mazo: se lee por su imagen y por la primera sensación que despierta. Lo que anotes ahora puedes guardarlo después en la carta.`;
       hasOwnText = false;
     }
   }
@@ -450,7 +450,7 @@ function detectPatterns(
     /* --- 6. Altura de los arcanos (etapa del recorrido) ---
        Sólo tiene sentido sobre los Arcanos Mayores presentes: `number` ahora
        también identifica Menores (22-77), que siempre darían "alto" si no
-       se filtran acá. */
+       se filtran aquí. */
     const majorArcanas = arcanas.filter((a) => a.arcanaType === 'mayor');
     if (majorArcanas.length >= 3) {
       const high = majorArcanas.filter((a) => a.number >= 15).length;
@@ -460,7 +460,7 @@ function detectPatterns(
           id: 'high-arcana',
           label: 'Arcanos altos',
           detail:
-            'La mitad o más de los Arcanos Mayores de la tirada pertenecen al último tramo del recorrido: los hechos exceden la voluntad personal y trabajan a escala de destino. Lo que se decida acá deja marca.',
+            'La mitad o más de los Arcanos Mayores de la tirada pertenecen al último tramo del recorrido: los hechos exceden la voluntad personal y trabajan a escala de destino. Lo que se decida aquí deja marca.',
           tone: 'gold',
         });
       } else if (low / majorArcanas.length >= 0.5) {
@@ -561,7 +561,7 @@ function detectPatterns(
         id: 'deck-incomplete',
         label: `${incomplete} ${incomplete === 1 ? 'carta' : 'cartas'} sin significado`,
         detail:
-          'Todavía falta escribir el sentido de algunas cartas de tu mazo para la orientación en que salieron. Podés completarlo desde «Mis mazos» y la próxima lectura va a salir más rica.',
+          'Todavía falta escribir el sentido de algunas cartas de tu mazo para la orientación en que salieron. Puedes completarlo desde «Mis mazos» y la próxima lectura va a salir más rica.',
         tone: 'amber',
       });
     }
@@ -655,7 +655,7 @@ function buildConclusion(
   if (total === 1 && first) {
     paragraphs.push(
       `Todo el peso está en una sola imagen: ${first.cardName}. Cuando la respuesta llega en una única carta, no hay matices que la diluyan; conviene leerla literal y aplicarla sin traducirla demasiado. ${
-        first.keywords.length ? `Quedate con ${joinNatural(first.keywords.slice(0, 2))}.` : ''
+        first.keywords.length ? `Quédate con ${joinNatural(first.keywords.slice(0, 2))}.` : ''
       }`,
     );
   } else if (first && last) {
@@ -702,14 +702,14 @@ function buildConclusion(
       );
     } else {
       paragraphs.push(
-        `Como cierre, releé las cartas en el orden en que salieron: al ser tu mazo, los significados ya están escritos con tus palabras, y la lectura funciona mejor si confiás en esa primera formulación. Lo que hoy te falte decir de una carta, agregalo a «${
+        `Como cierre, relee las cartas en el orden en que salieron: al ser tu mazo, los significados ya están escritos con tus palabras, y la lectura funciona mejor si confías en esa primera formulación. Lo que hoy te falte decir de una carta, agrégalo a «${
           deck?.name?.trim() || 'tu mazo'
         }» y la próxima tirada va a hablar más claro.`,
       );
     }
   } else {
     paragraphs.push(
-      'Como cierre, releé las cartas en el orden en que las cargaste y quedate con la frase que se te repitió mentalmente al escribirlas. En los mazos de oráculo, la interpretación válida es la que te resuena en el cuerpo: el mazo da la imagen, vos das el sentido.',
+      'Como cierre, relee las cartas en el orden en que las cargaste y quédate con la frase que se te repitió mentalmente al escribirlas. En los mazos de oráculo, la interpretación válida es la que te resuena en el cuerpo: el mazo da la imagen, tú das el sentido.',
     );
   }
 
