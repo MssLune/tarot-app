@@ -38,7 +38,8 @@ describe('límites del plan gratuito', () => {
   const f = limitsFor('free', 'inactive');
 
   it('topes definidos para cada recurso', () => {
-    expect(f.readings).toBe(10);
+    /* 2 lecturas guardadas POR SEMANA (ver VENTANA_MS), sin tope total. */
+    expect(f.readings).toBe(2);
     expect(f.decks).toBe(1);
     expect(f.spreads).toBe(2);
     expect(f.rituals).toBe(3);

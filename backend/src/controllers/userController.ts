@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { sendSuccess } from '../utils/response';
 import * as userService from '../services/userService';
+import { usoDelPlan } from '../services/limits';
 
 /* ---------- Perfil ---------- */
 
@@ -8,6 +9,12 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
   const userId = (req as any).dbUserId as string;
   const profile = await userService.getProfile(userId);
   sendSuccess(res, profile);
+};
+
+/** Plan, límites y uso: siempre disponible, haya o no Stripe configurado. */
+export const getUsage = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).dbUserId as string;
+  sendSuccess(res, await usoDelPlan(userId));
 };
 
 /* ---------- Mazos ---------- */

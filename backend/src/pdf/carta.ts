@@ -150,7 +150,7 @@ export interface DatosDeCarta {
  * Recibe los campos sueltos y no la carta entera a propósito: la carta del
  * Rider-Waite y la de un mazo propio no tienen la misma forma, y la única
  * diferencia que importa para el dibujo es si es mayor y qué palo tiene.
- * Pasarle el objeto obligaba a narrowing de tipos que no光源 de ningún valor
+ * Pasarle el objeto obligaba a narrowing de tipos que no aportaba ningún valor
  * real.
  */
 export function caraDe(nombre: string, datos: DatosDeCarta): CaraDeCarta {

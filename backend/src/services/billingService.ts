@@ -276,7 +276,7 @@ export async function grantLifetime(sessionId: string): Promise<string | null> {
       plan: 'pro',
       /* Un pago único no tiene estados de suscripción. 'active' es lo
          correcto y no se va a mover nunca: no hay renovación que falle ni
-         tarjeta que updating. */
+         tarjeta que se venza. */
       status: 'active',
       tier: 'lifetime',
       stripePriceId: priceId,

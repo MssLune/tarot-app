@@ -1,6 +1,81 @@
 import { prisma } from '../database/prisma';
 import { ApiError } from '../utils/ApiError';
-import { assertCanCreate } from './limits';
+import { assertCanCreate, registrarUso } from './limits';
+
+/* ---------- Validación de entrada ----------
+
+   Antes el body iba directo a Prisma: si faltaba un campo o venía con otro
+   tipo, explotaba la base y el usuario recibía un 500 sin explicación. Ahora
+   se comprueba la forma antes de escribir y el error es un 400 que dice qué
+   campo está mal.
+
+   `parcial` es para las actualizaciones: un campo que no viene se deja como
+   está, pero si viene tiene que tener el tipo correcto. */
+
+type Regla = 'texto' | 'textoOpcional' | 'lista' | 'objeto' | 'objetoOpcional' | 'booleano';
+
+function validar(
+  input: unknown,
+  reglas: Record<string, Regla>,
+  codigo: string,
+  parcial = false,
+): void {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    throw ApiError.badRequest(codigo, 'El cuerpo tiene que ser un objeto JSON.');
+  }
+  const datos = input as Record<string, unknown>;
+  for (const [campo, regla] of Object.entries(reglas)) {
+    const valor = datos[campo];
+    const opcional = regla === 'textoOpcional' || regla === 'objetoOpcional' || regla === 'booleano';
+    if (valor === undefined || valor === null) {
+      if (parcial || opcional) continue;
+      throw ApiError.badRequest(codigo, `Falta el campo "${campo}".`);
+    }
+    const ok =
+      regla === 'texto'
+        ? typeof valor === 'string' && valor.trim() !== ''
+        : regla === 'textoOpcional'
+          ? typeof valor === 'string'
+          : regla === 'lista'
+            ? Array.isArray(valor)
+            : regla === 'objeto' || regla === 'objetoOpcional'
+              ? typeof valor === 'object' && !Array.isArray(valor)
+              : typeof valor === 'boolean';
+    if (!ok) {
+      const esperado = {
+        texto: 'un texto no vacío',
+        textoOpcional: 'un texto',
+        lista: 'una lista',
+        objeto: 'un objeto',
+        objetoOpcional: 'un objeto',
+        booleano: 'true o false',
+      }[regla];
+      throw ApiError.badRequest(codigo, `El campo "${campo}" tiene que ser ${esperado}.`);
+    }
+  }
+}
+
+const REGLAS_MAZO = { name: 'texto', description: 'textoOpcional', allowReversed: 'booleano', cards: 'lista' } as const;
+const REGLAS_TIRADA = { name: 'texto', description: 'textoOpcional', preset: 'textoOpcional', positions: 'lista' } as const;
+const REGLAS_LECTURA = {
+  title: 'textoOpcional',
+  question: 'textoOpcional',
+  questionCategory: 'textoOpcional',
+  system: 'texto',
+  spread: 'objeto',
+  /* Sólo las lecturas con mazo propio lo traen: en Rider-Waite y Oráculo no
+     viene, y exigirlo rechazaba cualquier lectura normal. */
+  deck: 'objetoOpcional',
+  cards: 'lista',
+} as const;
+const REGLAS_RITUAL = {
+  title: 'texto',
+  body: 'texto',
+  phase: 'textoOpcional',
+  source: 'textoOpcional',
+  sourceDetail: 'textoOpcional',
+  sourceVerified: 'booleano',
+} as const;
 
 /* ==========================================================================
    Servicios de datos de usuario: mazos, tiradas y lecturas.
@@ -52,6 +127,7 @@ export async function getUserDeck(userId: string, id: string) {
 }
 
 export async function createUserDeck(userId: string, input: UserDeckInput) {
+  validar(input, REGLAS_MAZO, 'DECK_INVALID');
   const id = input.id ?? `deck_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const deck = await prisma.userDeck.create({
     data: {
@@ -59,7 +135,7 @@ export async function createUserDeck(userId: string, input: UserDeckInput) {
       userId,
       name: input.name,
       description: input.description,
-      allowReversed: input.allowReversed,
+      allowReversed: input.allowReversed ?? true,
       cards: JSON.stringify(input.cards),
     },
   });
@@ -76,6 +152,7 @@ export async function createUserDeck(userId: string, input: UserDeckInput) {
  * petición extra. Devolvemos `created` para que el controller elija 200 o 201.
  */
 export async function upsertUserDeck(userId: string, id: string, input: Partial<UserDeckInput>) {
+  validar(input, REGLAS_MAZO, 'DECK_INVALID', true);
   const existing = await prisma.userDeck.findFirst({ where: { id, userId } });
 
   if (!existing) {
@@ -164,13 +241,14 @@ export async function getUserSpread(userId: string, id: string) {
 }
 
 export async function createUserSpread(userId: string, input: UserSpreadInput) {
+  validar(input, REGLAS_TIRADA, 'SPREAD_INVALID');
   const id = input.id ?? `spread_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const spread = await prisma.userSpread.create({
     data: {
       id,
       userId,
       name: input.name,
-      description: input.description,
+      description: input.description ?? '',
       preset: input.preset,
       positions: JSON.stringify(input.positions),
     },
@@ -184,6 +262,7 @@ export async function upsertUserSpread(
   id: string,
   input: Partial<UserSpreadInput>,
 ) {
+  validar(input, REGLAS_TIRADA, 'SPREAD_INVALID', true);
   const existing = await prisma.userSpread.findFirst({ where: { id, userId } });
 
   if (!existing) {
@@ -252,8 +331,11 @@ export interface UserReadingInput {
 export async function listUserReadings(userId: string) {
   const readings = await prisma.userReading.findMany({
     where: { userId },
+    /* Sin `take`. Antes se cortaba en 100, y un usuario Pro (sin tope) con
+       más lecturas dejaba de ver las viejas sin ningún aviso; además el
+       frontend usa esta lista para saber qué falta subir del navegador, y con
+       el corte volvía a subir lecturas que ya estaban. */
     orderBy: { createdAt: 'desc' },
-    take: 100,
   });
   return readings.map((r) => ({
     ...r,
@@ -275,20 +357,27 @@ export async function getUserReading(userId: string, id: string) {
 }
 
 export async function createUserReading(userId: string, input: UserReadingInput) {
+  validar(input, REGLAS_LECTURA, 'READING_INVALID');
   const id = input.id ?? `read_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-  const reading = await prisma.userReading.create({
-    data: {
-      id,
-      userId,
-      title: input.title,
-      question: input.question,
-      questionCategory: input.questionCategory,
-      system: input.system,
-      spread: JSON.stringify(input.spread),
-      deck: input.deck ? JSON.stringify(input.deck) : null,
-      cards: JSON.stringify(input.cards),
-    },
-  });
+  /* La lectura y el registro de uso van juntos: si uno falla, no queda el
+     otro. Así nunca hay una lectura guardada que no cuente para el tope
+     semanal, ni un uso contado sin lectura. */
+  const [reading] = await prisma.$transaction([
+    prisma.userReading.create({
+      data: {
+        id,
+        userId,
+        title: input.title,
+        question: input.question,
+        questionCategory: input.questionCategory,
+        system: input.system,
+        spread: JSON.stringify(input.spread),
+        deck: input.deck ? JSON.stringify(input.deck) : null,
+        cards: JSON.stringify(input.cards),
+      },
+    }),
+    registrarUso(userId, 'readings'),
+  ]);
   return {
     ...reading,
     spread: JSON.parse(reading.spread),
@@ -337,6 +426,7 @@ export async function listUserRituals(userId: string) {
 }
 
 export async function createUserRitual(userId: string, input: UserRitualInput) {
+  validar(input, REGLAS_RITUAL, 'RITUAL_INVALID');
   if (input.phase !== undefined && !VALID_PHASES.has(input.phase)) {
     throw ApiError.badRequest('RITUAL_PHASE_INVALID', `"${input.phase}" no es una fase lunar válida.`);
   }
@@ -357,6 +447,7 @@ export async function createUserRitual(userId: string, input: UserRitualInput) {
 
 /** Upsert de ritual, mismo criterio que `upsertUserDeck`. */
 export async function upsertUserRitual(userId: string, id: string, input: Partial<UserRitualInput>) {
+  validar(input, REGLAS_RITUAL, 'RITUAL_INVALID', true);
   if (input.phase !== undefined && !VALID_PHASES.has(input.phase)) {
     throw ApiError.badRequest('RITUAL_PHASE_INVALID', `"${input.phase}" no es una fase lunar válida.`);
   }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@clerk/react';
 import { billingService, type SubscriptionInfo } from '../services/billingService';
-import { ApiRequestError } from '../services/api';
 import { useReadingStore } from '../store/useReadingStore';
 import type { LimitedResource, Plan, PlanTier } from '../types';
 
@@ -16,7 +15,7 @@ import type { LimitedResource, Plan, PlanTier } from '../types';
 
 /** Rótulos de cada recurso, para las barras de uso. */
 export const RESOURCE_LABEL: Record<LimitedResource, string> = {
-  readings: 'Lecturas',
+  readings: 'Lecturas guardadas esta semana',
   decks: 'Mazos',
   spreads: 'Tiradas',
   rituals: 'Rituales',
@@ -36,6 +35,14 @@ export function usePlan() {
   const [noConfigurado, setNoConfigurado] = useState(false);
   const notice = useReadingStore((s) => s.planNotice);
   const dismissNotice = useReadingStore((s) => s.dismissPlanNotice);
+  /* Cambian cuando el usuario guarda o borra algo: el contador se refresca
+     solo, sin que cada pantalla tenga que acordarse de pedirlo. */
+  const huella = useReadingStore(
+    (s) =>
+      `${s.history.length}|${s.customDecks.length}|${s.customSpreads.length}|${s.rituals.length}|${
+        s.planNotice?.message ?? ''
+      }`,
+  );
 
   const refresh = useCallback(async () => {
     if (!isSignedIn) {
@@ -44,17 +51,12 @@ export function usePlan() {
     }
     try {
       setLoading(true);
-      setInfo(await billingService.getSubscription());
-      setNoConfigurado(false);
-    } catch (err) {
-      /* 404 = el router de billing no se montó porque Stripe no está
-         configurado. No es un error: la app funciona entera en plan gratuito
-         y no hay nada que cobrar. */
-      if (err instanceof ApiRequestError && err.status === 404) {
-        setNoConfigurado(true);
-        setInfo(null);
-        return;
-      }
+      const datos = await billingService.getSubscription();
+      setInfo(datos);
+      /* Sin Stripe configurado no hay Pro que contratar todavía, pero los
+         topes del plan gratuito se aplican igual: el uso se muestra siempre. */
+      setNoConfigurado(datos.pagoHabilitado === false);
+    } catch {
       setInfo(null);
     } finally {
       setLoading(false);
@@ -63,7 +65,7 @@ export function usePlan() {
 
   useEffect(() => {
     if (isAuthLoaded) void refresh();
-  }, [isAuthLoaded, refresh]);
+  }, [isAuthLoaded, refresh, huella]);
 
   const plan: Plan = info?.plan ?? 'free';
   const tier: PlanTier | null = info?.tier ?? null;
@@ -146,6 +148,10 @@ export function usePlan() {
     cancelAtPeriodEnd: info?.cancelAtPeriodEnd ?? false,
     /** Stripe no está configurado en este entorno. */
     noConfigurado,
+    /** Hay datos de plan (usuario con sesión y la API respondió). */
+    cargado: info !== null,
+    /** Cuándo puede volver a guardar una lectura, si está en el tope. */
+    proximaLectura: info?.proximo?.readings ? new Date(info.proximo.readings) : null,
     loading,
     progress,
     atLimit,

@@ -4,6 +4,7 @@ import * as billingService from '../services/billingService';
 import { ApiError } from '../utils/ApiError';
 import { PLAN_TIERS, type PlanTier } from '../services/plans';
 import { sendSuccess } from '../utils/response';
+import { usoDelPlan } from '../services/limits';
 
 /* ==========================================================================
    Billing. Todas las rutas exigen sesión; el webhook es la única excepción.
@@ -80,28 +81,11 @@ export const createPortal = async (req: Request, res: Response): Promise<void> =
  *
  * Va en una sola respuesta a propósito: la pantalla de "MI PLAN" necesita los
  * dos, y si fueran endpoints separados aparecería un instante en el que la
- * barra dice "3 de 20" y el plan todavía no se Pintó.
+ * barra dice "3 de 20" y el plan todavía no se pintó.
  */
 export const getUsage = async (req: Request, res: Response): Promise<void> => {
+  /* Misma respuesta que `/api/user/usage` (que existe aunque no haya Stripe):
+     una sola fuente para el conteo, así las dos rutas no pueden discrepar. */
   const userId = (req as any).dbUserId as string;
-  const [readings, decks, spreads, rituals, sub] = await Promise.all([
-    prisma.userReading.count({ where: { userId } }),
-    prisma.userDeck.count({ where: { userId } }),
-    prisma.userSpread.count({ where: { userId } }),
-    prisma.userRitual.count({ where: { userId } }),
-    billingService.getSubscription(userId),
-  ]);
-
-  sendSuccess(res, {
-    plan: sub.plan,
-    /* El frontend lo necesita para decir "se renueva el 3 de marzo" o "no se
-       renueva nunca". Sin el tier, los tres Pro son indistinguibles y la
-       pantalla tendría que mentir con una fecha. */
-    tier: sub.tier,
-    status: sub.status,
-    limits: sub.limits,
-    currentPeriodEnd: sub.currentPeriodEnd,
-    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-    usage: { readings, decks, spreads, rituals },
-  });
+  sendSuccess(res, await usoDelPlan(userId));
 };

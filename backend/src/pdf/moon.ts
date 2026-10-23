@@ -111,7 +111,7 @@ function discoOscuro(doc: any, cx: number, cy: number, r: number): void {
  *
  * Vive acá y no en los tests porque es la definición, y los tests la comparan
  * contra el dibujo. Si las dos estuvieran en el mismo archivo, un cambio
- * wouldn't ser错误的 en los dos y el test seguiría pasando.
+ * incorrecto quedaría igual en los dos y el test seguiría pasando.
  */
 export function litArea(r: number, k: number): number {
   return k * Math.PI * r * r;

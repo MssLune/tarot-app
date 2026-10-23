@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
    cliente.
 
    El secreto es inventado, pero eso no importa: la verificación es un HMAC y
-   lo que se prueba es que Ours calcula el mismo digest que Stripe.
+   lo que se prueba es que nuestro código calcula el mismo digest que Stripe.
    ========================================================================== */
 
 const SECRETO = 'whsec_test_1234567890abcdef';

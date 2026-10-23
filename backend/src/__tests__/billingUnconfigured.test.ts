@@ -109,7 +109,7 @@ describe('leer el plan sin Stripe configurado', () => {
     expect(sub.plan).toBe('free');
     expect(sub.status).toBe('inactive');
     expect(sub.tier).toBeNull();
-    expect(sub.limits.readings).toBe(10);
+    expect(sub.limits.readings).toBe(2);
   });
 
   it('no crea fila para un usuario que nunca intentó pagar', async () => {

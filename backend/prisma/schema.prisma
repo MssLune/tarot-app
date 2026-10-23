@@ -26,6 +26,7 @@ model User {
   readings UserReading[]
   rituals UserRitual[]
   subscription Subscription?
+  usageEvents UsageEvent[]
 
   @@map("users")
 }
@@ -37,7 +38,7 @@ model User {
 /// una sola columna, un administrador que cancela perdería permisos, o un
 /// suscriptor acabaría con permisos de administración.
 ///
-/// `plan` es lo que OUR app cree; `status` es lo que Stripe reporta. Puede
+/// `plan` es lo que nuestra app cree; `status` es lo que Stripe reporta. Puede
 /// haber plan "pro" con status "past_due": la tarjeta falló pero todavía
 /// existe un período de gracia. Por eso se guardan los dos y no uno solo.
 model Subscription {
@@ -325,4 +326,20 @@ model AstronomyCache {
   fetchedAt DateTime @default(now())
 
   @@map("astronomy_cache")
+}
+
+/// Registro de cada vez que el usuario USA algo con tope por período (hoy:
+/// guardar una lectura). El tope semanal del plan gratuito cuenta estas filas,
+/// no las lecturas que existen: si contara las existentes, bastaría con borrar
+/// una para poder guardar otra.
+model UsageEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Qué se usó: 'readings'.
+  resource  String
+  createdAt DateTime @default(now())
+
+  @@index([userId, resource, createdAt])
+  @@map("usage_events")
 }

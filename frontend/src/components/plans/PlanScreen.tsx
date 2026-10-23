@@ -26,6 +26,8 @@ import SectionHeading from '../ui/SectionHeading';
 
 const RECURSOS: LimitedResource[] = ['readings', 'decks', 'spreads', 'rituals'];
 
+const FECHA = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+
 /**
  * Lo que trae el Pro. Los tres planes dan todo esto.
  *
@@ -113,6 +115,7 @@ export default function PlanScreen() {
     currentPeriodEnd,
     cancelAtPeriodEnd,
     noConfigurado,
+    proximaLectura,
     loading,
     progress,
     subscribe,
@@ -157,8 +160,64 @@ export default function PlanScreen() {
     setOcupado(null);
   };
 
-  /* Stripe no configurado: no hay nada que vender todavía. Decirlo es mejor
-     que mostrar planes que van a fallar. */
+  /* El uso del plan, con sus topes. Va en las dos versiones de la pantalla:
+     los topes del plan gratuito se aplican aunque el pago no esté habilitado. */
+  const seccionUso =
+    limits && usage ? (
+        <section className="panel gilded p-5">
+          <h3 className="overline mb-4">Tu uso</h3>
+          <div className="space-y-3.5">
+            {RECURSOS.map((recurso) => {
+              const usado = usage[recurso];
+              const max = limits[recurso];
+              const p = progress(recurso);
+              const sinTope = !Number.isFinite(max);
+              const lleno = !sinTope && usado >= max;
+              /* Aviso recién al 80%: una barra en rojo al segundo guardado
+                 sería invasivo. */
+              const casi = p !== null && p >= 0.8;
+
+              return (
+                <div key={recurso}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs text-gold-100/70">{RESOURCE_LABEL[recurso]}</span>
+                    <span
+                      className={`text-xs tabular-nums ${
+                        lleno ? 'text-rose-200/90' : casi ? 'text-amber-200/80' : 'text-gold-100/45'
+                      }`}
+                    >
+                      {usado}
+                      {sinTope ? ' · sin tope' : ` de ${max}`}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-900/80">
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: p ?? 1 }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      style={{ transformOrigin: 'left' }}
+                      className={`h-full rounded-full ${
+                        lleno ? 'bg-rose-400/70' : casi ? 'bg-amber-300/70' : 'bg-gold-400/55'
+                      }`}
+                    />
+                  </div>
+                  {lleno && (
+                    <p className="mt-1 text-[0.62rem] text-rose-200/70">
+                      {recurso === 'readings' && proximaLectura
+                        ? `Ya guardaste las de esta semana. Podés guardar otra el ${FECHA.format(proximaLectura)}.`
+                        : `Llegaste al límite de ${RESOURCE_UNIT[recurso]} del plan gratuito.`}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+    ) : null;
+
+  /* Stripe no configurado: no hay Pro que contratar todavía. Decirlo es mejor
+     que mostrar planes que van a fallar, pero el plan gratuito tiene topes
+     igual, y se muestran. */
   if (noConfigurado) {
     return (
       <div className="space-y-9">
@@ -170,10 +229,12 @@ export default function PlanScreen() {
         <div className="panel gilded p-6 text-center">
           <p className="text-sm text-gold-100/80">Estás en el plan gratuito</p>
           <p className="mt-2 text-xs leading-relaxed text-gold-100/45">
-            El pago no está habilitado en este entorno, así que no hay nada que contratar
-            por ahora. Todo lo de la app funciona igual.
+            Leer no tiene límite. Lo que tiene tope es lo que se guarda: 2 lecturas por semana,{' '}
+            {limits?.decks ?? 1} mazo propio, {limits?.spreads ?? 2} tiradas personalizadas y{' '}
+            {limits?.rituals ?? 3} rituales. El plan Pro, sin topes, va a estar disponible pronto.
           </p>
         </div>
+        {seccionUso}
       </div>
     );
   }
@@ -274,55 +335,7 @@ export default function PlanScreen() {
       </section>
 
       {/* ---------------- Uso ---------------- */}
-      {limits && usage && (
-        <section className="panel gilded p-5">
-          <h3 className="overline mb-4">Lo que tenés guardado</h3>
-          <div className="space-y-3.5">
-            {RECURSOS.map((recurso) => {
-              const usado = usage[recurso];
-              const max = limits[recurso];
-              const p = progress(recurso);
-              const sinTope = !Number.isFinite(max);
-              const lleno = !sinTope && usado >= max;
-              /* Aviso recién al 80%: una barra en rojo al segundo guardado
-                 sería invasivo. */
-              const casi = p !== null && p >= 0.8;
-
-              return (
-                <div key={recurso}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-xs text-gold-100/70">{RESOURCE_LABEL[recurso]}</span>
-                    <span
-                      className={`text-xs tabular-nums ${
-                        lleno ? 'text-rose-200/90' : casi ? 'text-amber-200/80' : 'text-gold-100/45'
-                      }`}
-                    >
-                      {usado}
-                      {sinTope ? ' · sin tope' : ` de ${max}`}
-                    </span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-900/80">
-                    <motion.div
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: p ?? 1 }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
-                      style={{ transformOrigin: 'left' }}
-                      className={`h-full rounded-full ${
-                        lleno ? 'bg-rose-400/70' : casi ? 'bg-amber-300/70' : 'bg-gold-400/55'
-                      }`}
-                    />
-                  </div>
-                  {lleno && (
-                    <p className="mt-1 text-[0.62rem] text-rose-200/70">
-                      Llegaste al límite de {RESOURCE_UNIT[recurso]} del plan gratuito.
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {seccionUso}
 
       {/* ---------------- Los tres planes ---------------- */}
       {!isPro && (

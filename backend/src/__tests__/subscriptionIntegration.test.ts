@@ -173,7 +173,7 @@ describe('cancelación', () => {
     /* Y el plan efectivo sí es free ahora. */
     const sub = await getSubscription(usuarioA.id);
     expect(sub.plan).toBe('free');
-    expect(sub.limits.readings).toBe(10);
+    expect(sub.limits.readings).toBe(2);
   });
 
   it('una suscripción desconocida devuelve null y no rompe', async () => {

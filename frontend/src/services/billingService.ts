@@ -14,6 +14,12 @@ export interface SubscriptionInfo {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   usage: PlanUsage;
+  /** Recursos que cuentan por semana y no en total (hoy, las lecturas). */
+  periodo?: Partial<Record<'readings', 'semana'>>;
+  /** Cuándo se libera el próximo uso, si está en el tope (ISO). */
+  proximo?: Partial<Record<'readings', string | null>>;
+  /** Si se puede pasar al Pro en este entorno (Stripe configurado). */
+  pagoHabilitado?: boolean;
 }
 
 export const billingService = {
@@ -24,7 +30,9 @@ export const billingService = {
    * endpoints aparecería un instante en que la barra dice "3 de 20" y el plan
    * todavía no se pintó.
    */
-  getSubscription: (): Promise<SubscriptionInfo> => api.get<SubscriptionInfo>('/billing/usage'),
+  /* `/user/usage` y no `/billing/usage`: la de billing sólo existe con Stripe
+     configurado, y los topes del plan gratuito se aplican siempre. */
+  getSubscription: (): Promise<SubscriptionInfo> => api.get<SubscriptionInfo>('/user/usage'),
 
   /**
    * Genera el checkout de Stripe y devuelve la URL a la que redirigir.

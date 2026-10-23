@@ -59,7 +59,7 @@ export function tierFromPriceId(priceId: string | null | undefined): PlanTier | 
 }
 
 export interface PlanLimits {
-  /** Lecturas guardadas en el historial. */
+  /** Lecturas que se pueden guardar POR SEMANA (ver `VENTANA_MS`). */
   readings: number;
   /** Mazos propios. */
   decks: number;
@@ -73,13 +73,30 @@ export interface PlanLimits {
   cloudSync: boolean;
 }
 
+/** Un día y una semana, en milisegundos. */
+const DIA_MS = 24 * 60 * 60 * 1000;
+export const SEMANA_MS = 7 * DIA_MS;
+
+/**
+ * Recursos cuyo tope es por período y no total.
+ *
+ * El período es una VENTANA MÓVIL ("los últimos 7 días") y no la semana del
+ * calendario: no depende de la zona horaria de nadie, y el usuario no pierde
+ * un uso por guardar el domingo a la noche. Cuenta las veces que se guardó
+ * (tabla `usage_events`), no lo que existe: borrar una lectura no devuelve el
+ * uso.
+ */
+export const VENTANA_MS: Partial<Record<LimitedResource, number>> = {
+  readings: SEMANA_MS,
+};
+
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: {
-    /* A la mitad de lo que había. El límite tiene que aparecer mientras el
-       usuario todavía recuerda que la app le sirvió: alguien que lee una vez
-       por semana tarda más de dos meses en llegar a diez, y para entonces
-       ya se olvidó de qué era esto. */
-    readings: 10,
+    /* 2 lecturas GUARDADAS por semana (ventana móvil de 7 días), sin tope
+       total. Leer no tiene límite: lo que se limita es guardar en el
+       historial. Un tope total (antes era 10) aparecía cuando el usuario ya se
+       había olvidado de la app; uno semanal se ve desde la primera semana. */
+    readings: 2,
     decks: 1,
     spreads: 2,
     rituals: 3,
@@ -109,11 +126,11 @@ const RESOURCE_LABEL: Record<LimitedResource, string> = {
 };
 
 /**
- * Límites que correspond plan.
+ * Límites que corresponden a un plan.
  *
  * `status` va aparte de `plan` a propósito. Una suscripción con la tarjeta
  * caída sigue siendo "pro" hasta que termina el período de gracia: el
- * usuario ya pagó ese mes y قطع el acceso hoy sería romper la promesa de lo
+ * usuario ya pagó ese mes, y cortarle el acceso hoy sería romper la promesa de lo
  * que pagó. El webhook de Stripe se encarga de hacer la transición.
  */
 export function limitsFor(plan: Plan, status: string): PlanLimits {
@@ -149,25 +166,42 @@ export function effectiveTier(
   return limitsFor('pro', status) === PLAN_LIMITS.pro ? tier : null;
 }
 
+/** Fecha en formato corto, para los mensajes: "martes 28 de octubre". */
+const FECHA = new Intl.DateTimeFormat('es-AR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+
 /**
  * Lanza si el usuario ya alcanzó el tope de un recurso.
  *
- * `current` es cuántos tiene AHORA. La comprobación es `>=` y no `>`, así que
- * con 20 lecturas free no puede crear la 21. y puede editar las que tiene.
+ * `current` es cuánto usó: para los recursos con ventana (las lecturas),
+ * cuántas guardó en los últimos 7 días; para los demás, cuántos tiene. La
+ * comprobación es `>=`, así que con el tope alcanzado no puede crear otro,
+ * pero sí editar los que tiene.
+ *
+ * `proximo` es cuándo se libera el siguiente uso, si el recurso tiene
+ * ventana: el mensaje lo dice para que el usuario sepa cuándo puede volver.
  */
 export function assertWithinLimit(
   plan: Plan,
   status: string,
   resource: LimitedResource,
   current: number,
+  proximo?: Date | null,
 ): void {
   const limit = limitsFor(plan, status)[resource];
   if (current < limit) return;
+  const cuando = proximo ? ` Podés guardar otra el ${FECHA.format(proximo)},` : '';
   throw new ApiError(
     402,
     'PLAN_LIMIT_REACHED',
     resource === 'readings'
-      ? `Guardaste ${current} lecturas, que es el límite del plan gratuito. Pasá al Pro para guardar sin tope.`
+      ? `Ya guardaste ${current} lecturas esta semana, el máximo del plan gratuito.${cuando || ''}${
+          cuando ? ' o pasá' : ' Pasá'
+        } al Pro para guardar sin límite.`
       : `Llegaste al límite de ${current} ${RESOURCE_LABEL[resource]} del plan gratuito. Pasá al Pro para crear sin tope.`,
   );
 }

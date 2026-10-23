@@ -79,11 +79,26 @@ Tarot/
   íntegramente propio, ya que la guía no cubre cartas invertidas en absoluto —
   y `CardFicha` recibe la orientación real de la carta (`reversed`) para
   mostrar la versión que corresponde.
-- **Qué se quedó en el navegador (localStorage):** los mazos personalizados,
-  las tiradas creadas por el usuario y el historial de lecturas. La app no
-  tiene usuarios ni autenticación, así que esos datos siguen siendo "del
-  dispositivo", no contenido editorial. Si en el futuro se agregan cuentas,
-  este es el primer candidato a migrar a la base de datos (ver Pendientes).
+- **Modo invitado:** la app se usa sin cuenta. Sin iniciar sesión se pueden
+  hacer lecturas con Rider-Waite u Oráculo y las tiradas predeterminadas, ver
+  el resultado completo y consultar la Luna (fases, calendario, eclipses,
+  retrógrados, festividades). Lo que se **guarda** pide cuenta: guardar una
+  lectura, el historial, los mazos propios, las tiradas personalizadas y los
+  rituales. En esos casos se abre la pantalla de inicio de sesión con el
+  motivo (`pedirCuenta` en el store) y un "Seguir sin cuenta" para volver. Si
+  un invitado toca "Guardar lectura" e inicia sesión, esa lectura se guarda en
+  su cuenta: queda apartada en `sessionStorage` (de esa pestaña, se borra al
+  cerrarla) para sobrevivir a la recarga del inicio de sesión. Un invitado
+  nunca escribe nada en localStorage.
+- **Datos del usuario y privacidad:** los mazos propios, las tiradas, el
+  historial y los rituales viven en la cuenta (base de datos) y el navegador
+  guarda una copia en localStorage para que la app responda al instante. Esa
+  copia **tiene dueño** (`ownerId`, el id de Clerk): al cerrar sesión se borra,
+  y si otra persona inicia sesión en el mismo equipo, los datos del anterior
+  se descartan antes de cargar nada; nunca se suben a la cuenta de otro. Los
+  datos de antes de que existieran las cuentas (sin dueño) se suben una sola
+  vez a la primera cuenta que inicie sesión. Ver `prepararSesion` y
+  `limpiarDatosLocales` en `frontend/src/store/useReadingStore.ts`.
 - **Motor de interpretación:** sigue siendo lógica 100% de frontend
   (`frontend/src/lib/interpretation.ts`), sin estado ni necesidad de
   servidor. Antes importaba las cartas de un archivo estático; ahora las
@@ -228,6 +243,21 @@ con una cuenta que no es admin, 403. El rol se guarda en la tabla `users` y se
 cambia desde el panel de administración. El frontend hoy sólo consume los
 `GET`; el resto queda listo para editar el contenido desde ese panel.
 
+**Luna** (públicas)
+
+| Método | Ruta | Descripción |
+| ------ | ---- | ----------- |
+| GET | `/api/moon/eclipses?anio=` | Eclipses lunares del año y del siguiente (IMCCE, cacheados) |
+| GET | `/api/moon/estado` | Si hoy hay eclipse y cuál es el próximo |
+| GET | `/api/moon/retrogrados?anio=` | Retrógrados planetarios del año (JPL, cacheados) |
+
+`anio` es opcional (por defecto, el año actual) y tiene que estar entre 1900 y
+2100; fuera de ese rango la API responde `400 ANIO_FUERA_DE_RANGO`.
+
+**Validación:** los datos del usuario (mazos, tiradas, lecturas, rituales) se
+validan antes de escribir; un campo que falta o con otro tipo responde 400
+con el nombre del campo.
+
 **Administración** (`/api/admin/*`, rol `admin`)
 
 Listar usuarios, cambiar su rol y borrarlos. Borrar un usuario es completo:
@@ -251,6 +281,34 @@ rituales (`/rituals`). El `PUT /:id` de mazos, tiradas y rituales es un
 *upsert*: si el id no existe, lo crea.
 
 ## Planes y límites
+
+**Plan gratuito** (con cuenta): leer no tiene límite; lo que tiene tope es lo
+que se guarda.
+
+| Qué | Tope |
+| --- | --- |
+| Lecturas guardadas | 2 por semana (últimos 7 días), sin tope total |
+| Mazos propios | 1 |
+| Tiradas personalizadas | 2 |
+| Rituales | 3 |
+
+**Pro**: sin topes. Los invitados (sin cuenta) no guardan nada, así que no
+tienen tope.
+
+**El tope semanal** cuenta las veces que se *guardó* (tabla `usage_events`),
+no las lecturas que existen: borrar una no devuelve el uso. Es una ventana
+móvil de 7 días (`VENTANA_MS` en `plans.ts`), no la semana del calendario. El
+`402` dice cuándo se puede volver a guardar.
+
+**Lo que ve el usuario:** una barra fina bajo la cabecera, siempre visible
+para quien tiene sesión y plan gratuito, con su uso de la semana y el botón
+«Pasar al Pro» (`frontend/src/components/plans/LimitBanner.tsx`). Se vuelve
+ámbar al llegar al tope. «Tu plan» muestra el detalle de los cuatro topes,
+también cuando el pago todavía no está habilitado.
+
+**El uso** sale de `GET /api/user/usage`, que existe siempre (con o sin
+Stripe); `/api/billing/usage` devuelve lo mismo pero sólo existe con Stripe
+configurado.
 
 Los topes del plan gratuito están en `backend/src/services/plans.ts`
 (`PLAN_LIMITS`) y se comprueban **sólo en el backend**, en un único lugar:
@@ -286,7 +344,6 @@ Los tests de integración del backend usan la base de desarrollo
 ## Pendientes / mejoras futuras
 
 - Panel de administración para editar cartas y tiradas desde una UI (la API ya soporta el CRUD completo).
-- Si se agregan cuentas de usuario, migrar mazos personalizados, tiradas propias e historial de localStorage a la base de datos.
 - Paginación en `/api/cards` y `/api/spreads` si el catálogo crece mucho más allá de su tamaño actual.
 - Resolver los puntos pendientes de [`docs/revision-seguridad.md`](docs/revision-seguridad.md).
 - **Exportar/importar mazos propios como archivo JSON** (alternativa a

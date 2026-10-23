@@ -113,7 +113,7 @@ async function deCache(anio: number): Promise<LunarEclipse[] | null> {
   } catch {
     /* Un JSON corrupto es peor que un cache miss: se borra y se vuelve a
        pedir. La fila existe pero no sirve, y quedarse con ella para siempre
-       dejaría a la app sin eclipsos hasta que alguien la borre a mano. */
+       dejaría a la app sin eclipses hasta que alguien la borre a mano. */
     await prisma.astronomyCache.delete({ where: { key: claveDe(anio) } }).catch(() => {});
     return null;
   }

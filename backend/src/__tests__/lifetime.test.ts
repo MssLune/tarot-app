@@ -378,7 +378,7 @@ describe('reembolso y disputa perdida quitan el de por vida', () => {
     const sub = await getSubscription(usuario.id);
     expect(sub.plan).toBe('free');
     expect(sub.tier).toBeNull();
-    expect(sub.limits.readings).toBe(10);
+    expect(sub.limits.readings).toBe(2);
 
     const fila = await prisma.subscription.findUnique({ where: { userId: usuario.id } });
     expect(fila?.status).toBe('refunded');
