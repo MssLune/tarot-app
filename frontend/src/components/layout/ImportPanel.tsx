@@ -37,7 +37,7 @@ export default function ImportPanel({ onClose, onDone }: Props) {
     try {
       const result = await readArchiveFile(file);
       if (result.total === 0) {
-        setError('El archivo no contiene mazos, tiradas ni lecturas.');
+        setError('El archivo no contiene mazos, tiradas, lecturas ni rituales.');
         return;
       }
       setPreview(result);
@@ -58,6 +58,17 @@ export default function ImportPanel({ onClose, onDone }: Props) {
     }
   };
 
+  const elegir = () => inputRef.current?.click();
+
+  const filas = preview
+    ? ([
+        ['Mazos', preview.decks],
+        ['Tiradas', preview.spreads],
+        ['Lecturas', preview.readings],
+        ['Rituales', preview.rituals],
+      ] as const)
+    : [];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -6 }}
@@ -76,48 +87,55 @@ export default function ImportPanel({ onClose, onDone }: Props) {
         }}
       />
 
-      {error ? (
-        <p className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
-          {error}
-        </p>
-      ) : preview ? (
+      {preview ? (
         <div className="space-y-3">
           <p className="text-xs leading-relaxed text-gold-100/70">
-            El archivo contiene {preview.total} elemento(s). Lo que ya tengas guardado con el mismo
-            id se conserva y no se duplica.
+            El archivo trae {preview.total} {preview.total === 1 ? 'elemento' : 'elementos'}:
           </p>
-          <ul className="space-y-1 text-[0.68rem] text-gold-100/50">
-            <li>· Mazos: {preview.decks}</li>
-            <li>· Tiradas: {preview.spreads}</li>
-            <li>· Lecturas: {preview.readings}</li>
-            <li>· Rituales: {preview.rituals}</li>
+          {/* Dos columnas también en el celular: son cuatro números cortos. */}
+          <ul className="grid grid-cols-2 gap-2">
+            {filas.map(([etiqueta, n]) => (
+              <li
+                key={etiqueta}
+                className={`flex items-center justify-between rounded-lg border px-3 py-2 text-xs ${
+                  n > 0
+                    ? 'border-gold-400/25 bg-ink-900/60 text-gold-100/85'
+                    : 'border-gold-400/10 text-gold-100/35'
+                }`}
+              >
+                <span>{etiqueta}</span>
+                <span className="font-display tabular-nums text-sm">{n}</span>
+              </li>
+            ))}
           </ul>
-          {/* Un respaldo v1 no trae rituales. Decirlo es mejor que mostrar un 0
-              que el usuario no sabe interpretar. */}
-          {preview.rituals === 0 && preview.total > 0 && (
-            <p className="text-[0.62rem] leading-relaxed text-gold-100/35">
-              Este archivo no incluye rituales: es un respaldo anterior a que existieran.
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1" onClick={handleConfirm} disabled={busy}>
+          <p className="text-[0.68rem] leading-relaxed text-gold-100/45">
+            Lo que ya tengas guardado con el mismo id se conserva y no se duplica.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button size="sm" className="sm:flex-1" fullWidth onClick={handleConfirm} disabled={busy}>
               {busy ? 'Importando…' : 'Importar'}
             </Button>
-            <Button size="sm" variant="ghost" onClick={onClose}>
-              Cancelar
+            <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" onClick={elegir}>
+              Otro archivo
             </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-xs leading-relaxed text-gold-100/60">
-            Elige un archivo <code className="text-gold-200/80">.json</code> exportado desde Arcana.
-          </p>
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1" onClick={() => inputRef.current?.click()}>
-              Elegir archivo
+          {error ? (
+            <p role="alert" className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
+              {error}
+            </p>
+          ) : (
+            <p className="text-xs leading-relaxed text-gold-100/60">
+              Elige un archivo <code className="text-gold-200/80">.json</code> exportado desde Arcana.
+            </p>
+          )}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button size="sm" className="sm:flex-1" fullWidth onClick={elegir}>
+              {error ? 'Elegir otro archivo' : 'Elegir archivo'}
             </Button>
-            <Button size="sm" variant="ghost" onClick={onClose}>
+            <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" onClick={onClose}>
               Cancelar
             </Button>
           </div>

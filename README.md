@@ -223,6 +223,16 @@ npm run build
 Frontend y API en Vercel (plan gratuito) y base de datos en Neon (plan
 gratuito). Paso a paso en [`docs/despliegue.md`](docs/despliegue.md).
 
+## Exportar e importar
+
+Desde **Tu cuenta → Tus datos** se exporta un respaldo en JSON (mazos,
+tiradas, lecturas y rituales, a elección) y se importa uno. El historial y el
+editor de mazos tienen además un ⇩ por elemento. Las cartas de los mazos
+propios pueden llevar una imagen por dirección `https://` (`imageUrl`); si no
+tiene o no carga, se dibuja su símbolo. El formato completo, con un mazo de
+ejemplo para escribir a mano, está en
+[`docs/formato-de-datos.md`](docs/formato-de-datos.md).
+
 ## Endpoints principales
 
 Todas las respuestas siguen el mismo sobre:
@@ -394,12 +404,13 @@ se borran al terminar.
 - Panel de administración para editar cartas y tiradas desde una UI (la API ya soporta el CRUD completo).
 - Paginación en `/api/cards` y `/api/spreads` si el catálogo crece mucho más allá de su tamaño actual.
 - Resolver los puntos pendientes de [`docs/revision-seguridad.md`](docs/revision-seguridad.md).
-- **Exportar/importar mazos propios como archivo JSON** (alternativa a
-  cuentas de usuario, evaluada y pospuesta por pedido explícito): un botón
-  "Exportar mazo" que serializa un `CustomDeck` a un `.json` descargable, y
-  "Importar mazo" que lo lee con un `<input type="file">` y lo agrega a
-  `customDecks` vía `saveCustomDeck`. 100% client-side, sin backend ni
-  autenticación — el archivo funciona como mecanismo manual de backup y de
-  traspaso entre navegadores/dispositivos. El mismo patrón se puede
-  extender después a tiradas propias (`customSpreads`) e historial
-  (`history`) si hace falta.
+- **Política de seguridad (CSP) en el frontend.** Se probó una en
+  `frontend/vercel.json` y se retiró porque la app publicada dejó de cargar.
+  Para retomarla conviene publicarla primero como
+  `Content-Security-Policy-Report-Only` (sólo avisa en la consola, no
+  bloquea), revisar qué direcciones reporta y recién después activarla.
+- **Subir la imagen de una carta desde el dispositivo.** Hoy la carta guarda
+  sólo una dirección `https://`. Subir archivos necesita un almacenamiento
+  aparte (por ejemplo Vercel Blob o Cloudinary): la base de Neon no es lugar
+  para fotos. El campo `imageUrl` ya sirve para eso: la subida guardaría ahí
+  la dirección del archivo subido, sin cambiar el formato.

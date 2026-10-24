@@ -117,6 +117,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  /* Si el `beforeAll` falló, no hay usuario que limpiar (y sin esto el error
+     real queda tapado por un TypeError). */
+  if (!usuario) {
+    await prisma.$disconnect();
+    return;
+  }
   await prisma.subscription.deleteMany({ where: { userId: usuario.id } });
   /* Sólo el usuario de ESTE archivo, y por id. Borrar con un predicado amplio
      como "todos los que acaban en @test.local" parece inofensivo y no lo es:

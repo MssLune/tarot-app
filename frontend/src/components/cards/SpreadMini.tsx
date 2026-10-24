@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { DrawnCard, SpreadPosition, SystemId } from '../../types';
-import type { ArcanaCard } from '@arcana/tarot-core';
+import { cardImageUrl, type ArcanaCard, type CustomDeck } from '@arcana/tarot-core';
 import { urlDeArchivo } from '../../services/api';
 
 /* ==========================================================================
@@ -30,27 +31,31 @@ export default function SpreadMini({
   cards,
   cardsById,
   system = 'rider-waite',
+  /** El mazo propio de la lectura, para sus imágenes. */
+  deck,
   className = '',
 }: {
   positions: SpreadPosition[];
   cards?: DrawnCard[];
   cardsById?: Record<string, ArcanaCard>;
   system?: SystemId;
+  deck?: CustomDeck | null;
   className?: string;
 }) {
   const width = miniCardWidth(positions.length);
 
+  const [rotas, setRotas] = useState<ReadonlySet<string>>(() => new Set());
+
   const imagenDe = (pos: SpreadPosition): string | null => {
     if (!cards || !cardsById) return null;
-    /* Sólo el mazo del Rider-Waite tiene imágenes servidas por el backend. Un
-       mazo propio vuelve a los marcos: no hay de dónde sacar el archivo, aunque
-       por un error de datos quede un `arcanaId` puesto. */
-    if (system !== 'rider-waite') return null;
     const puesta = cards.find((c) => c.positionId === pos.id);
-    if (!puesta?.arcanaId) return null;
-    /* La URL viene del backend como ruta relativa. Sin volverla absoluta, el
-       navegador la pide al servidor de la PÁGINA y da 404. */
-    return urlDeArchivo(cardsById[puesta.arcanaId]?.imageUrl) ?? null;
+    if (!puesta) return null;
+    /* Rider-Waite: los archivos del servidor. Mazo propio: la dirección que
+       el usuario puso en la carta, si la tiene. El resto vuelve a los marcos.
+       La ruta del servidor es relativa: sin volverla absoluta, el navegador la
+       pide al servidor de la PÁGINA y da 404. */
+    const url = urlDeArchivo(cardImageUrl(puesta, system, cardsById, deck));
+    return url && !rotas.has(url) ? url : null;
   };
 
   return (
@@ -78,6 +83,8 @@ export default function SpreadMini({
             {imagen ? (
               <img
                 src={imagen}
+                referrerPolicy="no-referrer"
+                onError={() => setRotas((r) => new Set(r).add(imagen))}
                 alt=""
                 loading="lazy"
                 draggable={false}

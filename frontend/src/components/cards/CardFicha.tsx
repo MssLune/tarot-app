@@ -141,7 +141,7 @@ export default function CardFicha({
                   ].map(
                     (block) =>
                       block.text && (
-                        <div key={block.label} className="rounded-xl border border-gold-400/12 bg-ink-950/40 p-3">
+                        <div key={block.label} className="rounded-xl border border-gold-400/[0.12] bg-ink-950/40 p-3">
                           <p className="mb-1.5 font-display text-[0.65rem] uppercase tracking-[0.18em] text-gold-200/70">
                             {block.label}
                           </p>
@@ -155,7 +155,7 @@ export default function CardFicha({
 
             {/* ---------------- Astrología ---------------- */}
             {card.astrology && (
-              <div className="rounded-xl border border-gold-400/12 bg-ink-950/40 px-4 py-3 text-center">
+              <div className="rounded-xl border border-gold-400/[0.12] bg-ink-950/40 px-4 py-3 text-center">
                 <p className="overline mb-1">Astrología y tiempos</p>
                 <p className="text-xs text-gold-100/60">{card.astrology}</p>
               </div>

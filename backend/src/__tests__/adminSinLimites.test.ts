@@ -32,7 +32,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.user.deleteMany({ where: { id: { in: [admin.id, normal.id] } } });
+  /* Si el `beforeAll` falló (por ejemplo, la base no respondió), no hay nada
+     que borrar: sin este filtro el error real queda tapado por un TypeError. */
+  const ids = [admin?.id, normal?.id].filter((id): id is string => !!id);
+  if (ids.length) await prisma.user.deleteMany({ where: { id: { in: ids } } });
 });
 
 describe('admin sin límites', () => {

@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { ELEMENT_LABELS, YES_NO_LABELS } from '@arcana/tarot-core';
-import { interpret, cardImageUrl } from '@arcana/tarot-core';
+import { interpret, cardImageUrl, deckCardOf } from '@arcana/tarot-core';
 import { SYSTEM_LABELS } from '../../lib/systems';
 import { usePlan } from '../../lib/usePlan';
 import { urlDeArchivo } from '../../services/api';
@@ -93,7 +93,7 @@ export default function ResultScreen() {
     subtitle: undefined,
     /* La URL viene del backend como ruta relativa y hay que volverla
        absoluta: si no, el navegador la pide al servidor de Vite y da 404. */
-    imageUrl: urlDeArchivo(cardImageUrl(p.card, system, cardsById)),
+    imageUrl: urlDeArchivo(cardImageUrl(p.card, system, cardsById, deck)),
     reversed: p.card.reversed,
   }));
 
@@ -311,6 +311,19 @@ export default function ResultScreen() {
           {positions.map((reading, index) => {
             const arcana = reading.card.arcanaId ? cardsById[reading.card.arcanaId] : undefined;
             const firstKeyword = reading.keywords[0];
+            /* Sí/No: el del Rider-Waite, o el que el usuario escribió en su mazo. */
+            const respuesta =
+              system === 'rider-waite'
+                ? arcana?.yesNo
+                : system === 'custom-deck'
+                  ? deckCardOf(reading.card, deck)?.yesNo
+                  : undefined;
+            const porQue =
+              system === 'rider-waite'
+                ? arcana?.yesNoReason
+                : system === 'custom-deck'
+                  ? deckCardOf(reading.card, deck)?.yesNoReason?.trim()
+                  : undefined;
             return (
             <motion.article
               key={reading.position.id}
@@ -356,11 +369,12 @@ export default function ResultScreen() {
                   <div className="mb-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="overline">{reading.position.name}</p>
-                      {system === 'rider-waite' && arcana?.yesNo && (
+                      {respuesta && YES_NO_BADGE[respuesta] && (
                         <span
-                          className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.12em] ${YES_NO_BADGE[arcana.yesNo]}`}
+                          title={porQue || undefined}
+                          className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.12em] ${YES_NO_BADGE[respuesta]}`}
                         >
-                          {YES_NO_LABELS[arcana.yesNo]}
+                          {YES_NO_LABELS[respuesta]}
                           {firstKeyword ? ` · ${firstKeyword}` : ''}
                         </span>
                       )}

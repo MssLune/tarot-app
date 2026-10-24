@@ -113,6 +113,10 @@ export default function CardPicker({
   onSelect,
 }: CardPickerProps) {
   const [query, setQuery] = useState('');
+  /* Imágenes que no cargaron (una dirección rota de un mazo propio): en vez
+     del ícono de imagen rota se muestra el glifo. */
+  const [rotas, setRotas] = useState<ReadonlySet<string>>(() => new Set());
+  const marcarRota = (url: string) => setRotas((r) => new Set(r).add(url));
   /* El panel flotante sólo existe mientras el campo está enfocado. */
   const [open, setOpen] = useState(false);
   /* Valor elegido por eje de filtro. Sin clave o cadena vacía = sin filtrar. */
@@ -454,12 +458,14 @@ export default function CardPicker({
                           : 'border-transparent hover:border-gold-400/30 hover:bg-ink-800/70'
                   }`}
                 >
-                  {item.imageUrl ? (
+                  {item.imageUrl && !rotas.has(item.imageUrl) ? (
                     /* La miniatura reemplaza al glifo cuando hay imagen. Es un
                        24×36, que es chico pero alcanza para reconocer la
                        carta: el buscador es justo donde se las busca. */
                     <img
                       src={item.imageUrl}
+                      referrerPolicy="no-referrer"
+                      onError={() => item.imageUrl && marcarRota(item.imageUrl)}
                       alt=""
                       aria-hidden="true"
                       loading="lazy"
@@ -539,9 +545,11 @@ export default function CardPicker({
           onClick={() => setOpen((v) => !v)}
           className="flex w-full items-center gap-2.5 rounded-xl border border-gold-300/40 bg-gold-400/[0.07] px-3 py-2 text-left transition-colors hover:border-gold-300/70"
         >
-          {selected.imageUrl ? (
+          {selected.imageUrl && !rotas.has(selected.imageUrl) ? (
             <img
               src={selected.imageUrl}
+              referrerPolicy="no-referrer"
+              onError={() => selected.imageUrl && marcarRota(selected.imageUrl)}
               alt=""
               aria-hidden="true"
               loading="lazy"

@@ -18,8 +18,11 @@ import type {
 /** Cartas del Rider-Waite indexadas por id, tal como las sirve la API. */
 type CardsById = Record<string, ArcanaCard>;
 
+/** Campos por tema: los tiene el Rider-Waite y, si el usuario los escribió, el mazo propio. */
+type ConTemas = Pick<ArcanaCard, 'loveHint' | 'workHint' | 'moneyHint' | 'healthHint'>;
+
 /** Devuelve la frase corta de la carta para la categoría elegida, si existe. */
-function hintForCategory(arcana: ArcanaCard, category: QuestionCategory): string | undefined {
+function hintForCategory(arcana: ConTemas, category: QuestionCategory): string | undefined {
   switch (category) {
     case 'amor':
       return arcana.loveHint;
@@ -156,6 +159,53 @@ export function cardGlyph(
   return genericGlyphs[index % genericGlyphs.length];
 }
 
+/** Largo máximo de la dirección de una imagen de carta. */
+export const MAX_LARGO_URL_IMAGEN = 2048;
+
+/**
+ * ¿Sirve como imagen de una carta de mazo propio?
+ *
+ * Sólo `https://`: la app se publica con https y una imagen `http://` el
+ * navegador la bloquea o la avisa como insegura. Tampoco se aceptan `data:`
+ * (una foto entera pegada en el JSON llenaría la base) ni espacios o comillas,
+ * que delatan algo que no es una dirección.
+ */
+export function esUrlDeImagenValida(url: unknown): boolean {
+  return (
+    typeof url === 'string' &&
+    url.trim().length <= MAX_LARGO_URL_IMAGEN &&
+    /^https:\/\/[^\s"'<>]+$/i.test(url.trim())
+  );
+}
+
+/**
+ * Convierte los enlaces «para compartir» de los servicios más usados en el
+ * enlace directo a la imagen, que es lo único que un <img> puede mostrar:
+ *
+ * - Google Drive (`drive.google.com/file/d/ID/view`, `open?id=ID`, `uc?id=ID`)
+ *   → la miniatura pública del archivo. El archivo tiene que estar compartido
+ *   como «Cualquier persona con el enlace».
+ * - Dropbox (`?dl=0`) → `?raw=1`, que entrega el archivo en vez de la página.
+ * - Imgur (`imgur.com/ID`) → `i.imgur.com/ID.jpg`.
+ *
+ * Cualquier otra dirección se devuelve igual.
+ */
+export function urlDirectaDeImagen(url: string): string {
+  const u = url.trim();
+  const drive = u.match(
+    /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{10,})/i,
+  );
+  if (drive) return `https://drive.google.com/thumbnail?id=${drive[1]}&sz=w1000`;
+  if (/^https:\/\/(?:www\.)?dropbox\.com\//i.test(u)) {
+    if (/[?&]raw=1/.test(u)) return u;
+    if (/[?&]dl=[01]/.test(u)) return u.replace(/([?&])dl=[01]/, '$1raw=1');
+    return `${u}${u.includes('?') ? '&' : '?'}raw=1`;
+  }
+  const imgur = u.match(/^https:\/\/(?:www\.|m\.)?imgur\.com\/([A-Za-z0-9]{5,8})\/?$/i);
+  if (imgur) return `https://i.imgur.com/${imgur[1]}.jpg`;
+  return u;
+}
+
 /**
  * URL de la imagen de la carta, si tiene.
  *
@@ -165,14 +215,20 @@ export function cardGlyph(
  * error —el mazo funciona entero sin imágenes, con el glifo—, y conviene que
  * el que llama lo sepa sin adivinar.
  *
- * Sólo el mazo del Rider-Waite tiene imágenes: son 78 archivos del servidor y
- * un mazo propio las tiene si el usuario las subió, que hoy no es el caso.
+ * El Rider-Waite usa los 78 archivos del servidor (ruta relativa). Un mazo
+ * propio usa la dirección que el usuario puso en la carta (`imageUrl`), si es
+ * válida. El Oráculo libre no tiene imágenes.
  */
 export function cardImageUrl(
   card: DrawnCard,
   system: SystemId,
   cardsById: CardsById,
+  deck?: CustomDeck | null,
 ): string | undefined {
+  if (system === 'custom-deck') {
+    const url = deckCardOf(card, deck)?.imageUrl?.trim();
+    return url && esUrlDeImagenValida(url) ? urlDirectaDeImagen(url) : undefined;
+  }
   if (system !== 'rider-waite' || !card.arcanaId) return undefined;
   return cardsById[card.arcanaId]?.imageUrl;
 }
@@ -265,6 +321,7 @@ function readCustomDeckPosition(
   positionName: string,
   prompt: string,
   index: number,
+  category: QuestionCategory = 'general',
 ): { text: string; keywords: string[]; subtitle: string; advice: string } {
   const name = deckCard?.name?.trim() || card.customName?.trim() || 'Carta sin nombre';
 
@@ -321,12 +378,18 @@ function readCustomDeckPosition(
   /* Nota puntual que el usuario haya escrito para esta lectura. */
   const own = card.customMeaning?.trim() ? ` Tu nota para esta tirada: ${card.customMeaning.trim()}` : '';
 
+  /* Lo que la carta dice sobre el tema de la pregunta, si el usuario lo escribió. */
+  const hint = hintForCategory(deckCard, category)?.trim();
+  const categoryPhrase = hint
+    ? ` En el plano de ${CATEGORY_PHRASE[category]}: ${capitalize(hint)}${/[.!?…]$/.test(hint) ? '' : '.'}`
+    : '';
+
   const subtitleParts = [deckCard.subtitle?.trim(), card.reversed ? 'invertida' : undefined].filter(
     Boolean,
   ) as string[];
 
   return {
-    text: fixContractions(`${base}${note}${bridge}${own}`),
+    text: fixContractions(`${base}${note}${bridge}${categoryPhrase}${own}`),
     // Sólo mostramos palabras clave si salen del mazo o de un texto propio.
     keywords: kw.length ? kw : hasOwnText ? extractKeywords(base).slice(0, 3) : [],
     subtitle: subtitleParts.length ? subtitleParts.join(' · ') : 'Mazo propio',
@@ -782,7 +845,7 @@ export function interpret(
       system === 'rider-waite'
         ? readRiderWaitePosition(card, pos.name, prompt, index, cardsById, category)
         : system === 'custom-deck'
-          ? readCustomDeckPosition(card, deckCardOf(card, deck), pos.name, prompt, index)
+          ? readCustomDeckPosition(card, deckCardOf(card, deck), pos.name, prompt, index, category)
           : readOraclePosition(card, pos.name, prompt);
 
     return {

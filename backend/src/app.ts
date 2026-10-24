@@ -13,7 +13,7 @@ import { CARDS_DIR, CARDS_ROUTE } from './services/cardImages';
 
 export const app = express();
 
-app.use(cors({ origin: env.frontendUrl }));
+app.use(cors({ origin: env.frontendOrigins }));
 
 /* Las imágenes de las cartas. Se sirven estáticas y no hay protección que
    valga: son el arte de un mazo de dominio público, que cualquiera puede

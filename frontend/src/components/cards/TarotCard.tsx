@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Glyph from '../ui/Glyph';
 
@@ -60,6 +61,10 @@ export default function TarotCard({
   className = '',
 }: TarotCardProps) {
   const t = TEXT[density];
+  /* La dirección que no cargó. Si es la misma que la actual se dibuja el
+     glifo; si el usuario cambia la imagen, se vuelve a intentar sola. */
+  const [fallida, setFallida] = useState<string | null>(null);
+  const imagen = imageUrl && fallida !== imageUrl ? imageUrl : undefined;
 
   return (
     <motion.div
@@ -127,15 +132,19 @@ export default function TarotCard({
               className="flex h-full w-full items-center justify-center"
               style={{ transform: reversed ? 'rotate(180deg)' : undefined }}
             >
-              {imageUrl ? (
+              {imagen ? (
                 <img
-                  src={imageUrl}
+                  src={imagen}
+                  referrerPolicy="no-referrer"
                   alt=""
                   aria-hidden="true"
                   loading="lazy"
                   draggable={false}
                   onLoad={() => onImage?.(true)}
-                  onError={() => onImage?.(false)}
+                  onError={() => {
+                    setFallida(imagen ?? null);
+                    onImage?.(false);
+                  }}
                   className="h-full w-full rounded object-contain"
                 />
               ) : (
@@ -155,15 +164,19 @@ export default function TarotCard({
                 {subtitle ?? ''}
               </span>
 
-              {imageUrl ? (
+              {imagen ? (
                 <img
-                  src={imageUrl}
+                  src={imagen}
+                  referrerPolicy="no-referrer"
                   alt=""
                   aria-hidden="true"
                   loading="lazy"
                   draggable={false}
                   onLoad={() => onImage?.(true)}
-                  onError={() => onImage?.(false)}
+                  onError={() => {
+                    setFallida(imagen ?? null);
+                    onImage?.(false);
+                  }}
                   className="min-h-0 w-full flex-1 rounded object-contain"
                 />
               ) : (

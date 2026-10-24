@@ -4,6 +4,7 @@ import { useProfile } from '../../lib/useProfile';
 import { usePlan } from '../../lib/usePlan';
 import { useReadingStore } from '../../store/useReadingStore';
 import Button from '../ui/Button';
+import DatosDialog, { type ModoDatos } from './DatosDialog';
 
 /* ==========================================================================
    Menú de cuenta: identidad, rol, sincronización y cierre de sesión.
@@ -49,6 +50,7 @@ export default function UserMenu() {
 
   const [open, setOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [datos, setDatos] = useState<ModoDatos | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   /* Cierra el menú al hacer clic fuera o al presionar Escape. */
@@ -215,13 +217,40 @@ export default function UserMenu() {
                 {isPro ? (isLifetime ? 'Pro de por vida' : 'Plan Pro') : 'Plan gratuito'}
               </span>
               <span className="block text-[0.6rem] text-gold-100/55">
-                {usage ? resumenDeUso(usage) : 'Ver límites y_usage'}
+                {usage ? resumenDeUso(usage) : 'Ver límites y uso'}
               </span>
             </span>
             <span className="shrink-0 text-[0.6rem] text-gold-100/30" aria-hidden="true">
               →
             </span>
           </button>
+
+          {/* Tus datos: exportar e importar el respaldo de la cuenta. */}
+          <div className="border-b border-gold-400/15 px-4 py-3">
+            <p className="overline mb-2">Tus datos</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDatos('exportar');
+                  setOpen(false);
+                }}
+                className="rounded-xl border border-gold-400/25 bg-ink-800 px-3 py-2 text-xs text-gold-100 transition-colors hover:border-gold-300/60 hover:bg-ink-700"
+              >
+                ⇩ Exportar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDatos('importar');
+                  setOpen(false);
+                }}
+                className="rounded-xl border border-gold-400/25 bg-ink-800 px-3 py-2 text-xs text-gold-100 transition-colors hover:border-gold-300/60 hover:bg-ink-700"
+              >
+                ⇧ Importar
+              </button>
+            </div>
+          </div>
 
           {/* Sesión activa */}
           <div className="border-b border-gold-400/15 px-4 py-3">
@@ -292,6 +321,8 @@ export default function UserMenu() {
           </div>
         </div>
       )}
+
+      {datos && <DatosDialog modo={datos} onCerrar={() => setDatos(null)} />}
     </div>
   );
 }

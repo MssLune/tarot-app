@@ -142,7 +142,7 @@ export default function SpreadBuilder() {
 
   const validate = (): boolean => {
     if (!name.trim()) {
-      setError('Ponele un nombre a la tirada para poder guardarla.');
+      setError('Ponle un nombre a la tirada para poder guardarla.');
       return false;
     }
     setError(null);
@@ -257,7 +257,7 @@ export default function SpreadBuilder() {
                   className={`rounded-2xl border p-3 transition-colors ${
                     dragIndex === index
                       ? 'border-gold-300/60 bg-gold-400/[0.07]'
-                      : 'border-gold-400/12 bg-ink-950/40'
+                      : 'border-gold-400/[0.12] bg-ink-950/40'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">

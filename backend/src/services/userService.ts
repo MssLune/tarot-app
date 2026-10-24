@@ -1,3 +1,4 @@
+import { MAX_LARGO_URL_IMAGEN, esUrlDeImagenValida } from '@arcana/tarot-core';
 import { prisma } from '../database/prisma';
 import { ApiError } from '../utils/ApiError';
 import { assertCanCreate, registrarUso } from './limits';
@@ -81,6 +82,27 @@ const REGLAS_RITUAL = {
   materials: 'textoOpcional',
 } as const;
 
+/**
+ * Las imágenes de las cartas de un mazo propio. Las cartas se guardan como
+ * JSON sin revisar campo por campo, pero `imageUrl` se revisa: es lo único que
+ * el navegador de otra persona va a pedir a otro sitio, y una foto entera
+ * pegada como `data:` llenaría la base. Tiene que ser https:// y corta.
+ */
+function validarImagenesDeCartas(cards: unknown): void {
+  if (!Array.isArray(cards)) return;
+  cards.forEach((card, i) => {
+    if (card === null || typeof card !== 'object') return;
+    const url = (card as { imageUrl?: unknown }).imageUrl;
+    if (url === undefined || url === null || url === '') return;
+    if (!esUrlDeImagenValida(url)) {
+      throw ApiError.badRequest(
+        'DECK_INVALID',
+        `La imagen de la carta ${i + 1} tiene que ser una dirección https:// de hasta ${MAX_LARGO_URL_IMAGEN} caracteres.`,
+      );
+    }
+  });
+}
+
 /* ==========================================================================
    Servicios de datos de usuario: mazos, tiradas y lecturas.
    ========================================================================== */
@@ -132,6 +154,7 @@ export async function getUserDeck(userId: string, id: string) {
 
 export async function createUserDeck(userId: string, input: UserDeckInput) {
   validar(input, REGLAS_MAZO, 'DECK_INVALID');
+  validarImagenesDeCartas(input.cards);
   const id = input.id ?? `deck_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const deck = await prisma.userDeck.create({
     data: {
@@ -157,6 +180,7 @@ export async function createUserDeck(userId: string, input: UserDeckInput) {
  */
 export async function upsertUserDeck(userId: string, id: string, input: Partial<UserDeckInput>) {
   validar(input, REGLAS_MAZO, 'DECK_INVALID', true);
+  validarImagenesDeCartas(input.cards);
   const existing = await prisma.userDeck.findFirst({ where: { id, userId } });
 
   if (!existing) {

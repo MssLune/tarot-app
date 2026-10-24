@@ -128,6 +128,12 @@ export interface CustomCard {
   name: string;
   /** Símbolo opcional para el frente de la carta. */
   glyph?: string;
+  /**
+   * Imagen opcional de la carta: una dirección https:// a un archivo de imagen
+   * (jpg, png, webp…). Si falta o no carga, la carta se dibuja con el glifo.
+   * Va en el JSON del mazo tal cual, así que también viaja en la exportación.
+   */
+  imageUrl?: string;
   /** Subtítulo libre (número, palo, correspondencia…). */
   subtitle?: string;
   /** Palabras clave separadas por coma, en posición derecha. */
@@ -140,6 +146,18 @@ export interface CustomCard {
   reversed?: string;
   /** Consejo breve, independiente de la orientación. */
   advice?: string;
+  /**
+   * Qué dice la carta según el tema de la pregunta. Se suman a la lectura
+   * cuando la persona elige ese tema (amor, trabajo, dinero, salud), igual
+   * que en el Rider-Waite. Mismos nombres de campo que `ArcanaCard`.
+   */
+  loveHint?: string;
+  workHint?: string;
+  moneyHint?: string;
+  healthHint?: string;
+  /** Respuesta a una pregunta de sí o no, y por qué. */
+  yesNo?: YesNoAnswer;
+  yesNoReason?: string;
   /** Metadatos opcionales que enriquecen la detección de patrones. */
   element?: Element;
   energy?: Energy;

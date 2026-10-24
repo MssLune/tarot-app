@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { cardDisplayName } from '@arcana/tarot-core';
+import { buildArchive, downloadArchive } from '../../lib/archive';
 import { SYSTEM_SHORT } from '../../lib/systems';
 import { abrirPdf } from '../../services/pdfService';
 import { useContentStore } from '../../store/useContentStore';
@@ -138,6 +139,23 @@ export default function HistoryScreen() {
               />
             ) : (
               <>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadArchive(
+                        buildArchive(
+                          { customDecks: [], customSpreads: [], history, rituals: [] },
+                          { decks: false, spreads: false, rituals: false },
+                        ),
+                      )
+                    }
+                    title="Descarga tus lecturas en un archivo JSON"
+                    className="rounded-full border border-gold-400/25 px-3.5 py-1.5 font-display text-[0.6rem] uppercase tracking-[0.16em] text-gold-200/80 transition-colors hover:border-gold-300/60 hover:text-gold-100"
+                  >
+                    ⇩ Exportar lecturas
+                  </button>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <AnimatePresence mode="popLayout">
                     {history.map((reading) => (
@@ -160,6 +178,7 @@ export default function HistoryScreen() {
                             cards={reading.cards}
                             cardsById={cardsById}
                             system={reading.system}
+                            deck={reading.deck}
                           />
                         </button>
 
@@ -298,6 +317,21 @@ export default function HistoryScreen() {
                             Editar
                           </Button>
                           <button
+                            onClick={() =>
+                              downloadArchive(
+                                buildArchive(
+                                  { customDecks: [], customSpreads: [spread], history: [], rituals: [] },
+                                  { decks: false, readings: false, rituals: false },
+                                ),
+                              )
+                            }
+                            title="Exportar esta tirada"
+                            aria-label={`Exportar la tirada ${spread.name}`}
+                            className="rounded-full px-2 py-2 text-xs text-gold-200/55 transition-colors hover:bg-gold-400/10 hover:text-gold-100"
+                          >
+                            ⇩
+                          </button>
+                          <button
                             onClick={() => deleteCustomSpread(spread.id)}
                             title="Eliminar tirada"
                             className="rounded-full px-2 py-2 text-xs text-rose-300/45 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
@@ -398,6 +432,21 @@ export default function HistoryScreen() {
                             <Button size="sm" variant="ghost" onClick={() => editDeck(deck)}>
                               Editar
                             </Button>
+                            <button
+                              onClick={() =>
+                                downloadArchive(
+                                  buildArchive(
+                                    { customDecks: [deck], customSpreads: [], history: [], rituals: [] },
+                                    { spreads: false, readings: false, rituals: false },
+                                  ),
+                                )
+                              }
+                              title="Exportar este mazo"
+                              aria-label={`Exportar el mazo ${deck.name}`}
+                              className="rounded-full px-2 py-2 text-xs text-gold-200/55 transition-colors hover:bg-gold-400/10 hover:text-gold-100"
+                            >
+                              ⇩
+                            </button>
                             <button
                               onClick={() => deleteCustomDeck(deck.id)}
                               title="Eliminar mazo"

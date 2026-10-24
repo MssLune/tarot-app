@@ -66,6 +66,7 @@
 
   /* Campos de formulario: base compartida */
   input[type='text'],
+  input[type='url'],
   input[type='number'],
   input[type='date'],
   textarea,
@@ -74,6 +75,7 @@
       placeholder:text-gold-100/25 outline-none transition;
   }
   input[type='text']:focus,
+  input[type='url']:focus,
   input[type='number']:focus,
   input[type='date']:focus,
   textarea:focus,

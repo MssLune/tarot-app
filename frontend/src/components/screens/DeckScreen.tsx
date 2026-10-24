@@ -2,11 +2,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { blankCard, getDeckTemplates, parseKeywords } from '../../data/deckTemplates';
 import { buildArchive, downloadArchive } from '../../lib/archive';
-import { AXIS_LABELS, ELEMENT_LABELS } from '@arcana/tarot-core';
+import {
+  AXIS_LABELS,
+  ELEMENT_LABELS,
+  MAX_LARGO_URL_IMAGEN,
+  esUrlDeImagenValida,
+  urlDirectaDeImagen,
+} from '@arcana/tarot-core';
 import { useContentStore } from '../../store/useContentStore';
 import { uid, useReadingStore } from '../../store/useReadingStore';
-import type { Axis, CustomCard, CustomDeck, Element, Energy } from '../../types';
-import ImportPanel from '../layout/ImportPanel';
+import type { Axis, CustomCard, CustomDeck, Element, Energy, YesNoAnswer } from '../../types';
 import Button from '../ui/Button';
 import Glyph from '../ui/Glyph';
 import OrnateDivider from '../ui/OrnateDivider';
@@ -20,6 +25,125 @@ import Toggle from '../ui/Toggle';
    - Editor: identidad del mazo y carta por carta, con significado al derecho
      y al revés (más metadatos opcionales que enriquecen los patrones).
    ========================================================================== */
+
+/**
+ * Miniatura de una carta del mazo: la imagen si tiene una dirección válida y
+ * carga; si no, el glifo. Una dirección rota no deja un ícono de imagen rota.
+ */
+function MiniaturaCarta({ card, respaldo, className }: { card: CustomCard; respaldo: string; className: string }) {
+  const [fallida, setFallida] = useState<string | null>(null);
+  const original = card.imageUrl?.trim();
+  const url = original && esUrlDeImagenValida(original) ? urlDirectaDeImagen(original) : undefined;
+  if (url && fallida !== url) {
+    return (
+      <span className={`${className} overflow-hidden`}>
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          draggable={false}
+          referrerPolicy="no-referrer"
+          onError={() => setFallida(url ?? null)}
+          className="h-full w-full object-cover"
+        />
+      </span>
+    );
+  }
+  return (
+    <span className={className}>
+      <Glyph>{respaldo}</Glyph>
+    </span>
+  );
+}
+
+/**
+ * Campo «Imagen» del editor: la dirección y una vista previa que dice si
+ * cargó. La foto no se sube a ningún lado: la carta guarda sólo la dirección.
+ */
+function CampoImagen({ valor, onCambio }: { valor: string; onCambio: (v: string) => void }) {
+  const url = valor.trim();
+  const valida = esUrlDeImagenValida(url);
+  /* Lo que de verdad se pide: el enlace directo si era uno de Drive, Dropbox o Imgur. */
+  const src = valida ? urlDirectaDeImagen(url) : '';
+  const [estado, setEstado] = useState<{ url: string; ok: boolean } | null>(null);
+  const cargo = estado?.url === url ? estado.ok : null;
+
+  let aviso: string;
+  let tono = 'text-gold-100/40';
+  if (!url) aviso = 'Opcional. Pega la dirección de una imagen (jpg, png, webp). Si no pones nada, se usa el símbolo.';
+  else if (!valida) {
+    aviso = url.startsWith('http://')
+      ? 'Tiene que empezar con https:// (las direcciones http:// el navegador las bloquea).'
+      : 'No parece una dirección de imagen. Tiene que empezar con https://';
+    tono = 'text-rose-300/80';
+  } else if (cargo === false) {
+    aviso = /drive\.google\.com/i.test(url)
+      ? 'No se pudo cargar desde Google Drive. Revisa que el archivo esté compartido como «Cualquier persona con el enlace». Mientras tanto se ve el símbolo.'
+      : 'No se pudo cargar la imagen. Tiene que ser el enlace al archivo, no a la página que lo muestra: abre la imagen, clic derecho → «Copiar dirección de la imagen». Algunos sitios (Pinterest, Instagram) no dejan usar sus imágenes en otras páginas. Mientras tanto se ve el símbolo.';
+    tono = 'text-rose-300/80';
+  } else if (cargo === true) aviso = 'Imagen cargada.';
+  else aviso = 'Cargando la vista previa…';
+
+  return (
+    <div className="flex gap-4">
+      <div className="flex aspect-[2/3] w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-ink-950/60 px-1 text-center text-[0.5rem] uppercase leading-tight tracking-[0.1em] text-gold-100/25">
+        {valida ? (
+          <img
+            key={src}
+            src={src}
+            alt="Vista previa de la carta"
+            draggable={false}
+            referrerPolicy="no-referrer"
+            onLoad={() => setEstado({ url, ok: true })}
+            onError={() => setEstado({ url, ok: false })}
+            className={`h-full w-full object-cover ${cargo === false ? 'hidden' : ''}`}
+          />
+        ) : null}
+        {(!valida || cargo === false) && <span>Sin imagen</span>}
+      </div>
+      <div className="min-w-0 flex-1">
+        <label className="overline mb-2 block" htmlFor="card-image">
+          Imagen{' '}
+          <span className="normal-case tracking-normal text-gold-100/25">(dirección https://)</span>
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="card-image"
+            type="url"
+            inputMode="url"
+            maxLength={MAX_LARGO_URL_IMAGEN}
+            value={valor}
+            onChange={(e) => onCambio(e.target.value)}
+            placeholder="https://…/mi-carta.jpg"
+            aria-describedby="card-image-aviso"
+            aria-invalid={!!url && !valida}
+            className="min-w-0 flex-1 !py-2 !text-sm"
+          />
+          {url && (
+            <button
+              type="button"
+              onClick={() => onCambio('')}
+              className="shrink-0 rounded-xl border border-gold-400/20 px-3 text-xs text-gold-100/50 transition-colors hover:border-gold-400/50 hover:text-gold-100"
+            >
+              Quitar
+            </button>
+          )}
+        </div>
+        <p id="card-image-aviso" className={`mt-1.5 text-[0.68rem] leading-relaxed ${tono}`} aria-live="polite">
+          {aviso}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Los temas de la pregunta y el campo de la carta donde va cada uno. */
+const TEMAS: { campo: 'loveHint' | 'workHint' | 'moneyHint' | 'healthHint'; etiqueta: string; ejemplo: string }[] = [
+  { campo: 'loveHint', etiqueta: 'Amor', ejemplo: 'Qué dice esta carta sobre una relación o un vínculo' },
+  { campo: 'workHint', etiqueta: 'Trabajo', ejemplo: 'Qué dice sobre la carrera, los estudios o un proyecto' },
+  { campo: 'moneyHint', etiqueta: 'Dinero', ejemplo: 'Qué dice sobre las finanzas o una decisión económica' },
+  { campo: 'healthHint', etiqueta: 'Salud', ejemplo: 'Qué dice sobre el bienestar y la energía' },
+];
 
 /** Cuántas cartas del mazo ya tienen algún significado escrito. */
 const countWritten = (deck: CustomDeck): number =>
@@ -49,13 +173,6 @@ function DeckList() {
   const deckTemplates = useMemo(() => getDeckTemplates(majorArcana), [majorArcana]);
 
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [showImport, setShowImport] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    decks: number;
-    spreads: number;
-    readings: number;
-    rituals: number;
-  } | null>(null);
 
   return (
     <div className="space-y-10">
@@ -112,12 +229,12 @@ function DeckList() {
                     {/* Muestra de glifos del mazo */}
                     <div className="relative mb-4 flex flex-wrap gap-1.5">
                       {deck.cards.slice(0, 10).map((c, index) => (
-                        <span
-                          key={c.id}
-                          title={c.name}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gold-400/15 bg-ink-950/60 text-xs text-gold-300/60"
-                        >
-                          <Glyph>{c.glyph?.trim() || String.fromCharCode(65 + (index % 26))}</Glyph>
+                        <span key={c.id} title={c.name}>
+                          <MiniaturaCarta
+                            card={c}
+                            respaldo={c.glyph?.trim() || String.fromCharCode(65 + (index % 26))}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gold-400/15 bg-ink-950/60 text-xs text-gold-300/60"
+                          />
                         </span>
                       ))}
                       {deck.cards.length > 10 && (
@@ -243,53 +360,11 @@ function DeckList() {
         </div>
       </section>
 
-      {/* Respaldo: exportar / importar todo en un archivo JSON. */}
-      <section className="panel gilded space-y-3 p-5">
-        <div>
-          <h3 className="font-display text-xs uppercase tracking-[0.24em] text-gold-200/80">
-            Respaldo
-          </h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-gold-100/45">
-            Descarga tus mazos, tiradas, lecturas y rituales en un archivo JSON. Es la
-            única copia que sobrevive si limpias los datos del navegador.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const { customDecks, customSpreads, history, rituals } =
-                useReadingStore.getState();
-              downloadArchive(buildArchive({ customDecks, customSpreads, history, rituals }));
-            }}
-          >
-            ⇩ Exportar todo
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
-            ⇧ Importar desde archivo
-          </Button>
-        </div>
-        {showImport && (
-          <ImportPanel
-            onClose={() => setShowImport(false)}
-            onDone={(result) => {
-              setShowImport(false);
-              setImportResult(result);
-            }}
-          />
-        )}
-        {importResult && (
-          <motion.p
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-gold-400/25 bg-gold-400/[0.07] px-4 py-2.5 text-xs text-gold-100/75"
-          >
-            Importado: {importResult.decks} mazo(s), {importResult.spreads} tirada(s),{' '}
-            {importResult.readings} lectura(s), {importResult.rituals} ritual(es).
-          </motion.p>
-        )}
-      </section>
+      {/* El respaldo completo (exportar / importar) está en el menú de la
+          cuenta → «Tus datos». Aquí sólo queda exportar cada mazo. */}
+      <p className="text-center text-[0.7rem] text-gold-100/40">
+        Para exportar o importar todos tus datos, usa «Tus datos» en el menú de tu cuenta.
+      </p>
     </div>
   );
 }
@@ -407,16 +482,29 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
     name: name.trim() || 'Mi mazo',
     description: description.trim() || undefined,
     allowReversed,
-    cards: cards.map((c) => ({ ...c, name: c.name.trim() })),
+    cards: cards.map(({ imageUrl, ...c }) => {
+      const url = imageUrl?.trim();
+      /* Sin imagen, el campo no se guarda: el JSON del mazo queda igual que
+         antes para las cartas que no la usan. */
+      return url ? { ...c, name: c.name.trim(), imageUrl: url } : { ...c, name: c.name.trim() };
+    }),
   });
 
   const validate = (): boolean => {
     if (!name.trim()) {
-      setError('Ponele un nombre al mazo para poder guardarlo.');
+      setError('Ponle un nombre al mazo para poder guardarlo.');
       return false;
     }
     if (!cards.some((c) => c.name.trim())) {
       setError('Agrega al menos una carta con nombre.');
+      return false;
+    }
+    const conImagenMala = cards.find((c) => c.imageUrl?.trim() && !esUrlDeImagenValida(c.imageUrl.trim()));
+    if (conImagenMala) {
+      setSelectedId(conImagenMala.id);
+      setError(
+        `La imagen de «${conImagenMala.name.trim() || 'Carta sin nombre'}» no es una dirección válida: tiene que empezar con https://. Corrígela o quítala.`,
+      );
       return false;
     }
     setError(null);
@@ -443,7 +531,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
       />
 
       {/* ---------------- Identidad del mazo ---------------- */}
-      <div className="panel gilded grid gap-4 p-5 sm:grid-cols-2">
+      <div className="panel gilded grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
         <div>
           <label className="overline mb-2 block" htmlFor="deck-name">
             Nombre del mazo
@@ -486,7 +574,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* ================= Lista de cartas ================= */}
         <div className="panel flex flex-col p-4 lg:sticky lg:top-36 lg:max-h-[calc(100vh-12rem)] lg:self-start">
           <div className="mb-3 flex items-center justify-between gap-2">
@@ -522,12 +610,14 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
                     className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
                       active
                         ? 'border-gold-300/60 bg-gold-400/[0.1]'
-                        : 'border-gold-400/12 bg-ink-950/40 hover:border-gold-400/35'
+                        : 'border-gold-400/[0.12] bg-ink-950/40 hover:border-gold-400/35'
                     }`}
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-gold-400/20 text-xs text-gold-300/70">
-                      <Glyph>{card.glyph?.trim() || '✧'}</Glyph>
-                    </span>
+                    <MiniaturaCarta
+                      card={card}
+                      respaldo={card.glyph?.trim() || '✧'}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-gold-400/20 text-xs text-gold-300/70"
+                    />
                     <span className="min-w-0 flex-1">
                       <span
                         className={`block truncate text-xs ${
@@ -576,7 +666,7 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
               className="panel gilded space-y-5 p-5"
             >
               {/* --- Identidad de la carta --- */}
-              <div className="grid gap-4 sm:grid-cols-[1fr_100px]">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_100px]">
                 <div>
                   <label className="overline mb-2 block" htmlFor="card-name">
                     Nombre de la carta
@@ -621,6 +711,11 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
                   className="!py-2 !text-sm"
                 />
               </div>
+
+              <CampoImagen
+                valor={selected.imageUrl ?? ''}
+                onCambio={(v) => updateCard(selected.id, { imageUrl: v })}
+              />
 
               <div className="hairline h-px opacity-50" />
 
@@ -724,8 +819,73 @@ function DeckEditor({ deck }: { deck: CustomDeck }) {
                 />
               </div>
 
+              {/* --- Por tema y Sí/No --- */}
+              <details
+                className="group rounded-2xl border border-gold-400/[0.12] bg-ink-950/40 p-4"
+                open={TEMAS.some((t) => selected[t.campo]?.trim()) || !!selected.yesNo}
+              >
+                <summary className="cursor-pointer list-none font-display text-[0.68rem] uppercase tracking-[0.18em] text-gold-200/70 transition-colors hover:text-gold-100">
+                  Por tema y Sí/No
+                  <span className="ml-2 normal-case tracking-normal text-gold-100/30">
+                    se suma a la lectura cuando la pregunta es de ese tema
+                  </span>
+                </summary>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {TEMAS.map((t) => (
+                    <div key={t.campo}>
+                      <label className="overline mb-2 block" htmlFor={`card-${t.campo}`}>
+                        {t.etiqueta}
+                      </label>
+                      <textarea
+                        id={`card-${t.campo}`}
+                        rows={2}
+                        value={selected[t.campo] ?? ''}
+                        onChange={(e) => updateCard(selected.id, { [t.campo]: e.target.value })}
+                        placeholder={t.ejemplo}
+                        className="resize-y !text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
+                  <div>
+                    <label className="overline mb-2 block" htmlFor="card-yesno">
+                      ¿Sí o no?
+                    </label>
+                    <select
+                      id="card-yesno"
+                      value={selected.yesNo ?? ''}
+                      onChange={(e) =>
+                        updateCard(selected.id, {
+                          yesNo: (e.target.value || undefined) as YesNoAnswer | undefined,
+                        })
+                      }
+                    >
+                      <option value="">— Sin definir —</option>
+                      <option value="si">Sí</option>
+                      <option value="no">No</option>
+                      <option value="incierto">Incierto</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="overline mb-2 block" htmlFor="card-yesno-reason">
+                      Por qué{' '}
+                      <span className="normal-case tracking-normal text-gold-100/25">(opcional)</span>
+                    </label>
+                    <input
+                      id="card-yesno-reason"
+                      type="text"
+                      value={selected.yesNoReason ?? ''}
+                      onChange={(e) => updateCard(selected.id, { yesNoReason: e.target.value })}
+                      placeholder="Ej: Sí, si das el primer paso"
+                      className="!py-2 !text-sm"
+                    />
+                  </div>
+                </div>
+              </details>
+
               {/* --- Metadatos opcionales --- */}
-              <details className="group rounded-2xl border border-gold-400/12 bg-ink-950/40 p-4">
+              <details className="group rounded-2xl border border-gold-400/[0.12] bg-ink-950/40 p-4">
                 <summary className="cursor-pointer list-none font-display text-[0.68rem] uppercase tracking-[0.18em] text-gold-200/70 transition-colors hover:text-gold-100">
                   Clasificación opcional
                   <span className="ml-2 normal-case tracking-normal text-gold-100/30">

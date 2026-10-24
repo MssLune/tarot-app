@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { CATEGORY_LABELS } from '@arcana/tarot-core';
-import { cardDisplayName, cardGlyph, cardImageUrl } from '@arcana/tarot-core';
+import { cardDisplayName, cardGlyph, cardImageUrl, esUrlDeImagenValida, urlDirectaDeImagen } from '@arcana/tarot-core';
 import { useContentStore } from '../../store/useContentStore';
 import { useReadingStore } from '../../store/useReadingStore';
 import type { QuestionCategory } from '../../types';
@@ -139,6 +139,7 @@ export default function InputScreen() {
           label: c.name,
           hint: c.subtitle?.trim() || undefined,
           glyph: c.glyph?.trim() || undefined,
+          imageUrl: c.imageUrl && esUrlDeImagenValida(c.imageUrl) ? urlDirectaDeImagen(c.imageUrl) : undefined,
           // Permite buscar por el significado que el usuario ya escribió.
           keywords: [...(c.keywords ?? []), ...(c.reversedKeywords ?? [])],
           meaning: `${c.upright ?? ''} ${c.reversed ?? ''} ${c.advice ?? ''}`,
@@ -150,6 +151,10 @@ export default function InputScreen() {
   ];
   /** Mazos de oráculo que no se leen invertidos: se oculta el toggle. */
   const allowReversed = !isDeck || (deck?.allowReversed ?? true);
+  /** ¿Alguna carta del mazo propio tiene texto para algún tema? */
+  const mazoConTemas = (deck?.cards ?? []).some((c) =>
+    [c.loveHint, c.workHint, c.moneyHint, c.healthHint].some((t) => t?.trim()),
+  );
 
   /** Arcanos ya usados en otras posiciones (un mazo físico no repite cartas). */
   const usedArcana = useMemo(() => {
@@ -193,7 +198,7 @@ export default function InputScreen() {
       glyph: hasCard ? cardGlyph(card, system, i, cardsById, deck) : '',
       /* La URL viene del backend como ruta relativa y hay que volverla
          absoluta: si no, el navegador la pide al servidor de Vite y da 404. */
-      imageUrl: hasCard ? urlDeArchivo(cardImageUrl(card, system, cardsById)) : undefined,
+      imageUrl: hasCard ? urlDeArchivo(cardImageUrl(card, system, cardsById, deck)) : undefined,
       reversed: card.reversed,
       empty: !hasCard,
     };
@@ -233,8 +238,10 @@ export default function InputScreen() {
           Si la escribes, la conclusión final va a responder directamente sobre eso.
         </p>
 
-        {/* --- Categoría: enfoca la lectura de cada carta a un tema puntual --- */}
-        {isTarot && (
+        {/* --- Categoría: enfoca la lectura de cada carta a un tema puntual.
+             En el mazo propio también: usa los textos por tema que el usuario
+             escribió en sus cartas (amor, trabajo, dinero, salud). --- */}
+        {(isTarot || isDeck) && (
           <div className="mt-4 border-t border-gold-400/10 pt-4">
             <label className="overline mb-2.5 block">
               Tema{' '}
@@ -257,7 +264,9 @@ export default function InputScreen() {
               ))}
             </div>
             <p className="mt-2 text-[0.68rem] text-gold-100/30">
-              Enfoca la lectura de cada carta a ese tema puntual.
+              {isDeck && !mazoConTemas
+                ? `Las cartas de «${deck?.name ?? 'tu mazo'}» todavía no tienen textos por tema: se leen con su significado general. Puedes escribirlos en el editor del mazo, en «Por tema y Sí/No».`
+                : 'Enfoca la lectura de cada carta a ese tema puntual.'}
             </p>
           </div>
         )}
