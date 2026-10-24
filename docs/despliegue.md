@@ -42,9 +42,15 @@ PostgreSQL en Neon. Los tres en su plan gratuito.
    rama **`dev`** (ver `backend/.env.example`):
 
    ```
-   DATABASE_URL="postgresql://…-pooler…/neondb?sslmode=require"
-   DIRECT_URL="postgresql://…/neondb?sslmode=require"
+   DATABASE_URL="postgresql://…-pooler…/neondb?sslmode=require&pgbouncer=true&connect_timeout=15&pool_timeout=15"
+   DIRECT_URL="postgresql://…/neondb?sslmode=require&connect_timeout=15"
    ```
+
+   Lo que va después del `?` importa: `pgbouncer=true` porque el pooler de
+   Neon no admite las consultas preparadas de Prisma, y los `timeout` porque
+   la base se apaga sola y tarda unos segundos en despertar. Sin eso aparecen
+   *«Can't reach database server»* o *«Timed out fetching a new connection»*.
+   Si Neon agrega `&channel_binding=require`, déjalo.
 
 2. **Borra la carpeta `backend/prisma/migrations`.** Son las migraciones de
    SQLite y no sirven para PostgreSQL. (El archivo `backend/prisma/dev.db`
@@ -57,15 +63,15 @@ PostgreSQL en Neon. Los tres en su plan gratuito.
    npm run db:seed
    ```
 
-4. Arranca la app como siempre (`npm run dev` en la raíz), inicia sesión y
-   vuelve a darte el rol de administrador (la base es nueva):
+4. Para ser administrador, agrega tu correo a `backend/.env` (puedes poner
+   varios separados por coma):
 
-   ```bash
-   cd backend
-   npx prisma studio
+   ```
+   ADMIN_EMAILS="tu-correo@ejemplo.com"
    ```
 
-   En la tabla **users**, cambia `role` de tu usuario a `admin` y guarda.
+   Arranca la app como siempre (`npm run dev` en la raíz) e inicia sesión con
+   ese correo: el rol se asigna solo. No hace falta tocar la base.
 
 5. Revisa que todo funcione y sube los cambios a GitHub. Las imágenes de las
    cartas ahora se versionan (antes estaban en `.gitignore`): sin ellas en el
@@ -102,12 +108,13 @@ producción sin querer.
 
    | Variable | Valor |
    | --- | --- |
-   | `DATABASE_URL` | cadena **con** pooler de `main` |
-   | `DIRECT_URL` | cadena **sin** pooler de `main` |
+   | `DATABASE_URL` | cadena **con** pooler de `main`, con `&pgbouncer=true&connect_timeout=15&pool_timeout=15` al final |
+   | `DIRECT_URL` | cadena **sin** pooler de `main`, con `&connect_timeout=15` al final |
    | `CLERK_SECRET_KEY` | `sk_test_…` |
    | `CLERK_PUBLISHABLE_KEY` | `pk_test_…` |
    | `NODE_ENV` | `production` |
    | `FRONTEND_URL` | por ahora `http://localhost:5173`; se cambia en el paso 6 |
+   | `ADMIN_EMAILS` | tu correo (los que serán administradores, separados por coma) |
 
    Las de Stripe **no** se cargan.
 4. **Deploy.** Al terminar, abre `https://<tu-api>.vercel.app/api/health`:
@@ -174,5 +181,6 @@ Sincroniza los cambios de los usuarios (nombre, borrado de cuenta) con la base.
   dirección del frontend.
 - *401 al iniciar sesión*: las claves de Clerk del frontend y de la API deben
   ser de la misma instancia.
-- Error de Prisma *«Can't reach database server»*: revisa las dos cadenas de
-  Neon y que lleven `?sslmode=require`.
+- Error de Prisma *«Can't reach database server»* o *«Timed out fetching a
+  new connection»*: revisa las dos cadenas de Neon y lo que llevan después del
+  `?` (paso 2).

@@ -333,7 +333,9 @@ móvil de 7 días (`VENTANA_MS` en `plans.ts`), no la semana del calendario. El
 `402` dice cuándo se puede volver a guardar.
 
 **Administradores:** las cuentas con rol `admin` no tienen topes, aunque no
-paguen (`esAdmin` en `services/limits.ts`). No ven la barra del plan ni la
+paguen (`esAdmin` en `services/limits.ts`). El rol se da solo a los correos
+verificados de la variable `ADMIN_EMAILS` (al iniciar sesión); quitar un
+correo de la lista no le saca el rol a nadie. No ven la barra del plan ni la
 ventana del Pro, y «Tu plan» dice «Administración».
 
 **En el navegador**, lo que el servidor rechaza por el tope no queda guardado:
