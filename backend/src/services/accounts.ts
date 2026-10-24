@@ -1,4 +1,5 @@
 import { clerkClient } from '@clerk/express';
+import { env } from '../config/env';
 import { prisma } from '../database/prisma';
 import { cancelSubscriptionForDeletedUser } from './billingService';
 
@@ -86,6 +87,18 @@ export function emailVerificado(datos: DatosDeClerk): string | null {
   return (principal ?? verificados[0])?.address.toLowerCase() ?? null;
 }
 
+/**
+ * true si ese correo (ya verificado) está en ADMIN_EMAILS.
+ *
+ * Así no hace falta editar la base a mano para darse el rol: basta con
+ * poner el correo en la variable de entorno. El correo que se compara es
+ * el que guardamos, que sólo puede venir de un email verificado (ver
+ * `emailVerificado`); el de relleno nunca coincide.
+ */
+export function esCorreoDeAdmin(email: string | null | undefined): boolean {
+  return !!email && env.adminEmails.includes(email.toLowerCase());
+}
+
 /** Email de relleno para cuentas sin email verificado. La columna es única. */
 const emailDeRelleno = (id: string) => `${id}@sin-correo.local`;
 
@@ -109,12 +122,14 @@ export async function sincronizarUsuario(datos: DatosDeClerk) {
       email && email !== existente.email
         ? !(await prisma.user.findUnique({ where: { email } }))
         : false;
+    const emailFinal = emailLibre && email ? email : existente.email;
     return prisma.user.update({
       where: { id: datos.id },
       data: {
         name: datos.name,
         avatarUrl: datos.imageUrl,
         ...(emailLibre && email ? { email } : {}),
+        ...(esCorreoDeAdmin(emailFinal) ? { role: 'admin' } : {}),
       },
     });
   }
@@ -130,7 +145,7 @@ export async function sincronizarUsuario(datos: DatosDeClerk) {
       }
       return prisma.user.update({
         where: { id: porEmail.id },
-        data: { name: datos.name, avatarUrl: datos.imageUrl, role: 'user' },
+        data: { name: datos.name, avatarUrl: datos.imageUrl, role: esCorreoDeAdmin(email) ? 'admin' : 'user' },
       });
     }
   }
@@ -141,6 +156,7 @@ export async function sincronizarUsuario(datos: DatosDeClerk) {
       email: email ?? emailDeRelleno(datos.id),
       name: datos.name,
       avatarUrl: datos.imageUrl,
+      ...(esCorreoDeAdmin(email) ? { role: 'admin' } : {}),
     },
   });
 }

@@ -38,6 +38,14 @@ export const env = {
   // autenticar cualquier request.
   clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY ?? '',
   clerkWebhookSecret: process.env.CLERK_WEBHOOK_SECRET ?? '',
+
+  /* Correos que reciben el rol de admin solos, separados por coma. Sólo
+     cuenta si el correo está VERIFICADO en Clerk. Quitar un correo de la
+     lista no le saca el rol a nadie: eso se hace a mano. */
+  adminEmails: (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
 };
 
 export const isProduction = env.nodeEnv === 'production';

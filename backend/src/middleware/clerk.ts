@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { getAuth, clerkClient } from '@clerk/express';
 import { env } from '../config/env';
 import { prisma } from '../database/prisma';
-import { desdeApiDeClerk, sincronizarUsuario } from '../services/accounts';
+import { desdeApiDeClerk, esCorreoDeAdmin, sincronizarUsuario } from '../services/accounts';
 
 /* ==========================================================================
    Autenticación con Clerk.
@@ -22,7 +22,15 @@ import { desdeApiDeClerk, sincronizarUsuario } from '../services/accounts';
  */
 async function resolveUser(clerkUserId: string) {
   const existing = await prisma.user.findUnique({ where: { id: clerkUserId } });
-  if (existing) return existing;
+  if (existing) {
+    /* Si su correo está en ADMIN_EMAILS y todavía no es admin, se le da el
+       rol aquí: así basta con agregar el correo a la variable y volver a
+       entrar, sin tocar la base. */
+    if (existing.role !== 'admin' && esCorreoDeAdmin(existing.email)) {
+      return prisma.user.update({ where: { id: existing.id }, data: { role: 'admin' } });
+    }
+    return existing;
+  }
 
   // Primera vez: pedimos los datos a Clerk para tener email/nombre/avatar.
   const clerkUser = await clerkClient.users.getUser(clerkUserId);
