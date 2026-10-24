@@ -165,6 +165,12 @@ Sincroniza los cambios de los usuarios (nombre, borrado de cuenta) con la base.
   Todas las rutas van a la función `api/index.js` por el *rewrite*. Las
   imágenes se incluyen también dentro de la función (`includeFiles`) porque
   el PDF las lee del disco.
+
+  Vercel sólo sube a la función los archivos que ve requeridos en el código.
+  pdfkit carga sus fuentes con un `require` dinámico que no detecta, así que
+  `src/pdf/fuentes.ts` las requiere con nombre fijo. Si el PDF empieza a usar
+  otra fuente estándar, hay que agregarla ahí: sin eso, el PDF funciona en
+  local pero falla en producción con *«Cannot find module …standard-fonts…»*.
 - **Frontend:** build normal de Vite; el *rewrite* manda cualquier ruta a
   `index.html`.
 - **Instalación:** los dos proyectos instalan desde la raíz del repositorio

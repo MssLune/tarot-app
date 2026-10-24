@@ -74,7 +74,11 @@ export async function abrirPdf(readingId: string): Promise<ResultadoPdf> {
 
   const blob = await respuesta.blob();
   const url = URL.createObjectURL(blob);
-  const ventana = window.open(url, '_blank', 'noopener,noreferrer');
+  /* Sin 'noopener' a propósito: con esa opción `window.open` devuelve SIEMPRE
+     null (así lo define el estándar), y el código creía que la ventana había
+     sido bloqueada y además disparaba la descarga. La dirección es un `blob:`
+     de la propia app, así que la pestaña nueva no abre nada ajeno. */
+  const ventana = window.open(url, '_blank');
 
   if (!ventana) {
     /* El navegador bloqueó la ventana emergente. Un enlace directa es más

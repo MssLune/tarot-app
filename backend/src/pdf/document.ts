@@ -1,4 +1,6 @@
 import PDFDocument from 'pdfkit';
+/* Para que Vercel incluya las fuentes en la función: ver el archivo. */
+import './fuentes';
 import type { Interpretation, MoonPhase, Reading } from '@arcana/tarot-core';
 import {
   BOTTOM_LIMIT,
