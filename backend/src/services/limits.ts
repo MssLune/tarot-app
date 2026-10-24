@@ -1,7 +1,7 @@
 import { isStripeConfigured } from '../config/env';
 import { prisma } from '../database/prisma';
 import * as billingService from './billingService';
-import { assertWithinLimit, VENTANA_MS, type LimitedResource } from './plans';
+import { assertWithinLimit, PLAN_LIMITS, VENTANA_MS, type LimitedResource } from './plans';
 
 /* ==========================================================================
    Comprobación de topes del plan, en un solo lugar.
@@ -81,10 +81,22 @@ export function registrarUso(userId: string, resource: LimitedResource) {
 }
 
 /**
+ * Los administradores no tienen topes: prueban la app entera, con cualquier
+ * cantidad de lecturas, mazos, tiradas y rituales. El rol sale de nuestra
+ * tabla `users` (la misma que usa `requireAdmin`), no de lo que diga el
+ * cliente.
+ */
+export async function esAdmin(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  return user?.role === 'admin';
+}
+
+/**
  * Lanza un ApiError 402 si el usuario ya no puede crear otro elemento de ese
  * tipo. Se llama SÓLO al crear: editar lo que ya tiene siempre está permitido.
  */
 export async function assertCanCreate(userId: string, resource: LimitedResource): Promise<void> {
+  if (await esAdmin(userId)) return;
   const [sub, current] = await Promise.all([
     billingService.getSubscription(userId),
     countResource(userId, resource),
@@ -105,20 +117,23 @@ export async function assertCanCreate(userId: string, resource: LimitedResource)
  * con el tope.
  */
 export async function usoDelPlan(userId: string) {
-  const sub = await billingService.getSubscription(userId);
+  const [sub, admin] = await Promise.all([billingService.getSubscription(userId), esAdmin(userId)]);
   const recursos: LimitedResource[] = ['readings', 'decks', 'spreads', 'rituals'];
   const usos = await Promise.all(recursos.map((r) => countResource(userId, r)));
   const usage = Object.fromEntries(recursos.map((r, i) => [r, usos[i]])) as Record<
     LimitedResource,
     number
   >;
-  const proximoLectura = await proximoUsoLibre(userId, 'readings', sub.limits.readings);
+  /* Para un admin, los límites del Pro (sin tope) aunque no pague: la barra
+     del plan no aparece y nada le pide pasar al Pro. */
+  const limits = admin ? PLAN_LIMITS.pro : sub.limits;
+  const proximoLectura = admin ? null : await proximoUsoLibre(userId, 'readings', sub.limits.readings);
 
   return {
     plan: sub.plan,
     tier: sub.tier,
     status: sub.status,
-    limits: sub.limits,
+    limits,
     currentPeriodEnd: sub.currentPeriodEnd,
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
     usage,
@@ -128,5 +143,7 @@ export async function usoDelPlan(userId: string) {
     proximo: { readings: proximoLectura?.toISOString() ?? null },
     /** Si se puede pasar al Pro en este entorno (Stripe configurado). */
     pagoHabilitado: isStripeConfigured,
+    /** Cuenta de administración: todo sin límite. */
+    admin,
   };
 }

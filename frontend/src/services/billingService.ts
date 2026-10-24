@@ -20,6 +20,8 @@ export interface SubscriptionInfo {
   proximo?: Partial<Record<'readings', string | null>>;
   /** Si se puede pasar al Pro en este entorno (Stripe configurado). */
   pagoHabilitado?: boolean;
+  /** Cuenta de administración: todo sin límite. */
+  admin?: boolean;
 }
 
 export const billingService = {

@@ -136,7 +136,7 @@ export default function ResultScreen() {
   const handleSave = async () => {
     /* Si ya se sabe que está en el tope, ni se intenta: se explica y se
        ofrece el Pro. El servidor igual es el que decide (ver abajo). */
-    if (isAuthenticated && plan.cargado && !plan.isPro && plan.atLimit('readings')) {
+    if (isAuthenticated && plan.cargado && !plan.isPro && !plan.isAdmin && plan.atLimit('readings')) {
       const max = plan.limits?.readings ?? 2;
       abrirAvisoPro(
         plan.proximaLectura

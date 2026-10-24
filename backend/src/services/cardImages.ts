@@ -14,8 +14,23 @@ import path from 'node:path';
    archivo de fuera, y por eso el nombre se valida antes de construir la ruta.
    ========================================================================== */
 
-/** Carpeta con los archivos. Relativa a la raíz del backend. */
-export const CARDS_DIR = path.resolve(__dirname, '..', '..', 'assets', 'cards');
+/**
+ * Carpeta con los archivos: `backend/assets/cards`.
+ *
+ * Se busca entre varias ubicaciones porque el código no corre siempre desde
+ * el mismo lugar: en desarrollo es `src/services/` (dos niveles arriba), y en
+ * Vercel el backend va empaquetado en un solo archivo en `dist-vercel/` (un
+ * nivel arriba). Se usa la primera que exista.
+ */
+function carpetaDeCartas(): string {
+  const candidatas = [
+    path.resolve(__dirname, '..', '..', 'assets', 'cards'),
+    path.resolve(__dirname, '..', 'assets', 'cards'),
+    path.resolve(process.cwd(), 'assets', 'cards'),
+  ];
+  return candidatas.find((c) => fs.existsSync(c)) ?? candidatas[0];
+}
+export const CARDS_DIR = carpetaDeCartas();
 
 /** Ruta pública con la que se sirven. Debe coincidir con la de `app.ts`. */
 export const CARDS_ROUTE = '/assets/cards';

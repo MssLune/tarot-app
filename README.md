@@ -17,7 +17,7 @@ Servicios de negocio
    ↓
 Prisma ORM
    ↓
-SQLite
+PostgreSQL (Neon)
 ```
 
 El repo es un monorepo con dos workspaces npm:
@@ -121,9 +121,11 @@ Tarot/
   servidor. Antes importaba las cartas de un archivo estático; ahora las
   recibe como parámetro (`cardsById`), alimentadas por la API a través de
   `useContentStore`.
-- **Base de datos:** SQLite + Prisma. No requiere instalar ni correr un
-  servicio de base de datos aparte — ideal para el alcance del proyecto y
-  para correr en Windows sin Docker. Prisma da migraciones y seed listos.
+- **Base de datos:** PostgreSQL en Neon (plan gratuito) + Prisma. Antes era
+  SQLite, pero la app se publica en Vercel, que no tiene disco persistente:
+  el archivo se perdía. Neon no requiere instalar nada en Windows y tiene
+  ramas: una para desarrollo y `main` para producción. Ver
+  [`docs/despliegue.md`](docs/despliegue.md).
 - **Formato de las palabras clave de una carta:** se guardan como JSON
   (`string`) en una sola columna en vez de una tabla relacionada, porque son
   atributos simples de la carta sin identidad ni relaciones propias. Las
@@ -166,7 +168,8 @@ cp frontend/.env.example frontend/.env
 
 | Variable       | Descripción                                  | Default                  |
 | -------------- | --------------------------------------------- | ------------------------- |
-| `DATABASE_URL` | Ruta del archivo SQLite                       | `file:./dev.db`           |
+| `DATABASE_URL` | PostgreSQL de Neon, cadena **con** pooler     | —                         |
+| `DIRECT_URL`   | PostgreSQL de Neon, cadena **sin** pooler (migraciones) | —               |
 | `PORT`         | Puerto de la API                              | `4000`                    |
 | `FRONTEND_URL` | Origen permitido para CORS                    | `http://localhost:5173`   |
 | `NODE_ENV`     | Entorno de ejecución                          | `development`             |
@@ -180,7 +183,7 @@ cp frontend/.env.example frontend/.env
 ## Base de datos: migraciones y datos iniciales
 
 ```bash
-npm run db:migrate    # crea el archivo SQLite y aplica el esquema
+npm run db:migrate    # aplica el esquema en la base de Neon de DATABASE_URL
 npm run db:seed       # carga las 78 cartas + 8 tiradas + 5 combinaciones
 ```
 
@@ -214,6 +217,11 @@ npm run dev:frontend
 ```bash
 npm run build
 ```
+
+## Despliegue
+
+Frontend y API en Vercel (plan gratuito) y base de datos en Neon (plan
+gratuito). Paso a paso en [`docs/despliegue.md`](docs/despliegue.md).
 
 ## Endpoints principales
 
@@ -324,6 +332,18 @@ no las lecturas que existen: borrar una no devuelve el uso. Es una ventana
 móvil de 7 días (`VENTANA_MS` en `plans.ts`), no la semana del calendario. El
 `402` dice cuándo se puede volver a guardar.
 
+**Administradores:** las cuentas con rol `admin` no tienen topes, aunque no
+paguen (`esAdmin` en `services/limits.ts`). No ven la barra del plan ni la
+ventana del Pro, y «Tu plan» dice «Administración».
+
+**En el navegador**, lo que el servidor rechaza por el tope no queda guardado:
+una lectura o un ritual con `402` sale del historial (antes quedaba en
+localStorage y parecía guardado) y se abre la ventana «Pasa al Pro»
+(`AvisoPro`, estado `avisoPro` del store). Si la pantalla ya sabe que el
+usuario está en el tope, ni intenta guardar y abre la ventana directamente.
+Al iniciar sesión, las lecturas que sólo están en el navegador se reenvían;
+las que el servidor rechaza salen sin abrir la ventana.
+
 **Lo que ve el usuario:** una barra fina bajo la cabecera, siempre visible
 para quien tiene sesión y plan gratuito, con su uso de la semana y el botón
 «Pasar al Pro» (`frontend/src/components/plans/LimitBanner.tsx`). Se vuelve
@@ -356,14 +376,16 @@ npm test               # todos los workspaces
 npm test -w backend    # sólo la API
 ```
 
-Los tests de integración del backend usan la base de desarrollo
-(`backend/prisma/dev.db`) con usuarios propios que se borran al terminar.
+Los tests de integración del backend usan la base de `backend/.env` (la
+rama de desarrollo de Neon, nunca la de producción) con usuarios propios que
+se borran al terminar.
 
 ## Tecnologías
 
 - **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Zustand, Framer Motion
 - **Backend:** Node.js, Express, TypeScript
-- **Base de datos:** SQLite + Prisma ORM
+- **Base de datos:** PostgreSQL (Neon) + Prisma ORM
+- **Hosting:** Vercel (frontend y API), plan gratuito
 
 ## Pendientes / mejoras futuras
 

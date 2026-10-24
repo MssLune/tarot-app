@@ -87,6 +87,9 @@ export function usePlan() {
   const atLimit = useCallback(
     (resource: LimitedResource): boolean => {
       if (!limits || !usage) return false;
+      /* Sin tope (Pro o admin) el límite llega como null en el JSON, y
+         `usado >= null` daba true: parecía lleno. */
+      if (!Number.isFinite(limits[resource])) return false;
       return usage[resource] >= limits[resource];
     },
     [limits, usage],
@@ -140,6 +143,8 @@ export function usePlan() {
     plan,
     tier,
     isPro: plan === 'pro',
+    /** Cuenta de administración: sin límites aunque no pague. */
+    isAdmin: info?.admin === true,
     isLifetime,
     limits,
     usage,

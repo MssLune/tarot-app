@@ -25,11 +25,11 @@ import { useReadingStore } from '../../store/useReadingStore';
 const FECHA = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
 
 export default function LimitBanner() {
-  const { isPro, cargado, limits, usage, proximaLectura, notice, dismissNotice } = usePlan();
+  const { isPro, isAdmin, cargado, limits, usage, proximaLectura, notice, dismissNotice } = usePlan();
   const goTo = useReadingStore((s) => s.goTo);
   const screen = useReadingStore((s) => s.screen);
 
-  if (!cargado || isPro || !limits || !usage) return null;
+  if (!cargado || isPro || isAdmin || !limits || !usage) return null;
 
   const max = limits.readings;
   const usadas = usage.readings;

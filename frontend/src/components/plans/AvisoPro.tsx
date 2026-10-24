@@ -29,7 +29,7 @@ export default function AvisoPro() {
   const aviso = useReadingStore((s) => s.avisoPro);
   const cerrar = useReadingStore((s) => s.cerrarAvisoPro);
   const goTo = useReadingStore((s) => s.goTo);
-  const { isPro, noConfigurado, limits } = usePlan();
+  const { isPro, isAdmin, noConfigurado, limits } = usePlan();
   const reducir = useReducedMotion();
   const boton = useRef<HTMLDivElement>(null);
 
@@ -49,7 +49,7 @@ export default function AvisoPro() {
 
   /* Un Pro no debería ver esto nunca; si el servidor lo rechazó igual, el
      mensaje de la barra alcanza. */
-  const visible = !!aviso && !isPro;
+  const visible = !!aviso && !isPro && !isAdmin;
 
   const beneficios = [
     `Lecturas guardadas sin tope (gratis: ${limits?.readings ?? 2} por semana)`,

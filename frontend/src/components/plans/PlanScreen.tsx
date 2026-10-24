@@ -107,6 +107,7 @@ function formatearPrecio(oferta: Oferta): { texto: string; unavailable: boolean 
 export default function PlanScreen() {
   const {
     isPro,
+    isAdmin,
     isLifetime,
     tier,
     limits,
@@ -214,6 +215,26 @@ export default function PlanScreen() {
           </div>
         </section>
     ) : null;
+
+  /* Administración: sin topes, no hay plan que contratar ni que gestionar. */
+  if (isAdmin) {
+    return (
+      <div className="space-y-9">
+        <SectionHeading
+          overline="Cuenta"
+          title="Tu plan"
+          subtitle="La información de tu cuenta y qué se sincroniza entre dispositivos."
+        />
+        <div className="panel gilded p-6 text-center">
+          <h2 className="font-display text-2xl text-gold-gradient">Administración</h2>
+          <p className="mt-2 text-xs leading-relaxed text-gold-100/55">
+            Tu cuenta es de administración: lecturas, mazos, tiradas y rituales sin límite, sin pagar.
+          </p>
+        </div>
+        {seccionUso}
+      </div>
+    );
+  }
 
   /* Stripe no configurado: no hay Pro que contratar todavía. Decirlo es mejor
      que mostrar planes que van a fallar, pero el plan gratuito tiene topes

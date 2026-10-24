@@ -5,11 +5,8 @@ dist/
 # Los PDF de ejemplo que genera tools/ejemplo.ts. Son artefactos, no código.
 backend/*.pdf
 
-# Los archivos de imagen de las cartas no se versionan: son varios megas de
-# binarios que cambian cada vez que se reemplaza una. La carpeta queda en el
-# servidor; el nombre de cada archivo sí está en la base.
-backend/assets/cards/*
-!backend/assets/cards/README.md
+# Las imágenes de las cartas SÍ se versionan: Vercel despliega desde Git, y
+# sin ellas en el repositorio la app publicada no tendría imágenes.
 
 # Las claves (Clerk, Stripe) nunca se versionan. Los .env.example sí.
 frontend/.env
@@ -30,3 +27,8 @@ backend/.*.ts
 
 # Salidas de herramientas/renderLuna.ts: PNG para mirar, no código.
 frontend/.luna/
+
+# Salidas del build de Vercel (scripts/empaquetar.mjs y copiarCartas.mjs).
+backend/dist-vercel/
+backend/public/
+.vercel/

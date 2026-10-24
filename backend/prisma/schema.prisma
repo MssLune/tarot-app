@@ -3,12 +3,19 @@
 // (mazos personalizados, tiradas creadas por el usuario y historial de lecturas).
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  /// "rhel-openssl-3.0.x" es el sistema de las funciones de Vercel.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
+/// PostgreSQL (Neon). La app corre en Vercel, que no tiene disco: el archivo
+/// SQLite de antes se perdía en cada ejecución.
+/// DATABASE_URL: la conexión con pooler (la que usa la app).
+/// DIRECT_URL: la directa, sin pooler (la que usan las migraciones).
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 /// Usuario autenticado (sincronizado con Clerk).

@@ -21,7 +21,7 @@ if exist "%NODE_BUNDLED%\node.exe" (
 
 echo.
 echo [ERROR] No se encontro Node.js en esta máquina.
-echo Instalalo desde https://nodejs.org ^(version 18 o superior^) y volve a intentar.
+echo Instálalo desde https://nodejs.org ^(version 18 o superior^) y vuelve a intentarlo.
 echo.
 pause
 exit /b 1
@@ -52,12 +52,11 @@ if not exist "node_modules" (
 )
 
 rem --- 4. Base de datos -------------------------------------------------
-if not exist "backend\prisma\dev.db" (
-    echo.
-    echo Preparando la base de datos por primera vez...
-    call npm run db:migrate:deploy -w backend
-    call npm run db:seed -w backend
-)
+rem La base ahora es PostgreSQL en Neon (ver docs\despliegue.md): ya no hay
+rem archivo local que crear. Se aplican las migraciones pendientes, si hay.
+echo.
+echo Revisando la base de datos...
+call npm run db:migrate:deploy -w backend
 
 rem --- 5. Arrancar backend + frontend en una ventana aparte -----------------
 echo.
@@ -66,7 +65,7 @@ echo   - API:      http://localhost:4000
 echo   - Frontend: http://localhost:5173
 echo.
 echo Se abre una ventana nueva "Arcana - servidores" con los logs.
-echo Para apagar la app, cerra esa ventana ^(o esta^).
+echo Para apagar la app, cierra esa ventana ^(o esta^).
 echo.
 
 start "Arcana - servidores" cmd /k "cd /d "%~dp0" && npm run dev"

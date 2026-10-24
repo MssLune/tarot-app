@@ -5,7 +5,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 4000),
   frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
-  databaseUrl: process.env.DATABASE_URL ?? 'file:./dev.db',
+  databaseUrl: process.env.DATABASE_URL ?? '',
 
   /* Stripe. Vacío = el billing queda apagado y la app corre toda en plan
      gratuito. Es el mismo patrón que Clerk: se monta sólo si está todo. */

@@ -2,7 +2,7 @@
   "name": "backend",
   "private": true,
   "version": "1.0.0",
-  "description": "Arcana API — Express + TypeScript + Prisma (SQLite)",
+  "description": "Arcana API — Express + TypeScript + Prisma (PostgreSQL)",
   "type": "commonjs",
   "main": "dist/server.js",
   "scripts": {
@@ -16,7 +16,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "vercel-build": "prisma generate && prisma migrate deploy && node scripts/empaquetar.mjs && node scripts/copiarCartas.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -40,6 +41,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.9.0",
     "@types/pdfkit": "^0.17.6",
+    "esbuild": "^0.21.5",
     "prisma": "^5.22.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
