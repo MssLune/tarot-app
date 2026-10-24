@@ -1,9 +1,14 @@
 import { SignUp } from '@clerk/react';
+import { URL_ENTRAR } from '../../lib/rutaCuenta';
 
 export default function SignUpPage() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <SignUp
+        /* Los pasos de Clerk (volver de Google, verificar el correo, completar
+           datos) van en el `#` de la URL: la app no tiene rutas. */
+        routing="hash"
+        signInUrl={URL_ENTRAR}
         appearance={{
           elements: {
             rootBox: 'w-full max-w-md',

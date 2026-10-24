@@ -19,6 +19,7 @@ import Glyph from './components/ui/Glyph';
 import Starfield from './components/ui/Starfield';
 import { useContentStore } from './store/useContentStore';
 import { useReadingStore } from './store/useReadingStore';
+import { sincronizarUrl } from './lib/rutaCuenta';
 
 /* ==========================================================================
    Raíz de la aplicación.
@@ -138,6 +139,12 @@ export default function App() {
   useEffect(() => {
     if (isSignedIn && authView) useReadingStore.setState({ authView: null, authMotivo: null });
   }, [isSignedIn, authView]);
+
+  /* La pantalla de cuenta se refleja en la URL (`/?cuenta=entrar|registro`),
+     que es la dirección que Clerk usa en sus pasos. Ver lib/rutaCuenta.ts. */
+  useEffect(() => {
+    sincronizarUrl(authView);
+  }, [authView]);
 
   /* Al cambiar de pantalla, volvemos arriba: evita aterrizar a mitad de página. */
   useEffect(() => {

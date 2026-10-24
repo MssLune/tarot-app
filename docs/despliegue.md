@@ -185,6 +185,14 @@ Sincroniza los cambios de los usuarios (nombre, borrado de cuenta) con la base.
 - *«No pudimos conectar con la API»* en el frontend: revisa `VITE_API_URL`
   (debe terminar en `/api`) y que `FRONTEND_URL` de la API sea exactamente la
   dirección del frontend.
+- *Al registrarse o entrar con Google termina en la página de Clerk*
+  (`*.accounts.dev`) o vuelve sin la sesión iniciada: la app le dice a Clerk
+  que el inicio de sesión y el registro viven en `/?cuenta=entrar` y
+  `/?cuenta=registro` (ver `frontend/src/lib/rutaCuenta.ts`). Si se cambia
+  esa lógica, hay que mantener esas direcciones.
+- *«Verify you are human» de Cloudflare al registrarse*: es la protección
+  anti-bots de Clerk. Se puede apagar en el panel de Clerk → *Attack
+  protection* → *Bot sign-up protection*.
 - *401 al iniciar sesión*: las claves de Clerk del frontend y de la API deben
   ser de la misma instancia.
 - Error de Prisma *«Can't reach database server»* o *«Timed out fetching a

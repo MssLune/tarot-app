@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { ClerkProvider } from '@clerk/react';
 import App from './App';
 import ErrorBoundary from './components/layout/ErrorBoundary';
+import { URL_ENTRAR, URL_REGISTRO, modoDesdeUrl } from './lib/rutaCuenta';
+import { useReadingStore } from './store/useReadingStore';
 import './index.css';
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
@@ -47,10 +49,25 @@ const clerkAppearance = {
   },
 };
 
+/* Si la página se abre en medio de un inicio de sesión o registro de Clerk
+   (`/?cuenta=…`), la pantalla de cuenta tiene que estar abierta desde el
+   primer render para que Clerk retome el paso. Ver lib/rutaCuenta.ts. */
+const modoInicial = modoDesdeUrl();
+if (modoInicial) useReadingStore.setState({ authView: modoInicial });
+
 /* Punto de entrada de la aplicación. */
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={publishableKey ?? ''} appearance={clerkAppearance}>
+    <ClerkProvider
+      publishableKey={publishableKey ?? ''}
+      appearance={clerkAppearance}
+      /* Inicio de sesión y registro viven en la app, no en la página de Clerk. */
+      signInUrl={URL_ENTRAR}
+      signUpUrl={URL_REGISTRO}
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+      afterSignOutUrl="/"
+    >
       <ErrorBoundary>
         <App />
       </ErrorBoundary>
